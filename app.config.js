@@ -1,0 +1,43 @@
+export default ({ config }) => ({
+  ...config,
+  name: 'SessionPlanner',
+  slug: 'SessionPlanner',
+  version: '1.0.0',
+  orientation: 'portrait',
+  scheme: 'SessionPlanner',
+  userInterfaceStyle: 'automatic',
+  newArchEnabled: true,
+  ios: {
+    supportsTablet: true,
+  },
+  android: {
+    adaptiveIcon: {
+      backgroundColor: '#E6F4FE',
+    },
+    edgeToEdgeEnabled: true,
+    predictiveBackGestureEnabled: false,
+  },
+  plugins: [
+    [
+      'expo-router',
+      {
+        root: './src/base/screens',
+      },
+    ],
+    [
+      'expo-splash-screen',
+      {
+        imageWidth: 200,
+        resizeMode: 'contain',
+        backgroundColor: '#ffffff',
+        dark: {
+          backgroundColor: '#000000',
+        },
+      },
+    ],
+  ],
+  experiments: {
+    typedRoutes: true,
+    reactCompiler: true,
+  },
+})
