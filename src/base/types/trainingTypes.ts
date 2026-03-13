@@ -41,6 +41,8 @@ export interface IWarmUp extends ICommonWorkout {
 
 export interface ICooldown extends IWarmUp {}
 
+export interface IStretching extends IWarmUp {}
+
 export interface IClimbing extends ICommonWorkout {
   grade: ClimbingGrades
   restingTime: number
