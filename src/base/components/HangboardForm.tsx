@@ -21,16 +21,8 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
 
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
-      <TextField
-        placeholder="Nom de l'exercice"
-        value={value.title}
-        onChangeText={(text) => handleChange('title', text)}
-      />
-      <TextField
-        placeholder="Type de prise (holdType)"
-        value={value.holdType}
-        onChangeText={(text) => handleChange('holdType', text)}
-      />
+      <TextField placeholder="Nom de l'exercice" value={value.title} onChangeText={(text) => handleChange('title', text)} />
+      <TextField placeholder="Type de prise (holdType)" value={value.holdType} onChangeText={(text) => handleChange('holdType', text)} />
       <TextField
         placeholder="Temps de repos (secondes)"
         value={String(value.restingTime || '')}
@@ -43,18 +35,8 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
         onChangeText={(text) => handleChange('holdTime', text)}
         type="number"
       />
-      <TextField
-        placeholder="Nombre de séries"
-        value={String(value.sets || '')}
-        onChangeText={(text) => handleChange('sets', text)}
-        type="number"
-      />
-      <TextField
-        placeholder="Notes"
-        value={value.notes}
-        onChangeText={(text) => handleChange('notes', text)}
-      />
+      <TextField placeholder="Nombre de séries" value={String(value.sets || '')} onChangeText={(text) => handleChange('sets', text)} type="number" />
+      <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />
     </View>
   )
 }
-

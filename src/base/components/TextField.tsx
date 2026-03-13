@@ -17,6 +17,7 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
   const isNumber = type === 'number'
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
   const [localValue, setLocalValue] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
 
   // Utiliser la valeur contrôlée si fournie, sinon utiliser l'état local
   const value = controlledValue !== undefined ? controlledValue : localValue
@@ -42,17 +43,19 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
         ) : null
       }
       textColor={LightColors.black}
-      placeholder={placeholder}
+      placeholder={isFocused ? '' : placeholder}
       value={value}
       onChangeText={handleChangeText}
       secureTextEntry={isPassword && !isPasswordVisible}
       keyboardType={isEmail ? 'email-address' : isNumber ? 'numeric' : 'default'}
       autoCapitalize={isEmail ? 'none' : 'sentences'}
-      style={styles.input}
+      style={[styles.input, isFocused && styles.inputFocused]}
       contentStyle={styles.content}
       placeholderTextColor={LightColors.black}
       underlineColor="transparent"
       activeUnderlineColor="transparent"
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
     />
   )
 }
@@ -67,6 +70,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 17,
     backgroundColor: LightColors.white,
     height: 50,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputFocused: {
+    borderColor: LightColors.primary,
   },
   content: {
     paddingLeft: 14,
