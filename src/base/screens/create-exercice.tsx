@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { View } from 'react-native'
+import { ScrollView, View, Keyboard } from 'react-native'
 import { router } from 'expo-router'
 import { ExerciceTypes, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -109,20 +109,24 @@ export default function index() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <View
-        style={{
-          flex: 1,
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingBottom: 30,
         }}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={() => Keyboard.dismiss()}
       >
         <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} />
         {renderForm()}
         <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center' }}>
           <PrimaryButton title="Valider" onPress={handleNext} />
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
