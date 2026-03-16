@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Keyboard } from 'react-native'
 import { router } from 'expo-router'
-import { ExerciceTypes, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching } from '../types/trainingTypes'
+import { useLocalSearchParams } from 'expo-router'
+import { ExerciceTypes, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching, TrainingExercise } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { ExercicePicker } from '../components/ExercicePicker'
 import { HangboardForm } from '../components/HangboardForm'
@@ -10,8 +11,14 @@ import { ClimbingForm } from '../components/ClimbingForm'
 import { WarmupForm } from '../components/WarmupForm'
 import { CooldownForm } from '../components/CooldownForm'
 import { StretchingForm } from '../components/StretchingForm'
+import { useTrainingStore } from '../store/trainingStore'
 
 export default function index() {
+  const params = useLocalSearchParams<{ blocId?: string }>()
+  const blocId = params.blocId ? Number(params.blocId) : null
+
+  const addExerciseToBloc = useTrainingStore((state) => state.addExerciseToBloc)
+
   const [selectedType, setSelectedType] = useState<ExerciceTypes | null>(null)
 
   const [hangboardData, setHangboardData] = useState<Ihangboard>({
@@ -68,20 +75,27 @@ export default function index() {
   })
 
   const handleNext = () => {
+    if (!blocId || !selectedType) {
+      router.back()
+      return
+    }
+
+    let exercise: TrainingExercise | null = null
+
     if (selectedType === 'hangboard') {
-      console.log('Hangboard data', hangboardData)
+      exercise = { type: 'hangboard', data: hangboardData }
+    } else if (selectedType === 'climbing') {
+      exercise = { type: 'climbing', data: climbingData }
+    } else if (selectedType === 'warmup') {
+      exercise = { type: 'warmup', data: warmupData }
+    } else if (selectedType === 'cooldown') {
+      exercise = { type: 'cooldown', data: cooldownData }
+    } else if (selectedType === 'stretching') {
+      exercise = { type: 'stretching', data: stretchingData }
     }
-    if (selectedType === 'climbing') {
-      console.log('Climbing data', climbingData)
-    }
-    if (selectedType === 'warmup') {
-      console.log('Warmup data', warmupData)
-    }
-    if (selectedType === 'cooldown') {
-      console.log('Cooldown data', cooldownData)
-    }
-    if (selectedType === 'stretching') {
-      console.log('Stretching data', stretchingData)
+
+    if (exercise) {
+      addExerciseToBloc(blocId, exercise)
     }
 
     router.back()

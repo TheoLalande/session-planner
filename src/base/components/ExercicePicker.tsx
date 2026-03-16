@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { View, ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native'
 import { LightColors } from '../constants/theme'
 import { ExerciceTypes } from '../types/trainingTypes'
@@ -11,6 +11,12 @@ type Props = {
 const EXERCICE_TYPES: ExerciceTypes[] = ['hangboard', 'climbing', 'warmup', 'cooldown', 'stretching']
 
 export const ExercicePicker: React.FC<Props> = ({ selectedType, onSelect }) => {
+  useEffect(() => {
+    if (!selectedType) {
+      onSelect(EXERCICE_TYPES[0])
+    }
+  }, [selectedType, onSelect])
+
   return (
     <View
       style={{
@@ -19,8 +25,8 @@ export const ExercicePicker: React.FC<Props> = ({ selectedType, onSelect }) => {
       }}
     >
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typesContainer}>
-        {EXERCICE_TYPES.map((type) => {
-          const isSelected = type === selectedType
+        {EXERCICE_TYPES.map((type, index) => {
+          const isSelected = selectedType ? type === selectedType : index === 0
           return (
             <TouchableOpacity
               key={type}

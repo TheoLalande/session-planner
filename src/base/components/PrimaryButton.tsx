@@ -6,21 +6,34 @@ interface PrimaryButtonProps {
   title: string
   onPress?: () => void
   isClickable?: boolean
+  color?: string
+  borderColor?: string
+  textColor?: string
 }
 
-export function PrimaryButton({ title, onPress, isClickable = true }: PrimaryButtonProps) {
+export function PrimaryButton({
+  title,
+  onPress,
+  isClickable = true,
+  color = LightColors.primary,
+  borderColor = LightColors.primary,
+  textColor = LightColors.white,
+}: PrimaryButtonProps) {
   const buttonStyle = [styles.button, !isClickable && styles.buttonDisabled]
 
   return (
-    <Button style={buttonStyle} onPress={isClickable ? onPress : undefined} disabled={!isClickable}>
-      <Text style={styles.title}>{title}</Text>
+    <Button
+      style={[buttonStyle, { backgroundColor: color, borderColor: borderColor, borderWidth: 1 }]}
+      onPress={isClickable ? onPress : undefined}
+      disabled={!isClickable}
+    >
+      <Text style={[styles.title, { color: textColor }]}>{title}</Text>
     </Button>
   )
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: LightColors.primary,
     paddingVertical: 5,
     borderRadius: 30,
     marginHorizontal: 30,

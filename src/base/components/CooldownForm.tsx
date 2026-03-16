@@ -1,6 +1,8 @@
 import React from 'react'
-import { View } from 'react-native'
+import { View, Text } from 'react-native'
+import Slider from '@react-native-community/slider'
 import { TextField } from './TextField'
+import { LightColors } from '../constants/theme'
 import { ICooldown } from '../types/trainingTypes'
 
 type CooldownFormProps = {
@@ -30,12 +32,19 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
         value={value.exerciceType}
         onChangeText={(text) => handleChange('exerciceType', text)}
       />
-      <TextField
-        placeholder="Durée (minutes)"
-        value={String(value.duration || '')}
-        onChangeText={(text) => handleChange('duration', text)}
-        type="number"
-      />
+      <View style={{ marginVertical: 10, width: '100%' }}>
+        <Text style={{ marginBottom: 4, textAlign: 'center', color: LightColors.black }}>
+          Durée : {value.duration} minutes
+        </Text>
+        <Slider
+          value={value.duration}
+          onValueChange={(newValue) => onChange({ ...value, duration: Math.round(newValue) })}
+          minimumValue={0}
+          maximumValue={60}
+          step={1}
+          minimumTrackTintColor={LightColors.primary}
+        />
+      </View>
       <TextField
         placeholder="Notes"
         value={value.notes}
