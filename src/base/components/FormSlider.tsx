@@ -13,6 +13,8 @@ type FormSliderProps = {
   onChange: (value: number) => void
   containerStyle?: ViewStyle
   labelStyle?: TextStyle
+  valueUnit?: 'minutes' | 'seconds'
+  onUnitChange?: (unit: 'minutes' | 'seconds') => void
   /**
    * Affiche un switch minutes/secondes à côté du slider.
    * Purement visuel pour l'instant : à toi d'interpréter la valeur côté parent si besoin.
@@ -31,12 +33,24 @@ export function FormSlider({
   containerStyle,
   labelStyle,
   enableUnitToggle,
+  valueUnit,
+  onUnitChange,
 }: FormSliderProps) {
-  const [unitMode, setUnitMode] = useState<'minutes' | 'seconds'>(() => {
+  const [internalUnit, setInternalUnit] = useState<'minutes' | 'seconds'>(() => {
     if (unit === 'seconds' || unit === 'secondes') return 'seconds'
     if (unit === 'minutes') return 'minutes'
     return 'minutes'
   })
+
+  const unitMode = valueUnit ?? internalUnit
+
+  const setUnitMode = (unitValue: 'minutes' | 'seconds') => {
+    if (onUnitChange) {
+      onUnitChange(unitValue)
+    } else {
+      setInternalUnit(unitValue)
+    }
+  }
 
   const effectiveUnit = useMemo(() => {
     if (unitMode === 'minutes') return unit ?? 'minutes'

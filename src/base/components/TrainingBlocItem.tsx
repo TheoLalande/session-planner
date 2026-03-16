@@ -16,11 +16,14 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
   } else if (type === 'climbing') {
     label = `${data.title || 'Climbing'} · ${data.grade}`
   } else if (type === 'warmup') {
-    label = `${data.title || 'Échauffement'} · ${data.duration} min`
+    const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
+    label = `${data.title || 'Échauffement'} · ${data.duration} ${unit}`
   } else if (type === 'cooldown') {
-    label = `${data.title || 'Retour au calme'} · ${data.duration} min`
+    const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
+    label = `${data.title || 'Retour au calme'} · ${data.duration} ${unit}`
   } else if (type === 'stretching') {
-    label = `${data.title || 'Étirement'} · ${data.duration} min`
+    const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
+    label = `${data.title || 'Étirement'} · ${data.duration} ${unit}`
   }
 
   return (

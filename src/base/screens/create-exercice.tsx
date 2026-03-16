@@ -52,6 +52,7 @@ export default function index() {
     exerciceType: '',
     notes: '',
     duration: 0,
+    durationUnit: 'seconds',
   })
 
   const [cooldownData, setCooldownData] = useState<ICooldown>({
@@ -62,6 +63,7 @@ export default function index() {
     exerciceType: '',
     notes: '',
     duration: 0,
+    durationUnit: 'seconds',
   })
 
   const [stretchingData, setStretchingData] = useState<IStretching>({
@@ -72,6 +74,7 @@ export default function index() {
     exerciceType: '',
     notes: '',
     duration: 0,
+    durationUnit: 'seconds',
   })
 
   const handleNext = () => {

@@ -32,11 +32,14 @@ export interface Ihangboard extends ICommonWorkout {
   notes: string
 }
 
+export type TimeUnit = 'minutes' | 'seconds'
+
 export interface IWarmUp extends ICommonWorkout {
   exerciceType: string
   picture: string
   notes: string
   duration: number
+  durationUnit: TimeUnit
 }
 
 export interface ICooldown extends IWarmUp {}
