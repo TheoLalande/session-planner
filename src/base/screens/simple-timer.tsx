@@ -69,6 +69,14 @@ export default function SimpleTimer() {
   const [isTransition, setIsTransition] = useState(false)
   const [transitionSeconds, setTransitionSeconds] = useState(5)
 
+  // À partir du deuxième exercice, on démarre automatiquement le timer
+  useEffect(() => {
+    const indexNum = timeIndex ? Number(timeIndex) : 0
+    if (indexNum > 0) {
+      setIsRunning(true)
+    }
+  }, [])
+
   useEffect(() => {
     // Si la durée change (nouveaux params / nouvel exercice), on réinitialise le timer principal
     setRemainingSeconds(initialDurationSeconds)

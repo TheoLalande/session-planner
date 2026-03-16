@@ -33,7 +33,8 @@ export function ClimbingForm({ value, onChange }: ClimbingFormProps) {
       />
       <FormSlider
         label="Temps de repos"
-        unit="s"
+        unit="seconds"
+        enableUnitToggle
         value={value.restingTime}
         minimumValue={0}
         maximumValue={300}

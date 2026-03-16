@@ -25,7 +25,8 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
       <TextField placeholder="Type de prise (holdType)" value={value.holdType} onChangeText={(text) => handleChange('holdType', text)} />
       <FormSlider
         label="Temps de repos"
-        unit="s"
+        unit="seconds"
+        enableUnitToggle
         value={value.restingTime}
         minimumValue={0}
         maximumValue={120}
@@ -33,7 +34,8 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
       />
       <FormSlider
         label="Temps de suspension"
-        unit="s"
+        unit="seconds"
+        enableUnitToggle
         value={value.holdTime}
         minimumValue={0}
         maximumValue={60}

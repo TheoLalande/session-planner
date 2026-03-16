@@ -21,30 +21,18 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
 
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
-      <TextField
-        placeholder="Nom de l'échauffement"
-        value={value.title}
-        onChangeText={(text) => handleChange('title', text)}
-      />
-      <TextField
-        placeholder="Type d'exercice"
-        value={value.exerciceType}
-        onChangeText={(text) => handleChange('exerciceType', text)}
-      />
+      <TextField placeholder="Nom de l'échauffement" value={value.title} onChangeText={(text) => handleChange('title', text)} />
+      <TextField placeholder="Type d'exercice" value={value.exerciceType} onChangeText={(text) => handleChange('exerciceType', text)} />
       <FormSlider
         label="Durée"
-        unit="minutes"
+        unit="seconds"
+        enableUnitToggle
         value={value.duration}
         minimumValue={0}
         maximumValue={60}
         onChange={(v) => onChange({ ...value, duration: v })}
       />
-      <TextField
-        placeholder="Notes"
-        value={value.notes}
-        onChangeText={(text) => handleChange('notes', text)}
-      />
+      <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />
     </View>
   )
 }
-

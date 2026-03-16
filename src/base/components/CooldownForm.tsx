@@ -33,7 +33,8 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
       />
       <FormSlider
         label="Durée"
-        unit="minutes"
+        unit="seconds"
+        enableUnitToggle
         value={value.duration}
         minimumValue={0}
         maximumValue={60}
