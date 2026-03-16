@@ -39,12 +39,20 @@ export default function RootLayout() {
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="home" options={{ headerShown: false, animation: 'none' }} />
               <Stack.Screen
+                name="training-detail"
+                options={{ headerShown: true, title: 'Détail de l\'entrainement', headerBackTitle: 'Retour' }}
+              />
+              <Stack.Screen
                 name="create-training"
                 options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }}
               />
               <Stack.Screen
                 name="create-exercice"
                 options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }}
+              />
+              <Stack.Screen
+                name="simple-timer"
+                options={{ headerShown: true, title: 'Timer', headerBackTitle: 'Retour' }}
               />
             </Stack>
           </SafeAreaProvider>

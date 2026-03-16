@@ -40,7 +40,8 @@ const styles = StyleSheet.create({
   },
   type: {
     fontSize: 11,
-    color: LightColors.grey,
+    color: LightColors.primary,
+    fontWeight: '600',
     textTransform: 'uppercase',
   },
   label: {

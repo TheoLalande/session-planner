@@ -1,17 +1,20 @@
 import { create } from 'zustand'
-import { ExerciceTypes, ITrainingBloc, TrainingExercise } from '../types/trainingTypes'
+import { IPlannedTraining, ITrainingBloc, TrainingExercise } from '../types/trainingTypes'
 
 type TrainingState = {
   blocs: ITrainingBloc[]
+  trainings: IPlannedTraining[]
   editingBlocId: number | null
   addBloc: (title: string) => void
   setEditingBlocId: (id: number | null) => void
   addExerciseToBloc: (blocId: number, exercise: TrainingExercise) => void
   removeBloc: (blocId: number) => void
+  saveTraining: (title: string, description: string) => void
 }
 
 export const useTrainingStore = create<TrainingState>((set) => ({
   blocs: [],
+  trainings: [],
   editingBlocId: null,
   addBloc: (title: string) =>
     set((state) => {
@@ -31,5 +34,19 @@ export const useTrainingStore = create<TrainingState>((set) => ({
     set((state) => ({
       blocs: state.blocs.filter((bloc) => bloc.id !== blocId),
     })),
+  saveTraining: (title, description) =>
+    set((state) => {
+      const id = state.trainings.length ? state.trainings[state.trainings.length - 1].id + 1 : 1
+      const newTraining: IPlannedTraining = {
+        id,
+        title,
+        description,
+        blocs: state.blocs,
+      }
+      return {
+        trainings: [...state.trainings, newTraining],
+        blocs: [],
+      }
+    }),
 }))
 

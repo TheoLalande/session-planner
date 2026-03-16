@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: LightColors.primary,
     padding: 12,
-    minHeight: 50,
-    justifyContent: 'space-between',
+    minHeight: 100,
+    justifyContent: 'center',
   },
   title: {
     color: LightColors.black,

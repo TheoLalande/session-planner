@@ -5,15 +5,18 @@ import { ScrollView, View } from 'react-native'
 import { TrainingBloc } from '../components/TrainingBloc'
 import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
+import { useRouter } from 'expo-router'
 
 export default function index() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const router = useRouter()
 
   const blocs = useTrainingStore((state) => state.blocs)
   const addBloc = useTrainingStore((state) => state.addBloc)
   const setEditingBlocId = useTrainingStore((state) => state.setEditingBlocId)
   const removeBloc = useTrainingStore((state) => state.removeBloc)
+  const saveTraining = useTrainingStore((state) => state.saveTraining)
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -57,7 +60,11 @@ export default function index() {
           <PrimaryButton
             title="Enregistrer"
             onPress={() => {
-              console.log('Enregistrer')
+              if (!title.trim()) return
+              saveTraining(title.trim(), description.trim())
+              setTitle('')
+              setDescription('')
+              router.replace('/home')
             }}
           />
         </View>

@@ -54,6 +54,13 @@ export interface ITraining extends ICommonWorkout {
   workouts: IWorkout[]
 }
 
+export interface IPlannedTraining {
+  id: number
+  title: string
+  description: string
+  blocs: ITrainingBloc[]
+}
+
 export type TrainingExercise =
   | { type: 'hangboard'; data: Ihangboard }
   | { type: 'climbing'; data: IClimbing }
