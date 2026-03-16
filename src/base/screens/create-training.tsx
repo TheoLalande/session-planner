@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton, TextField } from '../components'
 import { ScrollView, View } from 'react-native'
@@ -13,10 +13,25 @@ export default function index() {
   const router = useRouter()
 
   const blocs = useTrainingStore((state) => state.blocs)
+  const editingTrainingId = useTrainingStore((state) => state.editingTrainingId)
+  const trainings = useTrainingStore((state) => state.trainings)
   const addBloc = useTrainingStore((state) => state.addBloc)
   const setEditingBlocId = useTrainingStore((state) => state.setEditingBlocId)
   const removeBloc = useTrainingStore((state) => state.removeBloc)
   const saveTraining = useTrainingStore((state) => state.saveTraining)
+  const updateTraining = useTrainingStore((state) => state.updateTraining)
+
+  useEffect(() => {
+    if (!editingTrainingId) {
+      return
+    }
+    const training = trainings.find((t) => t.id === editingTrainingId)
+    if (!training) {
+      return
+    }
+    setTitle(training.title)
+    setDescription(training.description)
+  }, [editingTrainingId, trainings])
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -39,7 +54,7 @@ export default function index() {
             <TextField placeholder="Description de l'entrainement" type="text" value={description} onChangeText={setDescription} />
           </View>
 
-          <View style={{ width: '100%', alignItems: 'center', gap: 20 }}>
+          <View style={{ width: '100%', alignItems: 'center', gap: 20, marginBottom: 20 }}>
             {blocs.map((bloc) => (
               <TrainingBloc
                 key={bloc.id}
@@ -63,10 +78,14 @@ export default function index() {
             }}
           />
           <PrimaryButton
-            title="Enregistrer"
+            title={editingTrainingId ? 'Mettre à jour' : 'Enregistrer'}
             onPress={() => {
               if (!title.trim()) return
-              saveTraining(title.trim(), description.trim())
+              if (editingTrainingId) {
+                updateTraining(title.trim(), description.trim())
+              } else {
+                saveTraining(title.trim(), description.trim())
+              }
               setTitle('')
               setDescription('')
               router.replace('/home')

@@ -53,11 +53,21 @@ export function FormSlider({
   }
 
   const effectiveUnit = useMemo(() => {
-    if (unitMode === 'minutes') return unit ?? 'minutes'
-    // Si aucun unit n'est fourni, on choisit des labels par défaut
-    if (unit === 'seconds' || unit === 'secondes') return unit
+    // Si on n'a pas de toggle, on respecte strictement l'unité passée,
+    // et s'il n'y en a pas, on n'affiche aucune unité.
+    if (!enableUnitToggle) {
+      return unit ?? ''
+    }
+
+    if (unitMode === 'minutes') {
+      return 'minutes'
+    }
+    // mode secondes : on garde l'unité fournie si pertinente, sinon "secondes" par défaut
+    if (unit === 'seconds' || unit === 'secondes') {
+      return unit
+    }
     return 'secondes'
-  }, [unit, unitMode])
+  }, [unit, unitMode, enableUnitToggle])
 
   const fullLabel = effectiveUnit ? `${label} : ${value} ${effectiveUnit}` : `${label} : ${value}`
 

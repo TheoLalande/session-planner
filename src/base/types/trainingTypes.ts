@@ -34,12 +34,16 @@ export interface Ihangboard extends ICommonWorkout {
 
 export type TimeUnit = 'minutes' | 'seconds'
 
+export type QuantityMode = 'time' | 'reps'
+
 export interface IWarmUp extends ICommonWorkout {
   exerciceType: string
   picture: string
   notes: string
   duration: number
   durationUnit: TimeUnit
+  mode: QuantityMode
+  repetitions: number
 }
 
 export interface ICooldown extends IWarmUp {}

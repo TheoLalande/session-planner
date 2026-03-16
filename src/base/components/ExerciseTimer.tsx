@@ -1,25 +1,23 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { LightColors } from '../constants/theme'
 
 type ExerciseTimerProps = {
-  title: string
-  imageUri?: string | null
   initialSeconds: number
   autoStart?: boolean
   hasNextExercise?: boolean
   onNextExercise?: () => void
+  onStatusChange?: (status: { isRunning: boolean; isTransition: boolean; remainingSeconds: number }) => void
 }
 
-export function ExerciseTimer({
-  title,
-  imageUri,
-  initialSeconds,
-  autoStart = false,
-  hasNextExercise = false,
-  onNextExercise,
-}: ExerciseTimerProps) {
+export type ExerciseTimerHandle = {
+  startPause: () => void
+  reset: () => void
+}
+
+export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>(
+  ({ initialSeconds, autoStart = false, hasNextExercise = false, onNextExercise, onStatusChange }, ref) => {
   const [remainingSeconds, setRemainingSeconds] = useState(initialSeconds)
   const [isRunning, setIsRunning] = useState(autoStart)
   const [isTransition, setIsTransition] = useState(false)
@@ -107,75 +105,67 @@ export function ExerciseTimer({
   const seconds = remainingSeconds % 60
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        {imageUri ? <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" /> : null}
+  useImperativeHandle(ref, () => ({
+    startPause: handleStartPause,
+    reset: handleReset,
+  }))
 
+  useEffect(() => {
+    if (onStatusChange) {
+      onStatusChange({ isRunning, isTransition, remainingSeconds })
+    }
+  }, [isRunning, isTransition, remainingSeconds, onStatusChange])
+
+  const isActive = isRunning && !isTransition
+  const borderColor = isActive ? '#008000' : '#ff3b30'
+  const textColor = borderColor
+
+  return (
+    <TouchableOpacity activeOpacity={0.8} onPress={handleStartPause}>
+      <View style={styles.container}>
         {isTransition ? (
-          <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>00:{String(transitionSeconds).padStart(2, '0')}</Text>
+          <View style={[styles.timerContainer, { borderColor }]}>
+            <Text style={[styles.timerText, { color: textColor }]}>
+              00:{String(transitionSeconds).padStart(2, '0')}
+            </Text>
+            <View style={styles.iconWrapper}>
+              <MaterialCommunityIcons
+                name={isActive ? 'pause' : 'play'}
+                size={24}
+                color={textColor}
+              />
+            </View>
           </View>
         ) : (
-          <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>{formattedTime}</Text>
+          <View style={[styles.timerContainer, { borderColor }]}>
+            <Text style={[styles.timerText, { color: textColor }]}>{formattedTime}</Text>
+            <View style={styles.iconWrapper}>
+              <MaterialCommunityIcons
+                name={isActive ? 'pause' : 'play'}
+                size={24}
+                color={textColor}
+              />
+            </View>
           </View>
         )}
 
-        {!isTransition && remainingSeconds === 0 && <Text style={styles.finishedText}>Exercice terminé</Text>}
-
-        {isTransition && hasNextExercise && (
-          <Text style={styles.finishedText}>Prochain exercice dans {transitionSeconds} seconde(s)</Text>
+        {!isTransition && remainingSeconds === 0 && (
+          <Text style={styles.finishedText}>Exercice terminé</Text>
         )}
 
-        <View style={styles.buttonsRow}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={handleStartPause}
-            disabled={isTransition}
-            style={[
-              styles.button,
-              {
-                backgroundColor: isTransition ? LightColors.lightGrey : isRunning ? LightColors.grey : LightColors.primary,
-              },
-            ]}
-          >
-            <Text style={styles.buttonText}>{isRunning ? 'Pause' : 'Démarrer'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity activeOpacity={0.7} onPress={handleReset} style={[styles.button, styles.secondaryButton]}>
-            <Text style={[styles.buttonText, styles.secondaryButtonText]}>Réinitialiser</Text>
-          </TouchableOpacity>
-        </View>
+        {isTransition && hasNextExercise && (
+          <Text style={styles.finishedText}>
+            Prochain exercice dans {transitionSeconds} seconde(s)
+          </Text>
+        )}
       </View>
-    </SafeAreaView>
+    </TouchableOpacity>
   )
-}
+})
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: LightColors.white,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 30,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: LightColors.primary,
-    marginBottom: 8,
-  },
-  image: {
-    width: '100%',
-    maxWidth: 320,
-    height: 160,
-    borderRadius: 12,
-    marginBottom: 16,
   },
   timerContainer: {
     paddingVertical: 24,
@@ -185,6 +175,8 @@ const styles = StyleSheet.create({
     borderColor: LightColors.primary,
     backgroundColor: LightColors.white,
     marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timerText: {
     fontSize: 48,
@@ -197,30 +189,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: LightColors.grey,
   },
-  buttonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: LightColors.white,
-  },
-  secondaryButton: {
-    backgroundColor: LightColors.white,
-    borderWidth: 1,
-    borderColor: LightColors.primary,
-  },
-  secondaryButtonText: {
-    color: LightColors.primary,
+  iconWrapper: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
   },
 })
 

@@ -11,24 +11,42 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
   const { type, data } = exercise
 
   let label = ''
+  let typeLabel = ''
   if (type === 'hangboard') {
     label = `${data.title || 'Hangboard'} · ${data.sets} séries`
+    typeLabel = 'Hangboard'
   } else if (type === 'climbing') {
     label = `${data.title || 'Climbing'} · ${data.grade}`
+    typeLabel = 'Escalade'
   } else if (type === 'warmup') {
-    const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
-    label = `${data.title || 'Échauffement'} · ${data.duration} ${unit}`
+    if (data.mode === 'reps') {
+      label = `${data.title || 'Échauffement'} · ${data.repetitions} reps`
+    } else {
+      const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
+      label = `${data.title || 'Échauffement'} · ${data.duration} ${unit}`
+    }
+    typeLabel = data.exerciceType || 'Échauffement'
   } else if (type === 'cooldown') {
-    const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
-    label = `${data.title || 'Retour au calme'} · ${data.duration} ${unit}`
+    if (data.mode === 'reps') {
+      label = `${data.title || 'Retour au calme'} · ${data.repetitions} reps`
+    } else {
+      const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
+      label = `${data.title || 'Retour au calme'} · ${data.duration} ${unit}`
+    }
+    typeLabel = data.exerciceType || 'Retour au calme'
   } else if (type === 'stretching') {
-    const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
-    label = `${data.title || 'Étirement'} · ${data.duration} ${unit}`
+    if (data.mode === 'reps') {
+      label = `${data.title || 'Étirement'} · ${data.repetitions} reps`
+    } else {
+      const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
+      label = `${data.title || 'Étirement'} · ${data.duration} ${unit}`
+    }
+    typeLabel = data.exerciceType || 'Étirement'
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.type}>{type}</Text>
+      <Text style={styles.type}>{typeLabel}</Text>
       <Text style={styles.label} numberOfLines={1}>
         {label}
       </Text>

@@ -1,6 +1,6 @@
 import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Text } from 'react-native'
+import { ScrollView, View, Text, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
@@ -14,6 +14,7 @@ export default function TrainingDetail() {
   const training = useTrainingStore((state) =>
     state.trainings.find((t) => t.id === trainingId),
   )
+  const startEditingTraining = useTrainingStore((state) => state.startEditingTraining)
 
   if (!training || Number.isNaN(trainingId)) {
     return (
@@ -66,21 +67,36 @@ export default function TrainingDetail() {
               <Text style={{ color: LightColors.grey, fontSize: 13 }}>Aucun exercice dans ce bloc.</Text>
             ) : (
               bloc.exercises.map((exercise, index) => (
-                <TrainingBlocItem key={index} exercise={exercise} />
+                <TouchableOpacity
+                  key={index}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/create-exercice',
+                      params: {
+                        mode: 'edit',
+                        trainingId: String(training.id),
+                        blocId: String(bloc.id),
+                        exerciseIndex: String(index),
+                      },
+                    })
+                  }
+                >
+                  <TrainingBlocItem exercise={exercise} />
+                </TouchableOpacity>
               ))
             )}
           </View>
         ))}
 
-        <View style={{ marginTop: 24, alignItems: 'center' }}>
-          <Text
+        <View style={{ marginTop: 24, alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            activeOpacity={0.7}
             style={{
               paddingVertical: 12,
               paddingHorizontal: 24,
               borderRadius: 24,
               backgroundColor: LightColors.primary,
-              color: LightColors.white,
-              fontWeight: '600',
             }}
             onPress={() => {
               // On prend pour l'instant la séquence des exercices "time-based" (warmup / cooldown / stretching)
@@ -106,8 +122,40 @@ export default function TrainingDetail() {
               })
             }}
           >
-            Commencer l'entrainement
-          </Text>
+            <Text
+              style={{
+                color: LightColors.white,
+                fontWeight: '600',
+              }}
+            >
+              Commencer l'entrainement
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={{
+              paddingVertical: 12,
+              paddingHorizontal: 24,
+              borderRadius: 24,
+              borderWidth: 1,
+              borderColor: LightColors.primary,
+              backgroundColor: LightColors.white,
+            }}
+            onPress={() => {
+              startEditingTraining(training.id)
+              router.push('/create-training')
+            }}
+          >
+            <Text
+              style={{
+                color: LightColors.primary,
+                fontWeight: '600',
+              }}
+            >
+              Modifier l'entrainement
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

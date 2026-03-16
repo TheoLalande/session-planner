@@ -1,10 +1,11 @@
-import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import React, { useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native'
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { LightColors } from '../constants/theme'
 import { SecondaryRoundButton } from './SecondaryRoundButton'
 import { TrainingBlocItem } from './TrainingBlocItem'
 import { useTrainingStore } from '../store/trainingStore'
+import { useRouter } from 'expo-router'
 
 type TrainingBlocProps = {
   blocId: number
@@ -15,12 +16,48 @@ type TrainingBlocProps = {
 
 export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }: TrainingBlocProps) => {
   const exercises = useTrainingStore((state) => state.blocs.find((b) => b.id === blocId)?.exercises || [])
+  const renameBloc = useTrainingStore((state) => state.renameBloc)
+  const router = useRouter()
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [localTitle, setLocalTitle] = useState(title)
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title} numberOfLines={2}>
-        {title}
-      </Text>
+      {isEditingTitle ? (
+        <TextInput
+          style={styles.titleInput}
+          value={localTitle}
+          onChangeText={setLocalTitle}
+          autoFocus
+          onBlur={() => {
+            const trimmed = localTitle.trim()
+            const nextTitle = trimmed || title
+            setLocalTitle(nextTitle)
+            renameBloc(blocId, nextTitle)
+            setIsEditingTitle(false)
+          }}
+          returnKeyType="done"
+          onSubmitEditing={() => {
+            const trimmed = localTitle.trim()
+            const nextTitle = trimmed || title
+            setLocalTitle(nextTitle)
+            renameBloc(blocId, nextTitle)
+            setIsEditingTitle(false)
+          }}
+        />
+      ) : (
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => {
+            setLocalTitle(title)
+            setIsEditingTitle(true)
+          }}
+        >
+          <Text style={styles.title} numberOfLines={2}>
+            {title}
+          </Text>
+        </TouchableOpacity>
+      )}
       <Swipeable
         containerStyle={{ width: '100%' }}
         overshootLeft={false}
@@ -37,7 +74,22 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
           <View style={styles.square}>
             <View style={styles.exercisesContainer}>
               {exercises.map((exercise, index) => (
-                <TrainingBlocItem key={index} exercise={exercise} />
+                <TouchableOpacity
+                  key={index}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/create-exercice',
+                      params: {
+                        mode: 'edit-bloc',
+                        blocId: String(blocId),
+                        exerciseIndex: String(index),
+                      },
+                    })
+                  }
+                >
+                  <TrainingBlocItem exercise={exercise} />
+                </TouchableOpacity>
               ))}
             </View>
             <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
@@ -69,6 +121,15 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     textAlign: 'center',
     fontWeight: '600',
+  },
+  titleInput: {
+    color: LightColors.black,
+    fontSize: 16,
+    paddingLeft: 12,
+    textAlign: 'center',
+    fontWeight: '600',
+    borderBottomWidth: 1,
+    borderBottomColor: LightColors.primary,
   },
   exercisesContainer: {
     width: '100%',

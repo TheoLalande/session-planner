@@ -68,17 +68,66 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
           resizeMode="cover"
         />
       ) : null}
-      <FormSlider
-        label="Durée"
-        unit="seconds"
-        enableUnitToggle
-        valueUnit={value.durationUnit}
-        onUnitChange={(unitMode) => onChange({ ...value, durationUnit: unitMode })}
-        value={value.duration}
-        minimumValue={0}
-        maximumValue={60}
-        onChange={(v) => onChange({ ...value, duration: v })}
-      />
+      <View style={{ marginBottom: 10 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: '#ccc',
+            overflow: 'hidden',
+            marginBottom: 8,
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => onChange({ ...value, mode: 'time' })}
+            style={{
+              flex: 1,
+              paddingVertical: 6,
+              alignItems: 'center',
+              backgroundColor: value.mode === 'time' ? '#008000' : '#FFFFFF',
+            }}
+          >
+            <Text style={{ color: value.mode === 'time' ? '#FFFFFF' : '#121212', fontWeight: '600' }}>Temps</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => onChange({ ...value, mode: 'reps' })}
+            style={{
+              flex: 1,
+              paddingVertical: 6,
+              alignItems: 'center',
+              backgroundColor: value.mode === 'reps' ? '#008000' : '#FFFFFF',
+            }}
+          >
+            <Text style={{ color: value.mode === 'reps' ? '#FFFFFF' : '#121212', fontWeight: '600' }}>Répétitions</Text>
+          </TouchableOpacity>
+        </View>
+
+        {value.mode === 'time' ? (
+          <FormSlider
+            label="Durée"
+            unit="seconds"
+            enableUnitToggle
+            valueUnit={value.durationUnit}
+            onUnitChange={(unitMode) => onChange({ ...value, durationUnit: unitMode })}
+            value={value.duration}
+            minimumValue={0}
+            maximumValue={60}
+            onChange={(v) => onChange({ ...value, duration: v })}
+          />
+        ) : (
+          <FormSlider
+            label="Répétitions"
+            value={value.repetitions}
+            minimumValue={0}
+            maximumValue={50}
+            step={1}
+            onChange={(v) => onChange({ ...value, repetitions: v })}
+          />
+        )}
+      </View>
       <TextField
         placeholder="Notes"
         value={value.notes}
