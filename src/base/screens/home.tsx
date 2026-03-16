@@ -17,14 +17,7 @@ export default function index() {
           paddingTop: 30,
           paddingBottom: 30,
         }}
-      >
-        <PrimaryButton
-          title="Créer un entrainement"
-          onPress={() => {
-            router.push('/create-training')
-          }}
-        />
-      </View>
+      ></View>
       <BottomNavBar onHomePress={() => {}} onCalendarPress={() => {}} onSettingsPress={() => {}} />
     </SafeAreaView>
   )

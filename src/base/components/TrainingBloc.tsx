@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { LightColors } from '../constants/theme'
 import { SecondaryRoundButton } from './SecondaryRoundButton'
 import { TrainingBlocItem } from './TrainingBlocItem'
@@ -9,9 +10,10 @@ type TrainingBlocProps = {
   blocId: number
   title: string
   onPressAddExercise: () => void
+  onDeleteBloc: () => void
 }
 
-export const TrainingBloc = ({ blocId, title, onPressAddExercise }: TrainingBlocProps) => {
+export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }: TrainingBlocProps) => {
   const exercises = useTrainingStore((state) => state.blocs.find((b) => b.id === blocId)?.exercises || [])
 
   return (
@@ -19,14 +21,29 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise }: TrainingBloc
       <Text style={styles.title} numberOfLines={2}>
         {title}
       </Text>
-      <View style={styles.square}>
-        <View style={styles.exercisesContainer}>
-          {exercises.map((exercise, index) => (
-            <TrainingBlocItem key={index} exercise={exercise} />
-          ))}
+      <Swipeable
+        containerStyle={{ width: '100%' }}
+        overshootLeft={false}
+        overshootRight={false}
+        onSwipeableOpen={(direction) => {
+          if (direction === 'left' || direction === 'right') {
+            onDeleteBloc()
+          }
+        }}
+        renderLeftActions={() => <View style={styles.deleteBackground} />}
+        renderRightActions={() => <View style={styles.deleteBackground} />}
+      >
+        <View style={{ width: '100%' }}>
+          <View style={styles.square}>
+            <View style={styles.exercisesContainer}>
+              {exercises.map((exercise, index) => (
+                <TrainingBlocItem key={index} exercise={exercise} />
+              ))}
+            </View>
+            <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
+          </View>
         </View>
-        <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
-      </View>
+      </Swipeable>
     </View>
   )
 }
@@ -55,5 +72,10 @@ const styles = StyleSheet.create({
   },
   exercisesContainer: {
     width: '100%',
+  },
+  deleteBackground: {
+    flex: 1,
+    backgroundColor: '#ff3b30',
+    borderRadius: 12,
   },
 })

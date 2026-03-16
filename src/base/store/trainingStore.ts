@@ -7,6 +7,7 @@ type TrainingState = {
   addBloc: (title: string) => void
   setEditingBlocId: (id: number | null) => void
   addExerciseToBloc: (blocId: number, exercise: TrainingExercise) => void
+  removeBloc: (blocId: number) => void
 }
 
 export const useTrainingStore = create<TrainingState>((set) => ({
@@ -25,6 +26,10 @@ export const useTrainingStore = create<TrainingState>((set) => ({
       blocs: state.blocs.map((bloc) =>
         bloc.id === blocId ? { ...bloc, exercises: [...bloc.exercises, exercise] } : bloc,
       ),
+    })),
+  removeBloc: (blocId) =>
+    set((state) => ({
+      blocs: state.blocs.filter((bloc) => bloc.id !== blocId),
     })),
 }))
 

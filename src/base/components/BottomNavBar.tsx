@@ -2,6 +2,7 @@ import React from 'react'
 import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import { MaterialIcons } from '@expo/vector-icons'
 import { LightColors } from '../constants/theme'
+import { router } from 'expo-router'
 
 interface BottomNavBarProps {
   onHomePress?: () => void
@@ -13,15 +14,11 @@ export function BottomNavBar({ onHomePress, onCalendarPress, onSettingsPress }: 
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={onHomePress} style={styles.iconWrapper} activeOpacity={0.7}>
-        <MaterialIcons name="home-filled" size={28} color={LightColors.white} />
+        <MaterialIcons name="home-filled" size={28} color={LightColors.primary} />
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={onCalendarPress} style={styles.iconWrapper} activeOpacity={0.7}>
-        <MaterialIcons name="event-note" size={28} color={LightColors.white} />
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={onSettingsPress} style={styles.iconWrapper} activeOpacity={0.7}>
-        <MaterialIcons name="settings" size={28} color={LightColors.white} />
+      <TouchableOpacity onPress={() => router.push('/create-training')} style={styles.iconWrapper} activeOpacity={0.7}>
+        <MaterialIcons name="add-circle-outline" size={28} color={LightColors.primary} />
       </TouchableOpacity>
     </View>
   )
@@ -36,7 +33,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 0,
-    backgroundColor: LightColors.primary,
+    backgroundColor: LightColors.white,
+    borderWidth: 1,
+    borderColor: LightColors.primary,
     borderRadius: 25,
   },
   iconWrapper: {

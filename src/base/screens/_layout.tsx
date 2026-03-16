@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { PaperProvider } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -29,18 +30,26 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <PaperProvider>
-        <SafeAreaProvider>
-          <StatusBar style="dark" />
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="home" options={{ headerShown: false }} />
-            <Stack.Screen name="create-training" options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }} />
-            <Stack.Screen name="create-exercice" options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }} />
-          </Stack>
-        </SafeAreaProvider>
-      </PaperProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={DefaultTheme}>
+        <PaperProvider>
+          <SafeAreaProvider>
+            <StatusBar style="dark" />
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="home" options={{ headerShown: false, animation: 'none' }} />
+              <Stack.Screen
+                name="create-training"
+                options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }}
+              />
+              <Stack.Screen
+                name="create-exercice"
+                options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }}
+              />
+            </Stack>
+          </SafeAreaProvider>
+        </PaperProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   )
 }

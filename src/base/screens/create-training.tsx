@@ -13,6 +13,7 @@ export default function index() {
   const blocs = useTrainingStore((state) => state.blocs)
   const addBloc = useTrainingStore((state) => state.addBloc)
   const setEditingBlocId = useTrainingStore((state) => state.setEditingBlocId)
+  const removeBloc = useTrainingStore((state) => state.removeBloc)
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -33,7 +34,13 @@ export default function index() {
 
         <View style={{ width: '100%', alignItems: 'center', marginVertical: 30 }}>
           {blocs.map((bloc) => (
-            <TrainingBloc key={bloc.id} blocId={bloc.id} title={bloc.title} onPressAddExercise={() => setEditingBlocId(bloc.id)} />
+            <TrainingBloc
+              key={bloc.id}
+              blocId={bloc.id}
+              title={bloc.title}
+              onPressAddExercise={() => setEditingBlocId(bloc.id)}
+              onDeleteBloc={() => removeBloc(bloc.id)}
+            />
           ))}
         </View>
 
