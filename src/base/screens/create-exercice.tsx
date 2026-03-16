@@ -130,7 +130,6 @@ export default function index() {
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
-          justifyContent: 'space-between',
           alignItems: 'center',
           paddingBottom: 30,
         }}

@@ -21,16 +21,7 @@ export function ClimbingForm({ value, onChange }: ClimbingFormProps) {
 
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
-      <TextField
-        placeholder="Nom de l'exercice"
-        value={value.title}
-        onChangeText={(text) => handleChange('title', text)}
-      />
-      <TextField
-        placeholder="Cotation (grade)"
-        value={value.grade}
-        onChangeText={(text) => handleChange('grade', text)}
-      />
+      <TextField placeholder="Cotation (grade)" value={value.grade} onChangeText={(text) => handleChange('grade', text)} />
       <FormSlider
         label="Temps de repos"
         unit="seconds"
@@ -47,12 +38,7 @@ export function ClimbingForm({ value, onChange }: ClimbingFormProps) {
         maximumValue={20}
         onChange={(v) => onChange({ ...value, attempts: v })}
       />
-      <TextField
-        placeholder="Notes"
-        value={value.notes}
-        onChangeText={(text) => handleChange('notes', text)}
-      />
+      <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />
     </View>
   )
 }
-

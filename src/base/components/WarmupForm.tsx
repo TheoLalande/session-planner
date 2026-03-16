@@ -22,7 +22,6 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
 
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
-      <TextField placeholder="Nom de l'échauffement" value={value.title} onChangeText={(text) => handleChange('title', text)} />
       <TextField placeholder="Type d'exercice" value={value.exerciceType} onChangeText={(text) => handleChange('exerciceType', text)} />
       <TouchableOpacity
         activeOpacity={0.7}
@@ -48,17 +47,11 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#555' }}>
-            {value.picture ? "Changer l'image" : "Choisir une image depuis la galerie"}
-          </Text>
+          <Text style={{ color: '#555' }}>{value.picture ? "Changer l'image" : 'Choisir une image depuis la galerie'}</Text>
         </View>
       </TouchableOpacity>
       {value.picture ? (
-        <Image
-          source={{ uri: value.picture }}
-          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 10 }}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: value.picture }} style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 10 }} resizeMode="cover" />
       ) : null}
       <FormSlider
         label="Durée"

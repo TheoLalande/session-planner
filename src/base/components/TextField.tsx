@@ -63,7 +63,7 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
 const styles = StyleSheet.create({
   input: {
     marginBottom: 10,
-    textAlign: 'center',
+    textAlign: 'left',
     width: '100%',
     borderRadius: 17,
     borderTopLeftRadius: 17,

@@ -22,16 +22,7 @@ export function StretchingForm({ value, onChange }: StretchingFormProps) {
 
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
-      <TextField
-        placeholder="Nom de l'étirement"
-        value={value.title}
-        onChangeText={(text) => handleChange('title', text)}
-      />
-      <TextField
-        placeholder="Type d'exercice"
-        value={value.exerciceType}
-        onChangeText={(text) => handleChange('exerciceType', text)}
-      />
+      <TextField placeholder="Type d'exercice" value={value.exerciceType} onChangeText={(text) => handleChange('exerciceType', text)} />
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={async () => {
@@ -56,17 +47,11 @@ export function StretchingForm({ value, onChange }: StretchingFormProps) {
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#555' }}>
-            {value.picture ? "Changer l'image" : "Choisir une image depuis la galerie"}
-          </Text>
+          <Text style={{ color: '#555' }}>{value.picture ? "Changer l'image" : 'Choisir une image depuis la galerie'}</Text>
         </View>
       </TouchableOpacity>
       {value.picture ? (
-        <Image
-          source={{ uri: value.picture }}
-          style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 10 }}
-          resizeMode="cover"
-        />
+        <Image source={{ uri: value.picture }} style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 10 }} resizeMode="cover" />
       ) : null}
       <FormSlider
         label="Durée"
@@ -79,12 +64,7 @@ export function StretchingForm({ value, onChange }: StretchingFormProps) {
         maximumValue={60}
         onChange={(v) => onChange({ ...value, duration: v })}
       />
-      <TextField
-        placeholder="Notes"
-        value={value.notes}
-        onChangeText={(text) => handleChange('notes', text)}
-      />
+      <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />
     </View>
   )
 }
-

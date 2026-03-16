@@ -28,23 +28,28 @@ export default function index() {
           paddingHorizontal: 30,
           paddingTop: 0,
           paddingBottom: 30,
+          justifyContent: 'space-between',
         }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
-        <TextField placeholder="Titre de l'entrainement" type="text" value={title} onChangeText={setTitle} />
-        <TextField placeholder="Description de l'entrainement" type="text" value={description} onChangeText={setDescription} />
+        <View style={{ width: '100%', gap: 10 }}>
+          <View style={{ width: '100%' }}>
+            <TextField placeholder="Titre de l'entrainement" type="text" value={title} onChangeText={setTitle} />
+            <TextField placeholder="Description de l'entrainement" type="text" value={description} onChangeText={setDescription} />
+          </View>
 
-        <View style={{ width: '100%', alignItems: 'center', marginVertical: 30 }}>
-          {blocs.map((bloc) => (
-            <TrainingBloc
-              key={bloc.id}
-              blocId={bloc.id}
-              title={bloc.title}
-              onPressAddExercise={() => setEditingBlocId(bloc.id)}
-              onDeleteBloc={() => removeBloc(bloc.id)}
-            />
-          ))}
+          <View style={{ width: '100%', alignItems: 'center', gap: 20 }}>
+            {blocs.map((bloc) => (
+              <TrainingBloc
+                key={bloc.id}
+                blocId={bloc.id}
+                title={bloc.title}
+                onPressAddExercise={() => setEditingBlocId(bloc.id)}
+                onDeleteBloc={() => removeBloc(bloc.id)}
+              />
+            ))}
+          </View>
         </View>
 
         <View style={{ width: '100%', alignItems: 'center', gap: 10 }}>

@@ -21,7 +21,6 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
 
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
-      <TextField placeholder="Nom de l'exercice" value={value.title} onChangeText={(text) => handleChange('title', text)} />
       <TextField placeholder="Type de prise (holdType)" value={value.holdType} onChangeText={(text) => handleChange('holdType', text)} />
       <FormSlider
         label="Temps de repos"
@@ -41,13 +40,7 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
         maximumValue={60}
         onChange={(v) => onChange({ ...value, holdTime: v })}
       />
-      <FormSlider
-        label="Nombre de séries"
-        value={value.sets}
-        minimumValue={0}
-        maximumValue={20}
-        onChange={(v) => onChange({ ...value, sets: v })}
-      />
+      <FormSlider label="Nombre de séries" value={value.sets} minimumValue={0} maximumValue={20} onChange={(v) => onChange({ ...value, sets: v })} />
       <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />
     </View>
   )
