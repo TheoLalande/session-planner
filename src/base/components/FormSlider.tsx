@@ -69,7 +69,31 @@ export function FormSlider({
     return 'secondes'
   }, [unit, unitMode, enableUnitToggle])
 
-  const fullLabel = effectiveUnit ? `${label} : ${value} ${effectiveUnit}` : `${label} : ${value}`
+  const isUnitControlled = valueUnit !== undefined
+  const valueStoredInSeconds = Boolean(enableUnitToggle) && !isUnitControlled
+
+  const displayValue = useMemo(() => {
+    if (!valueStoredInSeconds) {
+      return value
+    }
+    return unitMode === 'minutes' ? value / 60 : value
+  }, [unitMode, value, valueStoredInSeconds])
+
+  const displayMin = useMemo(() => {
+    if (!valueStoredInSeconds) {
+      return minimumValue
+    }
+    return unitMode === 'minutes' ? minimumValue / 60 : minimumValue
+  }, [minimumValue, unitMode, valueStoredInSeconds])
+
+  const displayMax = useMemo(() => {
+    if (!valueStoredInSeconds) {
+      return maximumValue
+    }
+    return unitMode === 'minutes' ? maximumValue / 60 : maximumValue
+  }, [maximumValue, unitMode, valueStoredInSeconds])
+
+  const fullLabel = effectiveUnit ? `${label} : ${Math.round(displayValue)} ${effectiveUnit}` : `${label} : ${Math.round(displayValue)}`
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -117,10 +141,13 @@ export function FormSlider({
         )}
       </View>
       <Slider
-        value={value}
-        onValueChange={(v) => onChange(Math.round(v))}
-        minimumValue={minimumValue}
-        maximumValue={maximumValue}
+        value={displayValue}
+        onValueChange={(v) => {
+          const rounded = Math.round(v)
+          onChange(valueStoredInSeconds && unitMode === 'minutes' ? rounded * 60 : rounded)
+        }}
+        minimumValue={displayMin}
+        maximumValue={displayMax}
         step={step}
         minimumTrackTintColor={LightColors.primary}
       />

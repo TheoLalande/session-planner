@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native'
 import { Button, Text } from 'react-native-paper'
 import { Fonts, LightColors } from '../constants/theme'
+import { haptic } from '../utils/haptics'
 
 interface PrimaryButtonProps {
   title: string
@@ -24,7 +25,14 @@ export function PrimaryButton({
   return (
     <Button
       style={[buttonStyle, { backgroundColor: color, borderColor: borderColor, borderWidth: 1 }]}
-      onPress={isClickable ? onPress : undefined}
+      onPress={
+        isClickable
+          ? async () => {
+              await haptic('tap')
+              onPress?.()
+            }
+          : undefined
+      }
       disabled={!isClickable}
     >
       <Text style={[styles.title, { color: textColor }]}>{title}</Text>

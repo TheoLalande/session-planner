@@ -54,6 +54,18 @@ export default function RootLayout() {
                 name="simple-timer"
                 options={{ headerShown: true, title: 'Timer', headerBackTitle: 'Retour' }}
               />
+              <Stack.Screen
+                name="run-exercise"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="climb-steps"
+                options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }}
+              />
+              <Stack.Screen
+                name="hangboard"
+                options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }}
+              />
             </Stack>
           </SafeAreaProvider>
         </PaperProvider>

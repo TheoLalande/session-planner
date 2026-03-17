@@ -6,6 +6,7 @@ import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-nati
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { router } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
+import { haptic } from '../utils/haptics'
 
 export default function index() {
   const trainings = useTrainingStore((state) => state.trainings)
@@ -45,7 +46,10 @@ export default function index() {
               >
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => router.push({ pathname: '/training-detail', params: { id: String(training.id) } })}
+                  onPress={async () => {
+                    await haptic('tap')
+                    router.push({ pathname: '/training-detail', params: { id: String(training.id) } })
+                  }}
                   style={{
                     width: '100%',
                     padding: 12,

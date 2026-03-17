@@ -13,6 +13,7 @@ type TrainingState = {
   startEditingTraining: (trainingId: number) => void
   renameBloc: (blocId: number, title: string) => void
   addExerciseToBloc: (blocId: number, exercise: TrainingExercise) => void
+  duplicateExerciseInBloc: (blocId: number, exerciseIndex: number) => void
   updateExerciseInBloc: (blocId: number, exerciseIndex: number, exercise: TrainingExercise) => void
   updateExerciseInTraining: (
     trainingId: number,
@@ -82,6 +83,30 @@ export const useTrainingStore = create<TrainingState>()(
           blocs: state.blocs.map((bloc) =>
             bloc.id === blocId ? { ...bloc, exercises: [...bloc.exercises, exercise] } : bloc,
           ),
+        })),
+      duplicateExerciseInBloc: (blocId, exerciseIndex) =>
+        set((state) => ({
+          ...state,
+          blocs: state.blocs.map((bloc) => {
+            if (bloc.id !== blocId) {
+              return bloc
+            }
+            if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
+              return bloc
+            }
+            const source = bloc.exercises[exerciseIndex]
+            const duplicated: TrainingExercise = {
+              ...source,
+              data: { ...(source as any).data },
+            } as TrainingExercise
+
+            const nextExercises = [...bloc.exercises]
+            nextExercises.splice(exerciseIndex + 1, 0, duplicated)
+            return {
+              ...bloc,
+              exercises: nextExercises,
+            }
+          }),
         })),
       updateExerciseInBloc: (blocId, exerciseIndex, exercise) =>
         set((state) => ({

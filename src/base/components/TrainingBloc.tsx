@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native'
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
+import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { LightColors } from '../constants/theme'
 import { SecondaryRoundButton } from './SecondaryRoundButton'
 import { TrainingBlocItem } from './TrainingBlocItem'
 import { useTrainingStore } from '../store/trainingStore'
 import { useRouter } from 'expo-router'
+import { haptic } from '../utils/haptics'
 
 type TrainingBlocProps = {
   blocId: number
@@ -17,6 +19,7 @@ type TrainingBlocProps = {
 export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }: TrainingBlocProps) => {
   const exercises = useTrainingStore((state) => state.blocs.find((b) => b.id === blocId)?.exercises || [])
   const renameBloc = useTrainingStore((state) => state.renameBloc)
+  const duplicateExerciseInBloc = useTrainingStore((state) => state.duplicateExerciseInBloc)
   const router = useRouter()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [localTitle, setLocalTitle] = useState(title)
@@ -74,22 +77,36 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
           <View style={styles.square}>
             <View style={styles.exercisesContainer}>
               {exercises.map((exercise, index) => (
-                <TouchableOpacity
-                  key={index}
-                  activeOpacity={0.7}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/create-exercice',
-                      params: {
-                        mode: 'edit-bloc',
-                        blocId: String(blocId),
-                        exerciseIndex: String(index),
-                      },
-                    })
-                  }
-                >
-                  <TrainingBlocItem exercise={exercise} />
-                </TouchableOpacity>
+                <View key={index} style={styles.exerciseRow}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={{ flex: 1 }}
+                    onPress={async () => {
+                      await haptic('tap')
+                      router.push({
+                        pathname: '/create-exercice',
+                        params: {
+                          mode: 'edit-bloc',
+                          blocId: String(blocId),
+                          exerciseIndex: String(index),
+                        },
+                      })
+                    }}
+                  >
+                    <TrainingBlocItem exercise={exercise} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={async () => {
+                      await haptic('tap')
+                      duplicateExerciseInBloc(blocId, index)
+                    }}
+                    style={styles.duplicateButton}
+                  >
+                    <MaterialCommunityIcons name="content-duplicate" size={18} color={LightColors.primary} />
+                  </TouchableOpacity>
+                </View>
               ))}
             </View>
             <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
@@ -133,6 +150,17 @@ const styles = StyleSheet.create({
   },
   exercisesContainer: {
     width: '100%',
+  },
+  exerciseRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  duplicateButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    borderRadius: 10,
   },
   deleteBackground: {
     flex: 1,

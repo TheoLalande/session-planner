@@ -3,6 +3,7 @@ import { Button, Icon } from 'react-native-paper'
 import { StyleSheet, View } from 'react-native'
 import { LightColors } from '../constants/theme'
 import { router } from 'expo-router'
+import { haptic } from '../utils/haptics'
 
 type SecondaryRoundButtonProps = {
   blocId: number
@@ -11,7 +12,8 @@ type SecondaryRoundButtonProps = {
 }
 
 export const SecondaryRoundButton = ({ blocId, onPress, color = LightColors.primary }: SecondaryRoundButtonProps) => {
-  const handlePress = () => {
+  const handlePress = async () => {
+    await haptic('tap')
     onPress?.()
     router.push({
       pathname: '/create-exercice',

@@ -28,7 +28,7 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
         enableUnitToggle
         value={value.restingTime}
         minimumValue={0}
-        maximumValue={120}
+        maximumValue={10 * 60}
         onChange={(v) => onChange({ ...value, restingTime: v })}
       />
       <FormSlider
@@ -37,7 +37,7 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
         enableUnitToggle
         value={value.holdTime}
         minimumValue={0}
-        maximumValue={60}
+        maximumValue={2 * 60}
         onChange={(v) => onChange({ ...value, holdTime: v })}
       />
       <FormSlider label="Nombre de séries" value={value.sets} minimumValue={0} maximumValue={20} onChange={(v) => onChange({ ...value, sets: v })} />

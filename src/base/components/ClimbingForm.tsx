@@ -28,7 +28,7 @@ export function ClimbingForm({ value, onChange }: ClimbingFormProps) {
         enableUnitToggle
         value={value.restingTime}
         minimumValue={0}
-        maximumValue={300}
+        maximumValue={20 * 60}
         onChange={(v) => onChange({ ...value, restingTime: v })}
       />
       <FormSlider

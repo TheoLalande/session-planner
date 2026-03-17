@@ -1,27 +1,18 @@
 export type ClimbingGrades = '5c+' | '6a' | '6a+' | '6b' | '6+b' | '6c' | '6c+' | '7a' | '7a+' | '7b' | '7b+' | '7c' | '7c+' | '8a'
-export type ExerciceTypes = 'hangboard' | 'climbing' | 'warmup' | 'cooldown' | 'stretching'
 
-export interface ITraining {
-  id: number
-  title: string
-  description: string
-}
+export type ExerciseType = 'hangboard' | 'climbing' | 'warmup' | 'cooldown' | 'stretching'
 
-export interface IWorkout {
-  name: string
-  tool: string
-  weight: number
-  restingTime: number
-  repetitions: number
-  sets: number
-  notes: string
-}
+export type ExerciceTypes = ExerciseType
+
+export type TimeUnit = 'minutes' | 'seconds'
+export type QuantityMode = 'time' | 'reps'
 
 export interface ICommonWorkout {
   id: number
   title: string
   description: string
   picture: string
+  notes: string
 }
 
 export interface Ihangboard extends ICommonWorkout {
@@ -29,44 +20,26 @@ export interface Ihangboard extends ICommonWorkout {
   restingTime: number
   holdTime: number
   sets: number
-  notes: string
 }
 
-export type TimeUnit = 'minutes' | 'seconds'
-
-export type QuantityMode = 'time' | 'reps'
-
-export interface IWarmUp extends ICommonWorkout {
-  exerciceType: string
-  picture: string
-  notes: string
-  duration: number
-  durationUnit: TimeUnit
-  mode: QuantityMode
-  repetitions: number
-}
-
-export interface ICooldown extends IWarmUp {}
-
-export interface IStretching extends IWarmUp {}
+export type IHangboard = Ihangboard
 
 export interface IClimbing extends ICommonWorkout {
   grade: ClimbingGrades
   restingTime: number
   attempts: number
-  notes: string
 }
 
-export interface ITraining extends ICommonWorkout {
-  workouts: IWorkout[]
+export interface IWarmUp extends ICommonWorkout {
+  exerciceType: string
+  mode: QuantityMode
+  duration: number
+  durationUnit: TimeUnit
+  repetitions: number
 }
 
-export interface IPlannedTraining {
-  id: number
-  title: string
-  description: string
-  blocs: ITrainingBloc[]
-}
+export interface ICooldown extends IWarmUp {}
+export interface IStretching extends IWarmUp {}
 
 export type TrainingExercise =
   | { type: 'hangboard'; data: Ihangboard }
@@ -79,4 +52,11 @@ export interface ITrainingBloc {
   id: number
   title: string
   exercises: TrainingExercise[]
+}
+
+export interface IPlannedTraining {
+  id: number
+  title: string
+  description: string
+  blocs: ITrainingBloc[]
 }
