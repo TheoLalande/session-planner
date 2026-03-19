@@ -34,6 +34,15 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {
+        "root": "./src/base/screens"
+      },
+      "eas": {
+        "projectId": "f90bec0b-59f0-45cd-afcc-4c993eeb25d5"
+      }
+    },
+    "owner": "theo1312"
   }
 }

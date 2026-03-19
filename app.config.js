@@ -11,6 +11,7 @@ export default ({ config }) => ({
     supportsTablet: true,
   },
   android: {
+    package: 'com.gaston.sessionplanner',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
     },
@@ -27,6 +28,7 @@ export default ({ config }) => ({
     [
       'expo-splash-screen',
       {
+        image: './src/base/assets/png/logo-full.png',
         imageWidth: 200,
         resizeMode: 'contain',
         backgroundColor: '#ffffff',
