@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Keyboard } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ExerciceTypes, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching, TrainingExercise } from '../types/trainingTypes'
+import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching, TrainingExercise } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { ExercicePicker } from '../components/ExercicePicker'
 import { HangboardForm } from '../components/HangboardForm'
@@ -28,6 +28,7 @@ export default function index() {
   const addExerciseToBloc = useTrainingStore((state) => state.addExerciseToBloc)
   const updateExerciseInBloc = useTrainingStore((state) => state.updateExerciseInBloc)
   const updateExerciseInTraining = useTrainingStore((state) => state.updateExerciseInTraining)
+  const blocType = useTrainingStore((state) => (blocId ? state.blocs.find((b) => b.id === blocId)?.blocType : undefined))
   const currentExercise = useTrainingStore((state) => {
     if (isEditTrainingMode) {
       if (trainingId === null || blocId === null || exerciseIndex === null) {
@@ -54,6 +55,13 @@ export default function index() {
 
     return null
   })
+
+  const forcedType: ExerciseType | null = useMemo(() => {
+    if (isEditTrainingMode || isEditBlocMode) {
+      return null
+    }
+    return blocType ?? null
+  }, [blocType, isEditTrainingMode, isEditBlocMode])
 
   const [selectedType, setSelectedType] = useState<ExerciceTypes | null>(null)
 
@@ -139,6 +147,15 @@ export default function index() {
     }
   }, [currentExercise, isEditTrainingMode, isEditBlocMode])
 
+  // Si le bloc impose un type (warmup/cooldown/stretching/climbing/hangboard),
+  // on le sélectionne automatiquement et on ne montre plus le picker.
+  useEffect(() => {
+    if (!forcedType) {
+      return
+    }
+    setSelectedType(forcedType)
+  }, [forcedType])
+
   const handleNext = () => {
     if (!blocId || !selectedType) {
       router.back()
@@ -205,7 +222,9 @@ export default function index() {
         keyboardShouldPersistTaps="handled"
         onScrollBeginDrag={() => Keyboard.dismiss()}
       >
-        <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} />
+        {!forcedType && !isEditTrainingMode && !isEditBlocMode ? (
+          <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} />
+        ) : null}
         {renderForm()}
         <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center' }}>
           <PrimaryButton title="Valider" onPress={handleNext} />

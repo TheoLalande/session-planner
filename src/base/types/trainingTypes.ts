@@ -51,6 +51,8 @@ export type TrainingExercise =
 export interface ITrainingBloc {
   id: number
   title: string
+  description?: string
+  blocType?: ExerciseType
   exercises: TrainingExercise[]
 }
 

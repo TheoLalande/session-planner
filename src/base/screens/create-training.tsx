@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PrimaryButton, TextField } from '../components'
 import { ScrollView, View } from 'react-native'
@@ -6,20 +6,29 @@ import { TrainingBloc } from '../components/TrainingBloc'
 import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
 import { useRouter } from 'expo-router'
+import { Portal, Dialog, Button, RadioButton, Text } from 'react-native-paper'
+import { ExerciseType } from '../types/trainingTypes'
 
 export default function index() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const router = useRouter()
+  const [isBlocModalVisible, setIsBlocModalVisible] = useState(false)
+  const [blocTitle, setBlocTitle] = useState('')
+  const [blocDescription, setBlocDescription] = useState('')
+  const [blocType, setBlocType] = useState<ExerciseType>('warmup')
 
   const blocs = useTrainingStore((state) => state.blocs)
   const editingTrainingId = useTrainingStore((state) => state.editingTrainingId)
   const trainings = useTrainingStore((state) => state.trainings)
   const addBloc = useTrainingStore((state) => state.addBloc)
+  const addBlocWithMeta = useTrainingStore((state) => state.addBlocWithMeta)
   const setEditingBlocId = useTrainingStore((state) => state.setEditingBlocId)
   const removeBloc = useTrainingStore((state) => state.removeBloc)
   const saveTraining = useTrainingStore((state) => state.saveTraining)
   const updateTraining = useTrainingStore((state) => state.updateTraining)
+
+  const defaultBlocName = useMemo(() => `Bloc ${blocs.length + 1}`, [blocs.length])
 
   useEffect(() => {
     if (!editingTrainingId) {
@@ -74,7 +83,10 @@ export default function index() {
             borderColor={LightColors.primary}
             textColor={LightColors.primary}
             onPress={() => {
-              addBloc(`Bloc ${blocs.length + 1}`)
+              setBlocTitle(defaultBlocName)
+              setBlocDescription('')
+              setBlocType('warmup')
+              setIsBlocModalVisible(true)
             }}
           />
           <PrimaryButton
@@ -93,6 +105,58 @@ export default function index() {
           />
         </View>
       </ScrollView>
+
+      <Portal>
+        <Dialog
+          visible={isBlocModalVisible}
+          onDismiss={() => setIsBlocModalVisible(false)}
+        >
+          <Dialog.Title>Nouveau bloc</Dialog.Title>
+          <Dialog.Content>
+            <TextField
+              placeholder="Nom du bloc"
+              type="text"
+              value={blocTitle}
+              onChangeText={setBlocTitle}
+            />
+            <TextField
+              placeholder="Description (optionnel)"
+              type="text"
+              value={blocDescription}
+              onChangeText={setBlocDescription}
+            />
+
+            <View style={{ marginTop: 10 }}>
+              <Text style={{ marginBottom: 6 }}>Type de bloc</Text>
+              <RadioButton.Group
+                onValueChange={(value) => setBlocType(value as ExerciseType)}
+                value={blocType}
+              >
+                <RadioButton.Item label="Warmup" value="warmup" />
+                <RadioButton.Item label="Cooldown" value="cooldown" />
+                <RadioButton.Item label="Stretching" value="stretching" />
+                <RadioButton.Item label="Climbing" value="climbing" />
+                <RadioButton.Item label="Hangboard" value="hangboard" />
+              </RadioButton.Group>
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setIsBlocModalVisible(false)}>Annuler</Button>
+            <Button
+              onPress={() => {
+                const trimmed = blocTitle.trim()
+                if (!trimmed) {
+                  return
+                }
+                addBlocWithMeta(trimmed, blocDescription, blocType)
+                setIsBlocModalVisible(false)
+              }}
+            >
+              Ajouter
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   )
 }

@@ -9,6 +9,7 @@ type TrainingState = {
   editingBlocId: number | null
   editingTrainingId: number | null
   addBloc: (title: string) => void
+  addBlocWithMeta: (title: string, description: string, blocType: ITrainingBloc['blocType']) => void
   setEditingBlocId: (id: number | null) => void
   startEditingTraining: (trainingId: number) => void
   renameBloc: (blocId: number, title: string) => void
@@ -53,6 +54,23 @@ export const useTrainingStore = create<TrainingState>()(
           return {
             ...state,
             blocs: [...state.blocs, { id, title, exercises: [] }],
+          }
+        }),
+      addBlocWithMeta: (title, description, blocType) =>
+        set((state) => {
+          const id = state.blocs.length ? state.blocs[state.blocs.length - 1].id + 1 : 1
+          return {
+            ...state,
+            blocs: [
+              ...state.blocs,
+              {
+                id,
+                title,
+                description: description.trim() || undefined,
+                blocType: blocType ?? undefined,
+                exercises: [],
+              },
+            ],
           }
         }),
       setEditingBlocId: (id) =>
