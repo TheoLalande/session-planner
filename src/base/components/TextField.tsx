@@ -19,7 +19,6 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
   const [localValue, setLocalValue] = useState('')
   const [isFocused, setIsFocused] = useState(false)
 
-  // Utiliser la valeur contrôlée si fournie, sinon utiliser l'état local
   const value = controlledValue !== undefined ? controlledValue : localValue
   const hasValue = value && value.length > 0
 
@@ -43,6 +42,9 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
         ) : null
       }
       textColor={LightColors.black}
+      cursorColor={LightColors.primary}
+      caretHidden={false}
+      selectionColor={LightColors.primary}
       placeholder={isFocused ? '' : placeholder}
       value={value}
       onChangeText={handleChangeText}
@@ -72,6 +74,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: 'transparent',
+    padding: 0,
   },
   inputFocused: {
     borderColor: LightColors.primary,

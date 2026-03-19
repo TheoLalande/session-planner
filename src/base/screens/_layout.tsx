@@ -34,7 +34,7 @@ export default function RootLayout() {
       <ThemeProvider value={DefaultTheme}>
         <PaperProvider>
           <SafeAreaProvider>
-            <StatusBar style="dark" />
+            <StatusBar style="dark" translucent={false} backgroundColor="#FFFFFF" />
             <Stack>
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="home" options={{ headerShown: false, animation: 'none' }} />

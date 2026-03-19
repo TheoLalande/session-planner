@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PrimaryButton, TextField } from '../components'
 import { ScrollView, View } from 'react-native'
 import { TrainingBloc } from '../components/TrainingBloc'
@@ -17,6 +17,7 @@ export default function index() {
   const [blocTitle, setBlocTitle] = useState('')
   const [blocDescription, setBlocDescription] = useState('')
   const [blocType, setBlocType] = useState<ExerciseType>('warmup')
+  const insets = useSafeAreaInsets()
 
   const blocs = useTrainingStore((state) => state.blocs)
   const editingTrainingId = useTrainingStore((state) => state.editingTrainingId)
@@ -50,7 +51,7 @@ export default function index() {
           flexGrow: 1,
           alignItems: 'center',
           paddingHorizontal: 30,
-          paddingTop: 0,
+          paddingTop: 10,
           paddingBottom: 30,
           justifyContent: 'space-between',
         }}
@@ -107,31 +108,15 @@ export default function index() {
       </ScrollView>
 
       <Portal>
-        <Dialog
-          visible={isBlocModalVisible}
-          onDismiss={() => setIsBlocModalVisible(false)}
-        >
+        <Dialog visible={isBlocModalVisible} onDismiss={() => setIsBlocModalVisible(false)} style={{ marginTop: insets.top + 8 }}>
           <Dialog.Title>Nouveau bloc</Dialog.Title>
           <Dialog.Content>
-            <TextField
-              placeholder="Nom du bloc"
-              type="text"
-              value={blocTitle}
-              onChangeText={setBlocTitle}
-            />
-            <TextField
-              placeholder="Description (optionnel)"
-              type="text"
-              value={blocDescription}
-              onChangeText={setBlocDescription}
-            />
+            <TextField placeholder="Nom du bloc" type="text" value={blocTitle} onChangeText={setBlocTitle} />
+            <TextField placeholder="Description (optionnel)" type="text" value={blocDescription} onChangeText={setBlocDescription} />
 
             <View style={{ marginTop: 10 }}>
               <Text style={{ marginBottom: 6 }}>Type de bloc</Text>
-              <RadioButton.Group
-                onValueChange={(value) => setBlocType(value as ExerciseType)}
-                value={blocType}
-              >
+              <RadioButton.Group onValueChange={(value) => setBlocType(value as ExerciseType)} value={blocType}>
                 <RadioButton.Item label="Warmup" value="warmup" />
                 <RadioButton.Item label="Cooldown" value="cooldown" />
                 <RadioButton.Item label="Stretching" value="stretching" />
