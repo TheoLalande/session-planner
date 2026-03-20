@@ -40,32 +40,28 @@ export default function RootLayout() {
               <Stack.Screen name="home" options={{ headerShown: false, animation: 'none' }} />
               <Stack.Screen
                 name="training-detail"
-                options={{ headerShown: true, title: 'Détail de l\'entrainement', headerBackTitle: 'Retour' }}
+                options={{
+                  headerShown: true,
+                  title: "Détail de l'entrainement",
+                  headerBackTitle: 'Retour',
+                  headerTitleStyle: { fontSize: 15, fontWeight: '600' },
+                }}
               />
+              <Stack.Screen name="create-training" options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }} />
+              <Stack.Screen name="create-exercice" options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }} />
+              <Stack.Screen name="simple-timer" options={{ headerShown: true, title: 'Timer', headerBackTitle: 'Retour' }} />
+              <Stack.Screen name="run-exercise" options={{ headerShown: false }} />
               <Stack.Screen
-                name="create-training"
-                options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }}
+                name="statistiques"
+                options={{
+                  headerShown: true,
+                  title: "Détail de l'entrainement",
+                  headerBackTitle: 'Retour',
+                  headerTitleStyle: { fontSize: 15, fontWeight: '600' },
+                }}
               />
-              <Stack.Screen
-                name="create-exercice"
-                options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }}
-              />
-              <Stack.Screen
-                name="simple-timer"
-                options={{ headerShown: true, title: 'Timer', headerBackTitle: 'Retour' }}
-              />
-              <Stack.Screen
-                name="run-exercise"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="climb-steps"
-                options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }}
-              />
-              <Stack.Screen
-                name="hangboard"
-                options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }}
-              />
+              <Stack.Screen name="climb-steps" options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }} />
+              <Stack.Screen name="hangboard" options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }} />
             </Stack>
           </SafeAreaProvider>
         </PaperProvider>

@@ -32,6 +32,7 @@ type TrainingState = {
   editingBlocId: number | null
   editingTrainingId: number | null
   ensureExerciseIds: () => void
+  clearEditingTraining: () => void
   addBloc: (title: string) => void
   addBlocWithMeta: (title: string, description: string, blocType: ITrainingBloc['blocType']) => void
   setEditingBlocId: (id: number | null) => void
@@ -75,6 +76,12 @@ export const useTrainingStore = create<TrainingState>()(
       trainings: [],
       editingBlocId: null,
       editingTrainingId: null,
+      clearEditingTraining: () =>
+        set(() => ({
+          blocs: [],
+          editingBlocId: null,
+          editingTrainingId: null,
+        })),
       ensureExerciseIds: () =>
         set((state) => {
           let nextId = getNextExerciseDataId(state.blocs)

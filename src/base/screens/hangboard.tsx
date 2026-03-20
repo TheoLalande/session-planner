@@ -35,6 +35,18 @@ export default function Hangboard() {
     )
   }
 
+  const finishTraining = async () => {
+    if (!trainingId) {
+      router.replace('/home')
+      return
+    }
+
+    router.replace({
+      pathname: '/training-detail',
+      params: { id: String(trainingId) },
+    })
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -43,21 +55,24 @@ export default function Hangboard() {
         <Text style={styles.subtitle}>Tenue: {exercise.data.holdTime}s</Text>
         <Text style={styles.subtitle}>Repos: {exercise.data.restingTime}s</Text>
 
-        {hasNext && nextIndex !== null ? (
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.nextButton}
-            onPress={async () => {
-              await haptic('tap')
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.nextButton}
+          onPress={async () => {
+            await haptic('tap')
+            if (hasNext && nextIndex !== null) {
               router.replace({
                 pathname: '/run-exercise',
                 params: { trainingId: String(trainingId), exerciseIndex: String(nextIndex) },
               })
-            }}
-          >
-            <Text style={styles.nextText}>Suivant</Text>
-          </TouchableOpacity>
-        ) : null}
+              return
+            }
+
+            await finishTraining()
+          }}
+        >
+          <Text style={styles.nextText}>{hasNext && nextIndex !== null ? 'Suivant' : 'Terminer'}</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   )

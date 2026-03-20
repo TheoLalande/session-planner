@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
+import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import { LightColors } from '../constants/theme'
 import { TrainingExercise } from '../types/trainingTypes'
 import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
@@ -48,10 +49,28 @@ export default function ClimbSteps() {
   const isAttemptsDone = nextAttemptIndex === -1
   const hasSuccessAttempt = attemptResults.some((s) => s === 'success')
 
+  const addAttempt = useClimbingAttemptsStore((state) => state.addAttempt)
+
+  const finishTraining = async () => {
+    if (!trainingId) {
+      router.replace('/home')
+      return
+    }
+
+    router.replace({
+      pathname: '/training-detail',
+      params: { id: String(trainingId) },
+    })
+  }
+
   const markAttempt = (status: 'success' | 'fail') => {
     if (nextAttemptIndex === -1) {
       return
     }
+
+    const routeLabel = `${exercise.data.title || 'Climbing'} · ${exercise.data.grade}`
+    addAttempt({ routeLabel, status })
+
     setAttemptResults((prev) => {
       const next = [...prev]
       next[nextAttemptIndex] = status
@@ -114,22 +133,26 @@ export default function ClimbSteps() {
           onStatusChange={({ isRunning }) => setTimerRunning(isRunning)}
         />
 
-        {hasNext && nextIndex !== null ? (
-          <TouchableOpacity
-            activeOpacity={0.7}
-            style={styles.nextButton}
-            disabled={!hasSuccessAttempt}
-            onPress={async () => {
-              await haptic('tap')
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.nextButton}
+          disabled={hasNext && nextIndex !== null ? !isAttemptsDone : false}
+          onPress={async () => {
+            await haptic('tap')
+
+            if (hasNext && nextIndex !== null) {
               router.replace({
                 pathname: '/run-exercise',
                 params: { trainingId: String(trainingId), exerciseIndex: String(nextIndex) },
               })
-            }}
-          >
-            <Text style={styles.nextText}>Suivant</Text>
-          </TouchableOpacity>
-        ) : null}
+              return
+            }
+
+            await finishTraining()
+          }}
+        >
+          <Text style={styles.nextText}>{hasNext && nextIndex !== null ? 'Suivant' : 'Terminer'}</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   )

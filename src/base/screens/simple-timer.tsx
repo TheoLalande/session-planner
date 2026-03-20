@@ -136,6 +136,18 @@ export default function SimpleTimer() {
     })
   }
 
+  const finishTraining = () => {
+    if (!trainingId) {
+      router.replace('/home')
+      return
+    }
+
+    router.replace({
+      pathname: '/training-detail',
+      params: { id: String(trainingId) },
+    })
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
@@ -188,17 +200,21 @@ export default function SimpleTimer() {
             activeOpacity={0.7}
             onPress={async () => {
               await haptic('tap')
+              if (nextIndex === null) {
+                finishTraining()
+                return
+              }
+
               goToNextExercise()
             }}
-            disabled={nextIndex === null}
             style={[
               styles.button,
               {
-                backgroundColor: nextIndex === null ? LightColors.lightGrey : LightColors.primary,
+                backgroundColor: LightColors.primary,
               },
             ]}
           >
-            <Text style={[styles.buttonText]}>Suivant</Text>
+            <Text style={[styles.buttonText]}>{nextIndex === null ? 'Terminer' : 'Suivant'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
