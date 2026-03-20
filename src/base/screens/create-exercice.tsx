@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Keyboard } from 'react-native'
+import { ScrollView, View, Keyboard, Alert } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching, TrainingExercise } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -11,6 +11,7 @@ import { WarmupForm } from '../components/WarmupForm'
 import { CooldownForm } from '../components/CooldownForm'
 import { StretchingForm } from '../components/StretchingForm'
 import { useTrainingStore } from '../store/trainingStore'
+import { ExerciceColors } from '../constants/theme'
 
 export default function index() {
   const params = useLocalSearchParams<{
@@ -26,6 +27,7 @@ export default function index() {
   const isEditBlocMode = params.mode === 'edit-bloc' && blocId !== null && exerciseIndex !== null
 
   const addExerciseToBloc = useTrainingStore((state) => state.addExerciseToBloc)
+  const removeExerciseFromBloc = useTrainingStore((state) => state.removeExerciseFromBloc)
   const updateExerciseInBloc = useTrainingStore((state) => state.updateExerciseInBloc)
   const updateExerciseInTraining = useTrainingStore((state) => state.updateExerciseInTraining)
   const blocType = useTrainingStore((state) => (blocId ? state.blocs.find((b) => b.id === blocId)?.blocType : undefined))
@@ -189,6 +191,24 @@ export default function index() {
     router.back()
   }
 
+  const handleDelete = () => {
+    if (blocId === null || exerciseIndex === null || (!isEditTrainingMode && !isEditBlocMode)) {
+      return
+    }
+
+    Alert.alert("Supprimer l'exercice", 'Cette action est irreversible.', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer',
+        style: 'destructive',
+        onPress: () => {
+          removeExerciseFromBloc(blocId, exerciseIndex)
+          router.back()
+        },
+      },
+    ])
+  }
+
   const renderForm = () => {
     if (selectedType === 'hangboard') {
       return <HangboardForm value={hangboardData} onChange={setHangboardData} />
@@ -222,12 +242,18 @@ export default function index() {
         keyboardShouldPersistTaps="handled"
         onScrollBeginDrag={() => Keyboard.dismiss()}
       >
-        {!forcedType && !isEditTrainingMode && !isEditBlocMode ? (
-          <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} />
-        ) : null}
+        {!forcedType && !isEditTrainingMode && !isEditBlocMode ? <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} /> : null}
         {renderForm()}
-        <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center' }}>
-          <PrimaryButton title="Valider" onPress={handleNext} />
+        <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+          <PrimaryButton title="Ajouter l'exercice" onPress={handleNext} />
+          {isEditTrainingMode || isEditBlocMode ? (
+            <PrimaryButton
+              title="Supprimer l'exercice"
+              onPress={handleDelete}
+              color={ExerciceColors.cooldown}
+              borderColor={ExerciceColors.cooldown}
+            />
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>

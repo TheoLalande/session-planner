@@ -28,6 +28,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const minutesBuzzedRef = useRef(0)
     const finishedBuzzRef = useRef(false)
     const hapticsSeqRef = useRef(0)
+    const nextExerciseCalledRef = useRef(false)
 
     // Réinitialise le timer quand la durée ou l'autoStart changent
     useEffect(() => {
@@ -38,6 +39,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
+      nextExerciseCalledRef.current = false
     }, [initialSeconds, autoStart])
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -85,6 +87,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
             if (hasNextExercise && onNextExercise) {
               // Lance le timer de transition avant de passer au suivant
+              nextExerciseCalledRef.current = false
               setIsTransition(true)
               setTransitionSeconds(5)
             }
@@ -120,9 +123,6 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
         setTransitionSeconds((prev) => {
           if (prev <= 1) {
             clearInterval(interval)
-            if (onNextExercise) {
-              onNextExercise()
-            }
             return 0
           }
 
@@ -132,6 +132,19 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
       return () => clearInterval(interval)
     }, [isTransition, onNextExercise])
+
+    // L'appel `onNextExercise` doit se faire après le rendu (pas dans un setter),
+    // sinon React peut remonter l'erreur "Cannot update a component while rendering...".
+    useEffect(() => {
+      if (!isTransition) return
+      if (transitionSeconds !== 0) return
+      if (nextExerciseCalledRef.current) return
+      if (!onNextExercise) return
+
+      nextExerciseCalledRef.current = true
+      setIsTransition(false)
+      onNextExercise()
+    }, [isTransition, transitionSeconds, onNextExercise])
 
     const handleStartPause = () => {
       if (isTransition) {
@@ -156,6 +169,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
+      nextExerciseCalledRef.current = false
       // Stoppe toute séquence haptics en cours
       hapticsSeqRef.current += 1
     }

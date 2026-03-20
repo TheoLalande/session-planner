@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native'
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
@@ -8,6 +8,8 @@ import { TrainingBlocItem } from './TrainingBlocItem'
 import { useTrainingStore } from '../store/trainingStore'
 import { useRouter } from 'expo-router'
 import { haptic } from '../utils/haptics'
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
+import { TrainingExercise } from '../types/trainingTypes'
 
 type TrainingBlocProps = {
   blocId: number
@@ -18,11 +20,75 @@ type TrainingBlocProps = {
 
 export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }: TrainingBlocProps) => {
   const exercises = useTrainingStore((state) => state.blocs.find((b) => b.id === blocId)?.exercises || [])
+  const ensureExerciseIds = useTrainingStore((state) => state.ensureExerciseIds)
   const renameBloc = useTrainingStore((state) => state.renameBloc)
   const duplicateExerciseInBloc = useTrainingStore((state) => state.duplicateExerciseInBloc)
+  const reorderExercisesInBloc = useTrainingStore((state) => state.reorderExercisesInBloc)
   const router = useRouter()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [localTitle, setLocalTitle] = useState(title)
+  const hasMissingExerciseIds = useMemo(
+    () => exercises.some((exercise) => Number(exercise.data?.id ?? 0) <= 0),
+    [exercises],
+  )
+
+  useEffect(() => {
+    if (hasMissingExerciseIds) {
+      ensureExerciseIds()
+    }
+  }, [ensureExerciseIds, hasMissingExerciseIds])
+
+  const renderExerciseItem = ({ item, getIndex, drag, isActive }: RenderItemParams<TrainingExercise>) => {
+    return (
+      <View style={[styles.exerciseRow, isActive && styles.activeExerciseRow]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={{ flex: 1 }}
+          onPress={async () => {
+            const index = getIndex()
+            if (index == null || index < 0) return
+            await haptic('tap')
+            router.push({
+              pathname: '/create-exercice',
+              params: {
+                mode: 'edit-bloc',
+                blocId: String(blocId),
+                exerciseIndex: String(index),
+              },
+            })
+          }}
+        >
+          <TrainingBlocItem exercise={item} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={async () => {
+            const index = getIndex()
+            if (index == null || index < 0) return
+            await haptic('tap')
+            duplicateExerciseInBloc(blocId, index)
+          }}
+          style={styles.duplicateButton}
+        >
+          <MaterialCommunityIcons name="content-duplicate" size={18} color={LightColors.primary} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onLongPress={() => {
+            drag()
+            // On déclenche le haptique sans await pour ne pas perturber la gesture drag
+            haptic('tap')
+          }}
+          delayLongPress={120}
+          style={styles.dragHandleButton}
+        >
+          <MaterialCommunityIcons name="drag-vertical" size={20} color={LightColors.grey} />
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
@@ -76,38 +142,23 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
         <View style={{ width: '100%' }}>
           <View style={styles.square}>
             <View style={styles.exercisesContainer}>
-              {exercises.map((exercise, index) => (
-                <View key={index} style={styles.exerciseRow}>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    style={{ flex: 1 }}
-                    onPress={async () => {
-                      await haptic('tap')
-                      router.push({
-                        pathname: '/create-exercice',
-                        params: {
-                          mode: 'edit-bloc',
-                          blocId: String(blocId),
-                          exerciseIndex: String(index),
-                        },
-                      })
-                    }}
-                  >
-                    <TrainingBlocItem exercise={exercise} />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={async () => {
-                      await haptic('tap')
-                      duplicateExerciseInBloc(blocId, index)
-                    }}
-                    style={styles.duplicateButton}
-                  >
-                    <MaterialCommunityIcons name="content-duplicate" size={18} color={LightColors.primary} />
-                  </TouchableOpacity>
-                </View>
-              ))}
+              <DraggableFlatList
+                data={exercises}
+                keyExtractor={(item, index) => {
+                  const exerciseId = Number(item.data?.id ?? 0)
+                  if (exerciseId > 0) {
+                    return `${blocId}-${item.type}-${exerciseId}`
+                  }
+                  return `${blocId}-${item.type}-tmp-${index}`
+                }}
+                renderItem={renderExerciseItem}
+                onDragEnd={({ data }) => {
+                  reorderExercisesInBloc(blocId, data)
+                }}
+                scrollEnabled={false}
+                activationDistance={8}
+                containerStyle={{ width: '100%' }}
+              />
             </View>
             <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
           </View>
@@ -157,7 +208,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  activeExerciseRow: {
+    opacity: 0.85,
+  },
   duplicateButton: {
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  dragHandleButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 10,
