@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PrimaryButton, TextField } from '../components'
-import { ScrollView, View } from 'react-native'
+import { Alert, ScrollView, View } from 'react-native'
 import { TrainingBloc } from '../components/TrainingBloc'
 import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
@@ -22,14 +22,18 @@ export default function index() {
   const blocs = useTrainingStore((state) => state.blocs)
   const editingTrainingId = useTrainingStore((state) => state.editingTrainingId)
   const trainings = useTrainingStore((state) => state.trainings)
-  const addBloc = useTrainingStore((state) => state.addBloc)
   const addBlocWithMeta = useTrainingStore((state) => state.addBlocWithMeta)
   const setEditingBlocId = useTrainingStore((state) => state.setEditingBlocId)
   const removeBloc = useTrainingStore((state) => state.removeBloc)
   const saveTraining = useTrainingStore((state) => state.saveTraining)
   const updateTraining = useTrainingStore((state) => state.updateTraining)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
 
   const defaultBlocName = useMemo(() => `Bloc ${blocs.length + 1}`, [blocs.length])
+
+  useEffect(() => {
+    loadTrainings()
+  }, [loadTrainings])
 
   useEffect(() => {
     if (!editingTrainingId) {
@@ -92,16 +96,21 @@ export default function index() {
           />
           <PrimaryButton
             title={editingTrainingId ? 'Mettre à jour' : 'Enregistrer'}
-            onPress={() => {
+            onPress={async () => {
               if (!title.trim()) return
-              if (editingTrainingId) {
-                updateTraining(title.trim(), description.trim())
-              } else {
-                saveTraining(title.trim(), description.trim())
+              try {
+                if (editingTrainingId) {
+                  await updateTraining(title.trim(), description.trim())
+                } else {
+                  await saveTraining(title.trim(), description.trim())
+                }
+                setTitle('')
+                setDescription('')
+                router.replace('/home')
+              } catch (e) {
+                const message = e && typeof e === 'object' && 'message' in e ? String((e as any).message) : "Erreur d'enregistrement"
+                Alert.alert('Erreur', message)
               }
-              setTitle('')
-              setDescription('')
-              router.replace('/home')
             }}
           />
         </View>

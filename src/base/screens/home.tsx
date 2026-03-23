@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BottomNavBar, PrimaryButton } from '../components'
 import { LightColors } from '../constants/theme'
@@ -7,10 +7,53 @@ import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { router } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
 import { haptic } from '../utils/haptics'
+import { getSession } from '../api/authService'
 
 export default function index() {
   const trainings = useTrainingStore((state) => state.trainings)
   const removeTraining = useTrainingStore((state) => state.removeTraining)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+    const check = async () => {
+      try {
+        const session = await getSession()
+        if (!isMounted) return
+        if (!session.accessToken) {
+          router.replace('/login')
+          return
+        }
+      } catch {
+        if (!isMounted) return
+        router.replace('/login')
+        return
+      }
+
+      try {
+        await loadTrainings()
+      } catch {
+        if (!isMounted) return
+      } finally {
+        if (!isMounted) return
+        setIsCheckingSession(false)
+      }
+    }
+
+    check()
+    return () => {
+      isMounted = false
+    }
+  }, [loadTrainings])
+
+  if (isCheckingSession) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: LightColors.grey }}>Chargement...</Text>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -38,9 +81,9 @@ export default function index() {
                 overshootRight={false}
                 renderLeftActions={() => <View style={styles.deleteBackground} />}
                 renderRightActions={() => <View style={styles.deleteBackground} />}
-                onSwipeableOpen={(direction) => {
+                onSwipeableOpen={async (direction) => {
                   if (direction === 'left' || direction === 'right') {
-                    removeTraining(training.id)
+                    await removeTraining(training.id)
                   }
                 }}
               >

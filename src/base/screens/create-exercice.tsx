@@ -21,13 +21,14 @@ export default function index() {
     exerciseIndex?: string
   }>()
   const blocId = params.blocId ? Number(params.blocId) : null
-  const trainingId = params.trainingId ? Number(params.trainingId) : null
+  const trainingId = params.trainingId ?? null
   const exerciseIndex = params.exerciseIndex ? Number(params.exerciseIndex) : null
   const isEditTrainingMode = params.mode === 'edit' && trainingId !== null && exerciseIndex !== null && blocId !== null
   const isEditBlocMode = params.mode === 'edit-bloc' && blocId !== null && exerciseIndex !== null
 
   const addExerciseToBloc = useTrainingStore((state) => state.addExerciseToBloc)
   const removeExerciseFromBloc = useTrainingStore((state) => state.removeExerciseFromBloc)
+  const removeExerciseFromTraining = useTrainingStore((state) => state.removeExerciseFromTraining)
   const updateExerciseInBloc = useTrainingStore((state) => state.updateExerciseInBloc)
   const updateExerciseInTraining = useTrainingStore((state) => state.updateExerciseInTraining)
   const blocType = useTrainingStore((state) => (blocId ? state.blocs.find((b) => b.id === blocId)?.blocType : undefined))
@@ -158,7 +159,7 @@ export default function index() {
     setSelectedType(forcedType)
   }, [forcedType])
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!blocId || !selectedType) {
       router.back()
       return
@@ -180,7 +181,7 @@ export default function index() {
 
     if (exercise) {
       if (isEditTrainingMode && trainingId !== null && exerciseIndex !== null) {
-        updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise)
+        await updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise)
       } else if (isEditBlocMode && exerciseIndex !== null) {
         updateExerciseInBloc(blocId, exerciseIndex, exercise)
       } else {
@@ -202,6 +203,12 @@ export default function index() {
         text: 'Supprimer',
         style: 'destructive',
         onPress: () => {
+          if (isEditTrainingMode && trainingId !== null) {
+            removeExerciseFromTraining(trainingId, blocId, exerciseIndex).then(() => {
+              router.back()
+            })
+            return
+          }
           removeExerciseFromBloc(blocId, exerciseIndex)
           router.back()
         },

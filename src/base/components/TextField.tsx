@@ -31,12 +31,12 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
 
   return (
     <TextInput
-      left={icon ? <TextInput.Icon icon={icon} color={LightColors.white} /> : null}
+      left={icon ? <TextInput.Icon icon={icon} color={LightColors.primary} /> : null}
       right={
-        isPassword && localValue.length > 0 ? (
+        isPassword && hasValue ? (
           <TextInput.Icon
             icon={isPasswordVisible ? 'eye' : 'eye-off'}
-            color={LightColors.white}
+            color={LightColors.primary}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
           />
         ) : null
@@ -50,7 +50,8 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
       onChangeText={handleChangeText}
       secureTextEntry={isPassword && !isPasswordVisible}
       keyboardType={isEmail ? 'email-address' : isNumber ? 'numeric' : 'default'}
-      autoCapitalize={isEmail ? 'none' : 'sentences'}
+      autoCapitalize={isEmail || isPassword ? 'none' : 'sentences'}
+      autoCorrect={false}
       style={[styles.input, isFocused && styles.inputFocused]}
       contentStyle={styles.content}
       placeholderTextColor={LightColors.black}

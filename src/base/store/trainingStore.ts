@@ -1,7 +1,6 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import * as SecureStore from 'expo-secure-store'
 import { IPlannedTraining, ITrainingBloc, TrainingExercise } from '../types/trainingTypes'
+import { createTraining, deleteTrainingById, fetchTrainings, updateTrainingById } from '../api/trainingService'
 
 function getNextExerciseDataId(blocs: ITrainingBloc[]) {
   const maxId = blocs.reduce((acc, bloc) => {
@@ -29,444 +28,429 @@ function withExerciseDataId(exercise: TrainingExercise, nextId: number): Trainin
 type TrainingState = {
   blocs: ITrainingBloc[]
   trainings: IPlannedTraining[]
+  isLoadingTrainings: boolean
   editingBlocId: number | null
-  editingTrainingId: number | null
+  editingTrainingId: string | null
+  loadTrainings: () => Promise<void>
   ensureExerciseIds: () => void
   clearEditingTraining: () => void
   addBloc: (title: string) => void
   addBlocWithMeta: (title: string, description: string, blocType: ITrainingBloc['blocType']) => void
   setEditingBlocId: (id: number | null) => void
-  startEditingTraining: (trainingId: number) => void
+  startEditingTraining: (trainingId: string) => void
   renameBloc: (blocId: number, title: string) => void
   addExerciseToBloc: (blocId: number, exercise: TrainingExercise) => void
   removeExerciseFromBloc: (blocId: number, exerciseIndex: number) => void
+  removeExerciseFromTraining: (trainingId: string, blocId: number, exerciseIndex: number) => Promise<void>
   moveExerciseInBloc: (blocId: number, fromIndex: number, toIndex: number) => void
   reorderExercisesInBloc: (blocId: number, exercises: TrainingExercise[]) => void
   duplicateExerciseInBloc: (blocId: number, exerciseIndex: number) => void
   updateExerciseInBloc: (blocId: number, exerciseIndex: number, exercise: TrainingExercise) => void
   updateExerciseInTraining: (
-    trainingId: number,
+    trainingId: string,
     blocId: number,
     exerciseIndex: number,
     exercise: TrainingExercise,
-  ) => void
+  ) => Promise<void>
   removeBloc: (blocId: number) => void
-   removeTraining: (trainingId: number) => void
-  saveTraining: (title: string, description: string) => void
-  updateTraining: (title: string, description: string) => void
+  removeTraining: (trainingId: string) => Promise<void>
+  saveTraining: (title: string, description: string) => Promise<void>
+  updateTraining: (title: string, description: string) => Promise<void>
 }
 
-const secureStoreStorage = {
-  getItem: async (name: string) => {
-    const value = await SecureStore.getItemAsync(name)
-    return value ?? null
+export const useTrainingStore = create<TrainingState>()((set, get) => ({
+  blocs: [],
+  trainings: [],
+  isLoadingTrainings: false,
+  editingBlocId: null,
+  editingTrainingId: null,
+  loadTrainings: async () => {
+    set({ isLoadingTrainings: true })
+    try {
+      const trainings = await fetchTrainings()
+      set({ trainings })
+    } finally {
+      set({ isLoadingTrainings: false })
+    }
   },
-  setItem: async (name: string, value: string) => {
-    await SecureStore.setItemAsync(name, value)
-  },
-  removeItem: async (name: string) => {
-    await SecureStore.deleteItemAsync(name)
-  },
-}
-
-export const useTrainingStore = create<TrainingState>()(
-  persist(
-    (set, get) => ({
+  clearEditingTraining: () =>
+    set(() => ({
       blocs: [],
-      trainings: [],
       editingBlocId: null,
       editingTrainingId: null,
-      clearEditingTraining: () =>
-        set(() => ({
-          blocs: [],
-          editingBlocId: null,
-          editingTrainingId: null,
-        })),
-      ensureExerciseIds: () =>
-        set((state) => {
-          let nextId = getNextExerciseDataId(state.blocs)
-          let hasChanges = false
+    })),
+  ensureExerciseIds: () =>
+    set((state) => {
+      let nextId = getNextExerciseDataId(state.blocs)
+      let hasChanges = false
 
-          const nextBlocs = state.blocs.map((bloc) => {
-            const nextExercises = bloc.exercises.map((exercise) => {
-              const currentId = Number(exercise.data?.id ?? 0)
-              if (currentId > 0) {
-                return exercise
-              }
-              hasChanges = true
-              const exerciseWithId = {
-                ...exercise,
-                data: {
-                  ...exercise.data,
-                  id: nextId++,
-                },
-              } as TrainingExercise
-              return exerciseWithId
-            })
-            return { ...bloc, exercises: nextExercises }
-          })
-
-          if (!hasChanges) {
-            return state
+      const nextBlocs = state.blocs.map((bloc) => {
+        const nextExercises = bloc.exercises.map((exercise) => {
+          const currentId = Number(exercise.data?.id ?? 0)
+          if (currentId > 0) {
+            return exercise
           }
-
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      addBloc: (title: string) =>
-        set((state) => {
-          const id = state.blocs.length ? state.blocs[state.blocs.length - 1].id + 1 : 1
-          const nextBlocs = [...state.blocs, { id, title, exercises: [] }]
-
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      addBlocWithMeta: (title, description, blocType) =>
-        set((state) => {
-          const id = state.blocs.length ? state.blocs[state.blocs.length - 1].id + 1 : 1
-          const nextBlocs = [
-            ...state.blocs,
-            {
-              id,
-              title,
-              description: description.trim() || undefined,
-              blocType: blocType ?? undefined,
-              exercises: [],
+          hasChanges = true
+          const exerciseWithId = {
+            ...exercise,
+            data: {
+              ...exercise.data,
+              id: nextId++,
             },
-          ]
+          } as TrainingExercise
+          return exerciseWithId
+        })
+        return { ...bloc, exercises: nextExercises }
+      })
 
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
+      if (!hasChanges) {
+        return state
+      }
 
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      setEditingBlocId: (id) =>
-        set((state) => ({
-          ...state,
-          editingBlocId: id,
-        })),
-      startEditingTraining: (trainingId) =>
-        set((state) => {
-          const training = state.trainings.find((t) => t.id === trainingId)
-          if (!training) {
-            return state
-          }
-          return {
-            ...state,
-            editingTrainingId: trainingId,
-            blocs: training.blocs,
-          }
-        }),
-      renameBloc: (blocId, title) =>
-        set((state) => {
-          const nextBlocs = state.blocs.map((bloc) => (bloc.id === blocId ? { ...bloc, title } : bloc))
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
 
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      addExerciseToBloc: (blocId, exercise) =>
-        set((state) => {
-          const exerciseWithId = withExerciseDataId(exercise, getNextExerciseDataId(state.blocs))
-          const nextBlocs = state.blocs.map((bloc) =>
-            bloc.id === blocId ? { ...bloc, exercises: [...bloc.exercises, exerciseWithId] } : bloc,
-          )
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      removeExerciseFromBloc: (blocId, exerciseIndex) =>
-        set((state) => {
-          const nextBlocs = state.blocs.map((bloc) => {
-            if (bloc.id !== blocId) {
-              return bloc
-            }
-            if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
-              return bloc
-            }
-            const nextExercises = bloc.exercises.filter((_, index) => index !== exerciseIndex)
-            return {
-              ...bloc,
-              exercises: nextExercises,
-            }
-          })
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      moveExerciseInBloc: (blocId, fromIndex, toIndex) =>
-        set((state) => {
-          const nextBlocs = state.blocs.map((bloc) => {
-            if (bloc.id !== blocId) {
-              return bloc
-            }
-            if (
-              fromIndex < 0 ||
-              toIndex < 0 ||
-              fromIndex >= bloc.exercises.length ||
-              toIndex >= bloc.exercises.length ||
-              fromIndex === toIndex
-            ) {
-              return bloc
-            }
-
-            const nextExercises = [...bloc.exercises]
-            const [movedExercise] = nextExercises.splice(fromIndex, 1)
-            nextExercises.splice(toIndex, 0, movedExercise)
-
-            return {
-              ...bloc,
-              exercises: nextExercises,
-            }
-          })
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      reorderExercisesInBloc: (blocId, exercises) =>
-        set((state) => {
-          const nextBlocs = state.blocs.map((bloc) => {
-            if (bloc.id !== blocId) {
-              return bloc
-            }
-            return {
-              ...bloc,
-              exercises,
-            }
-          })
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      duplicateExerciseInBloc: (blocId, exerciseIndex) =>
-        set((state) => {
-          const nextBlocs = state.blocs.map((bloc) => {
-            if (bloc.id !== blocId) {
-              return bloc
-            }
-            if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
-              return bloc
-            }
-            const source = bloc.exercises[exerciseIndex]
-            const duplicated: TrainingExercise = {
-              ...source,
-              data: { ...(source as any).data, id: getNextExerciseDataId(state.blocs) },
-            } as TrainingExercise
-
-            const nextExercises = [...bloc.exercises]
-            nextExercises.splice(exerciseIndex + 1, 0, duplicated)
-            return {
-              ...bloc,
-              exercises: nextExercises,
-            }
-          })
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      updateExerciseInBloc: (blocId, exerciseIndex, exercise) =>
-        set((state) => {
-          const nextBlocs = state.blocs.map((bloc) => {
-            if (bloc.id !== blocId) {
-              return bloc
-            }
-            if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
-              return bloc
-            }
-            const updatedExercises = [...bloc.exercises]
-            updatedExercises[exerciseIndex] = exercise
-            return {
-              ...bloc,
-              exercises: updatedExercises,
-            }
-          })
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      updateExerciseInTraining: (trainingId, blocId, exerciseIndex, exercise) =>
-        set((state) => ({
-          ...state,
-          trainings: state.trainings.map((training) => {
-            if (training.id !== trainingId) {
-              return training
-            }
-            return {
-              ...training,
-              blocs: training.blocs.map((bloc) => {
-                if (bloc.id !== blocId) {
-                  return bloc
-                }
-                if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
-                  return bloc
-                }
-                const updatedExercises = [...bloc.exercises]
-                updatedExercises[exerciseIndex] = exercise
-                return {
-                  ...bloc,
-                  exercises: updatedExercises,
-                }
-              }),
-            }
-          }),
-        })),
-      removeBloc: (blocId) =>
-        set((state) => {
-          const nextBlocs = state.blocs.filter((bloc) => bloc.id !== blocId)
-          const nextTrainings =
-            state.editingTrainingId == null
-              ? state.trainings
-              : state.trainings.map((training) =>
-                  training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training,
-                )
-
-          return {
-            ...state,
-            blocs: nextBlocs,
-            trainings: nextTrainings,
-          }
-        }),
-      removeTraining: (trainingId) =>
-        set((state) => ({
-          ...state,
-          trainings: state.trainings.filter((training) => training.id !== trainingId),
-        })),
-      saveTraining: (title, description) =>
-        set((state) => {
-          const id = state.trainings.length ? state.trainings[state.trainings.length - 1].id + 1 : 1
-          const newTraining: IPlannedTraining = {
-            id,
-            title,
-            description,
-            blocs: state.blocs,
-          }
-          return {
-            ...state,
-            trainings: [...state.trainings, newTraining],
-            blocs: [],
-            editingTrainingId: null,
-          }
-        }),
-      updateTraining: (title, description) =>
-        set((state) => {
-          if (state.editingTrainingId == null) {
-            return state
-          }
-          return {
-            ...state,
-            trainings: state.trainings.map((training) =>
-              training.id === state.editingTrainingId
-                ? {
-                    ...training,
-                    title,
-                    description,
-                    blocs: state.blocs,
-                  }
-                : training,
-            ),
-            blocs: [],
-            editingTrainingId: null,
-          }
-        }),
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
     }),
-    {
-      name: 'training-storage',
-      storage: createJSONStorage(() => secureStoreStorage as never),
-      partialize: (state) => ({
-        blocs: state.blocs,
-        trainings: state.trainings,
-      }),
-    },
-  ),
-)
+  addBloc: (title: string) =>
+    set((state) => {
+      const id = state.blocs.length ? state.blocs[state.blocs.length - 1].id + 1 : 1
+      const nextBlocs = [...state.blocs, { id, title, exercises: [] }]
+
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  addBlocWithMeta: (title, description, blocType) =>
+    set((state) => {
+      const id = state.blocs.length ? state.blocs[state.blocs.length - 1].id + 1 : 1
+      const nextBlocs = [
+        ...state.blocs,
+        {
+          id,
+          title,
+          description: description.trim() || undefined,
+          blocType: blocType ?? undefined,
+          exercises: [],
+        },
+      ]
+
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  setEditingBlocId: (id) =>
+    set((state) => ({
+      ...state,
+      editingBlocId: id,
+    })),
+  startEditingTraining: (trainingId) =>
+    set((state) => {
+      const training = state.trainings.find((t) => t.id === trainingId)
+      if (!training) {
+        return state
+      }
+      return {
+        ...state,
+        editingTrainingId: trainingId,
+        blocs: training.blocs,
+      }
+    }),
+  renameBloc: (blocId, title) =>
+    set((state) => {
+      const nextBlocs = state.blocs.map((bloc) => (bloc.id === blocId ? { ...bloc, title } : bloc))
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  addExerciseToBloc: (blocId, exercise) =>
+    set((state) => {
+      const exerciseWithId = withExerciseDataId(exercise, getNextExerciseDataId(state.blocs))
+      const nextBlocs = state.blocs.map((bloc) => (bloc.id === blocId ? { ...bloc, exercises: [...bloc.exercises, exerciseWithId] } : bloc))
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  removeExerciseFromBloc: (blocId, exerciseIndex) =>
+    set((state) => {
+      const nextBlocs = state.blocs.map((bloc) => {
+        if (bloc.id !== blocId) {
+          return bloc
+        }
+        if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
+          return bloc
+        }
+        const nextExercises = bloc.exercises.filter((_, index) => index !== exerciseIndex)
+        return {
+          ...bloc,
+          exercises: nextExercises,
+        }
+      })
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  removeExerciseFromTraining: async (trainingId, blocId, exerciseIndex) => {
+    const state = get()
+    const training = state.trainings.find((t) => t.id === trainingId)
+    if (!training) return
+    const nextBlocs = training.blocs.map((bloc) => {
+      if (bloc.id !== blocId) return bloc
+      if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) return bloc
+      return { ...bloc, exercises: bloc.exercises.filter((_, idx) => idx !== exerciseIndex) }
+    })
+    const nextTraining = { ...training, blocs: nextBlocs }
+    await updateTrainingById(trainingId, {
+      title: nextTraining.title,
+      description: nextTraining.description,
+      blocs: nextTraining.blocs,
+    })
+    set((current) => ({
+      ...current,
+      trainings: current.trainings.map((t) => (t.id === trainingId ? nextTraining : t)),
+    }))
+  },
+  moveExerciseInBloc: (blocId, fromIndex, toIndex) =>
+    set((state) => {
+      const nextBlocs = state.blocs.map((bloc) => {
+        if (bloc.id !== blocId) {
+          return bloc
+        }
+        if (
+          fromIndex < 0 ||
+          toIndex < 0 ||
+          fromIndex >= bloc.exercises.length ||
+          toIndex >= bloc.exercises.length ||
+          fromIndex === toIndex
+        ) {
+          return bloc
+        }
+
+        const nextExercises = [...bloc.exercises]
+        const [movedExercise] = nextExercises.splice(fromIndex, 1)
+        nextExercises.splice(toIndex, 0, movedExercise)
+
+        return {
+          ...bloc,
+          exercises: nextExercises,
+        }
+      })
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  reorderExercisesInBloc: (blocId, exercises) =>
+    set((state) => {
+      const nextBlocs = state.blocs.map((bloc) => {
+        if (bloc.id !== blocId) {
+          return bloc
+        }
+        return {
+          ...bloc,
+          exercises,
+        }
+      })
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  duplicateExerciseInBloc: (blocId, exerciseIndex) =>
+    set((state) => {
+      const nextBlocs = state.blocs.map((bloc) => {
+        if (bloc.id !== blocId) {
+          return bloc
+        }
+        if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
+          return bloc
+        }
+        const source = bloc.exercises[exerciseIndex]
+        const duplicated: TrainingExercise = {
+          ...source,
+          data: { ...(source as any).data, id: getNextExerciseDataId(state.blocs) },
+        } as TrainingExercise
+
+        const nextExercises = [...bloc.exercises]
+        nextExercises.splice(exerciseIndex + 1, 0, duplicated)
+        return {
+          ...bloc,
+          exercises: nextExercises,
+        }
+      })
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  updateExerciseInBloc: (blocId, exerciseIndex, exercise) =>
+    set((state) => {
+      const nextBlocs = state.blocs.map((bloc) => {
+        if (bloc.id !== blocId) {
+          return bloc
+        }
+        if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
+          return bloc
+        }
+        const updatedExercises = [...bloc.exercises]
+        updatedExercises[exerciseIndex] = exercise
+        return {
+          ...bloc,
+          exercises: updatedExercises,
+        }
+      })
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  updateExerciseInTraining: async (trainingId, blocId, exerciseIndex, exercise) => {
+    const state = get()
+    const training = state.trainings.find((t) => t.id === trainingId)
+    if (!training) return
+    const nextBlocs = training.blocs.map((bloc) => {
+      if (bloc.id !== blocId) return bloc
+      if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) return bloc
+      const updatedExercises = [...bloc.exercises]
+      updatedExercises[exerciseIndex] = exercise
+      return { ...bloc, exercises: updatedExercises }
+    })
+    const nextTraining = { ...training, blocs: nextBlocs }
+    await updateTrainingById(trainingId, {
+      title: nextTraining.title,
+      description: nextTraining.description,
+      blocs: nextTraining.blocs,
+    })
+    set((current) => ({
+      ...current,
+      trainings: current.trainings.map((t) => (t.id === trainingId ? nextTraining : t)),
+    }))
+  },
+  removeBloc: (blocId) =>
+    set((state) => {
+      const nextBlocs = state.blocs.filter((bloc) => bloc.id !== blocId)
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  removeTraining: async (trainingId) => {
+    await deleteTrainingById(trainingId)
+    set((state) => ({
+      ...state,
+      trainings: state.trainings.filter((training) => training.id !== trainingId),
+    }))
+  },
+  saveTraining: async (title, description) => {
+    const state = get()
+    const savedTraining = await createTraining({
+      title,
+      description,
+      blocs: state.blocs,
+    })
+    set((current) => ({
+      ...current,
+      trainings: [...current.trainings, savedTraining],
+      blocs: [],
+      editingTrainingId: null,
+    }))
+  },
+  updateTraining: async (title, description) => {
+    const state = get()
+    if (state.editingTrainingId == null) {
+      return
+    }
+    await updateTrainingById(state.editingTrainingId, {
+      title,
+      description,
+      blocs: state.blocs,
+    })
+    set((current) => ({
+      ...current,
+      trainings: current.trainings.map((training) =>
+        training.id === current.editingTrainingId
+          ? {
+              ...training,
+              title,
+              description,
+              blocs: current.blocs,
+            }
+          : training,
+      ),
+      blocs: [],
+      editingTrainingId: null,
+    }))
+  },
+}))
 

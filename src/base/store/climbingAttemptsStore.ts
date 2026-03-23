@@ -1,6 +1,5 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import { createClimbingAttempt, fetchClimbingAttempts } from '../api/climbingAttemptsService'
 
 export type ClimbingAttemptStatus = 'success' | 'fail'
 
@@ -13,36 +12,28 @@ export type ClimbingAttempt = {
 
 type ClimbingAttemptsState = {
   attempts: ClimbingAttempt[]
-  addAttempt: (payload: { routeLabel: string; status: ClimbingAttemptStatus; createdAt?: number }) => void
-  clearAttempts: () => void
+  isLoadingAttempts: boolean
+  loadAttempts: () => Promise<void>
+  addAttempt: (payload: { routeLabel: string; status: ClimbingAttemptStatus; createdAt?: number }) => Promise<void>
 }
 
-export const useClimbingAttemptsStore = create<ClimbingAttemptsState>()(
-  persist(
-    (set) => ({
-      attempts: [],
-      addAttempt: ({ routeLabel, status, createdAt }) =>
-        set((state) => {
-          const nextAttempt: ClimbingAttempt = {
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            createdAt: createdAt ?? Date.now(),
-            routeLabel,
-            status,
-          }
-
-          const nextAttempts = [...state.attempts, nextAttempt]
-          const maxAttempts = 5000
-
-          return {
-            attempts: nextAttempts.length > maxAttempts ? nextAttempts.slice(nextAttempts.length - maxAttempts) : nextAttempts,
-          }
-        }),
-      clearAttempts: () => set({ attempts: [] }),
-    }),
-    {
-      name: 'climbing-attempts',
-      storage: createJSONStorage(() => AsyncStorage),
-    },
-  ),
-)
+export const useClimbingAttemptsStore = create<ClimbingAttemptsState>()((set) => ({
+  attempts: [],
+  isLoadingAttempts: false,
+  loadAttempts: async () => {
+    set({ isLoadingAttempts: true })
+    try {
+      const attempts = await fetchClimbingAttempts()
+      set({ attempts })
+    } finally {
+      set({ isLoadingAttempts: false })
+    }
+  },
+  addAttempt: async ({ routeLabel, status, createdAt }) => {
+    const attempt = await createClimbingAttempt({ routeLabel, status, createdAt })
+    set((state) => ({
+      attempts: [...state.attempts, attempt],
+    }))
+  },
+}))
 

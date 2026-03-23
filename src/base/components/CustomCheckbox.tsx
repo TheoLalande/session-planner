@@ -1,6 +1,6 @@
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import { Icon } from 'react-native-paper'
-import { Colors } from '../constants/theme'
+import { LightColors } from '../constants/theme'
 
 interface CustomCheckboxProps {
   checked: boolean
@@ -23,7 +23,7 @@ export function CustomCheckbox({ checked, onPress, borderColor, checkedColor }: 
           },
         ]}
       >
-        {checked && <Icon source="check" size={24 * 0.7} color={Colors.white} />}
+        {checked && <Icon source="check" size={24 * 0.7} color={LightColors.white} />}
       </View>
     </TouchableOpacity>
   )

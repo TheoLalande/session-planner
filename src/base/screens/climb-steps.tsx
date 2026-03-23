@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -14,12 +14,13 @@ export default function ClimbSteps() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
 
   const { exercise, hasNext, nextIndex } = useMemo((): { exercise: TrainingExercise | null; hasNext: boolean; nextIndex: number | null } => {
-    const trainingIdNum = trainingId ? Number(trainingId) : NaN
+    const trainingIdValue = trainingId ?? ''
     const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
-    const training = trainings.find((t) => t.id === trainingIdNum)
-    if (!training || Number.isNaN(trainingIdNum) || Number.isNaN(indexNum)) {
+    const training = trainings.find((t) => t.id === trainingIdValue)
+    if (!training || !trainingIdValue || Number.isNaN(indexNum)) {
       return { exercise: null, hasNext: false, nextIndex: null }
     }
     const exercises = training.blocs.flatMap((b) => b.exercises)
@@ -30,6 +31,22 @@ export default function ClimbSteps() {
     return { exercise: exercises[indexNum], hasNext, nextIndex: hasNext ? indexNum + 1 : null }
   }, [exerciseIndex, trainingId, trainings])
 
+  const timerRef = useRef<ExerciseTimerHandle | null>(null)
+
+  const initialAttempts = exercise && exercise.type === 'climbing' ? exercise.data.attempts : 0
+  const [attemptResults, setAttemptResults] = useState<('pending' | 'success' | 'fail')[]>(() =>
+    Array.from({ length: Math.max(0, initialAttempts) }, () => 'pending'),
+  )
+
+  const nextAttemptIndex = attemptResults.findIndex((s) => s === 'pending')
+  const isAttemptsDone = nextAttemptIndex === -1
+
+  const addAttempt = useClimbingAttemptsStore((state) => state.addAttempt)
+
+  useEffect(() => {
+    loadTrainings()
+  }, [loadTrainings])
+
   if (!exercise || exercise.type !== 'climbing') {
     return (
       <SafeAreaView style={styles.container}>
@@ -37,19 +54,6 @@ export default function ClimbSteps() {
       </SafeAreaView>
     )
   }
-
-  const timerRef = useRef<ExerciseTimerHandle | null>(null)
-  const [timerRunning, setTimerRunning] = useState(false)
-
-  const [attemptResults, setAttemptResults] = useState<Array<'pending' | 'success' | 'fail'>>(() =>
-    Array.from({ length: Math.max(0, exercise.data.attempts) }, () => 'pending')
-  )
-
-  const nextAttemptIndex = attemptResults.findIndex((s) => s === 'pending')
-  const isAttemptsDone = nextAttemptIndex === -1
-  const hasSuccessAttempt = attemptResults.some((s) => s === 'success')
-
-  const addAttempt = useClimbingAttemptsStore((state) => state.addAttempt)
 
   const finishTraining = async () => {
     if (!trainingId) {
@@ -63,13 +67,13 @@ export default function ClimbSteps() {
     })
   }
 
-  const markAttempt = (status: 'success' | 'fail') => {
+  const markAttempt = async (status: 'success' | 'fail') => {
     if (nextAttemptIndex === -1) {
       return
     }
 
     const routeLabel = `${exercise.data.title || 'Climbing'} · ${exercise.data.grade}`
-    addAttempt({ routeLabel, status })
+    await addAttempt({ routeLabel, status })
 
     setAttemptResults((prev) => {
       const next = [...prev]
@@ -77,8 +81,6 @@ export default function ClimbSteps() {
       return next
     })
 
-    // Démarre le timer de repos au clic (réussi/raté).
-    // On reset d'abord pour repartir de la durée complète, puis on lance.
     timerRef.current?.reset()
     setTimeout(() => {
       timerRef.current?.startPause()
@@ -104,7 +106,7 @@ export default function ClimbSteps() {
             activeOpacity={0.7}
             onPress={async () => {
               await haptic('tap')
-              markAttempt('success')
+              await markAttempt('success')
             }}
             disabled={isAttemptsDone}
             style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? LightColors.lightGrey : LightColors.primary }]}
@@ -115,7 +117,7 @@ export default function ClimbSteps() {
             activeOpacity={0.7}
             onPress={async () => {
               await haptic('tap')
-              markAttempt('fail')
+              await markAttempt('fail')
             }}
             disabled={isAttemptsDone}
             style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? LightColors.lightGrey : '#ff3b30' }]}
@@ -130,7 +132,7 @@ export default function ClimbSteps() {
           initialSeconds={exercise.data.restingTime}
           autoStart={false}
           hasNextExercise={false}
-          onStatusChange={({ isRunning }) => setTimerRunning(isRunning)}
+          onStatusChange={() => {}}
         />
 
         <TouchableOpacity

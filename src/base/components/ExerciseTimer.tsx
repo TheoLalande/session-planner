@@ -30,7 +30,6 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const hapticsSeqRef = useRef(0)
     const nextExerciseCalledRef = useRef(false)
 
-    // Réinitialise le timer quand la durée ou l'autoStart changent
     useEffect(() => {
       setRemainingSeconds(initialSeconds)
       setIsTransition(false)

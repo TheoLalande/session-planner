@@ -1,25 +1,46 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'expo-router'
-import { View, Animated } from 'react-native'
-import { Logo, MainText, PrimaryButton } from '../components'
+import { View, Animated, Text } from 'react-native'
+import { Logo, MainText } from '../components'
 import { LightColors } from '../constants/theme'
+import { getSession } from '../api/authService'
 
 export default function Index() {
   const router = useRouter()
   const opacity = useRef(new Animated.Value(1)).current
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        router.replace('/home')
-      })
-    }, 2000)
+    let isMounted = true
 
-    return () => clearTimeout(timer)
+    const check = async () => {
+      try {
+        const session = await getSession()
+        if (!isMounted) return
+
+        const target = session.accessToken ? '/home' : '/login'
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }).start(() => {
+          if (!isMounted) return
+          router.replace(target)
+        })
+      } catch {
+        if (!isMounted) return
+        router.replace('/login')
+      } finally {
+        if (!isMounted) return
+        setIsCheckingSession(false)
+      }
+    }
+
+    check()
+
+    return () => {
+      isMounted = false
+    }
   }, [opacity, router])
 
   return (
@@ -48,6 +69,7 @@ export default function Index() {
           <Logo logo="logo-full.png" maxWidth={300} maxHeight={300} />
           <MainText text="Plannifiez vos sessions d'entrainement" fontSize={30} color={LightColors.primary} />
         </View>
+        {isCheckingSession ? <Text style={{ color: LightColors.grey, marginBottom: 20 }}>Chargement...</Text> : null}
       </View>
     </Animated.View>
   )

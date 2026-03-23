@@ -57,7 +57,7 @@ export interface ITrainingBloc {
 }
 
 export interface IPlannedTraining {
-  id: number
+  id: string
   title: string
   description: string
   blocs: ITrainingBloc[]

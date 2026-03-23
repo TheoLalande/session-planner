@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
@@ -65,6 +65,8 @@ const formatDate = (d: Date) => {
 
 export default function Statistiques() {
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
+  const isLoadingAttempts = useClimbingAttemptsStore((state) => state.isLoadingAttempts)
+  const loadAttempts = useClimbingAttemptsStore((state) => state.loadAttempts)
   const { width: windowWidth } = useWindowDimensions()
   const [hiddenGrades, setHiddenGrades] = useState<Record<string, boolean>>({ '5c': true })
 
@@ -77,6 +79,10 @@ export default function Statistiques() {
 
   const [showStartPicker, setShowStartPicker] = useState(false)
   const [showEndPicker, setShowEndPicker] = useState(false)
+
+  useEffect(() => {
+    loadAttempts()
+  }, [loadAttempts])
 
   const attemptsInRange = useMemo(() => {
     const start = toStartOfDay(startDate)
@@ -231,7 +237,11 @@ export default function Statistiques() {
           <StatusLegendItem color="#ff3b30" label="Échecs" />
         </View>
 
-        {attemptsInRange.length === 0 ? (
+        {isLoadingAttempts ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyText}>Chargement...</Text>
+          </View>
+        ) : attemptsInRange.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyText}>Aucune voie testée sur cette période.</Text>
           </View>

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native'
@@ -22,18 +22,23 @@ export default function SimpleTimer() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
   const timerRef = useRef<ExerciseTimerHandle | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [isTransition, setIsTransition] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(0)
 
+  useEffect(() => {
+    loadTrainings()
+  }, [loadTrainings])
+
   const { initialDurationSeconds, hasNextExercise, nextIndex, exerciseTitle, exerciseImage, autoStart, isReps, repetitions } =
     useMemo((): TimerConfig => {
-      const trainingIdNum = trainingId ? Number(trainingId) : NaN
+      const trainingIdValue = trainingId ?? ''
       const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
 
-      const training = trainings.find((t) => t.id === trainingIdNum)
-      if (!training || Number.isNaN(trainingIdNum)) {
+      const training = trainings.find((t) => t.id === trainingIdValue)
+      if (!training || !trainingIdValue) {
         return {
           initialDurationSeconds: 60,
           hasNextExercise: false,

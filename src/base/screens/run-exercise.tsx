@@ -10,13 +10,18 @@ export default function RunExercise() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
+
+  useEffect(() => {
+    loadTrainings()
+  }, [loadTrainings])
 
   const { exercise, isValid } = useMemo((): { exercise: TrainingExercise | null; isValid: boolean } => {
-    const trainingIdNum = trainingId ? Number(trainingId) : NaN
+    const trainingIdValue = trainingId ?? ''
     const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
 
-    const training = trainings.find((t) => t.id === trainingIdNum)
-    if (!training || Number.isNaN(trainingIdNum) || Number.isNaN(indexNum)) {
+    const training = trainings.find((t) => t.id === trainingIdValue)
+    if (!training || !trainingIdValue || Number.isNaN(indexNum)) {
       return { exercise: null, isValid: false }
     }
 

@@ -1,4 +1,3 @@
-import { GatewayConfig, getAuthEndpoint } from '../../../config'
 import {
   IApiError,
   IForgotPasswordRequest,
@@ -9,173 +8,126 @@ import {
   IRegisterResponse,
   IResendVerificationRequest,
   IResendVerificationResponse,
+  ISessionResponse,
 } from '../types/authTypes'
+import { getSupabaseClient, getSupabaseRedirectTo } from './supabaseClient'
 
 export async function register(registerData: IRegisterData): Promise<IRegisterResponse> {
-  try {
-    const url = getAuthEndpoint('register')
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), GatewayConfig.timeout)
+  const supabase = getSupabaseClient()
+  const redirectTo = getSupabaseRedirectTo()
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: GatewayConfig.defaultHeaders,
-      body: JSON.stringify(registerData),
-      signal: controller.signal,
-    })
-    clearTimeout(timeoutId)
+  const signUpOptions: { data: { nickname: string; firstName: string; lastName: string }; emailRedirectTo?: string } = {
+    data: {
+      nickname: registerData.nickname,
+      firstName: registerData.firstName,
+      lastName: registerData.lastName,
+    },
+  }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: `Erreur ${response.status}: ${response.statusText}`,
-        statusCode: response.status,
-      }))
+  if (redirectTo) {
+    signUpOptions.emailRedirectTo = redirectTo
+  }
 
-      throw {
-        message: errorData.message || "Erreur lors de l'enregistrement",
-        status: response.status,
-      } as IApiError
-    }
+  const { data, error } = await supabase.auth.signUp({
+    email: registerData.email,
+    password: registerData.password,
+    options: signUpOptions,
+  })
 
-    const data: IRegisterResponse = await response.json()
-    return data
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw {
-        message: 'La requête a expiré. Veuillez réessayer.',
-      } as IApiError
-    }
-    if (error && typeof error === 'object' && 'message' in error) {
-      throw error as IApiError
-    }
-
+  if (error) {
     throw {
-      message: 'Erreur réseau. Vérifiez votre connexion.',
+      message: error.message,
     } as IApiError
+  }
+
+  return {
+    user: data.user ? { id: data.user.id, email: data.user.email ?? null } : null,
+    accessToken: data.session?.access_token ?? null,
+    refreshToken: data.session?.refresh_token ?? null,
   }
 }
 
 export async function login(loginData: ILoginRequest): Promise<ILoginResponse> {
-  try {
-    const url = getAuthEndpoint('login')
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), GatewayConfig.timeout)
+  const supabase = getSupabaseClient()
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: GatewayConfig.defaultHeaders,
-      body: JSON.stringify(loginData),
-      signal: controller.signal,
-    })
-    clearTimeout(timeoutId)
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: `Erreur ${response.status}: ${response.statusText}`,
-      }))
-      throw {
-        message: errorData.message || 'Erreur lors de la connexion',
-        status: response.status,
-      } as IApiError
-    }
-    const data: ILoginResponse = await response.json()
-    return data
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw {
-        message: 'La requête a expiré. Veuillez réessayer.',
-      } as IApiError
-    }
-    if (error && typeof error === 'object' && 'message' in error) {
-      throw error as IApiError
-    }
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: loginData.email,
+    password: loginData.password,
+  })
 
+  if (error) {
     throw {
-      message: 'Erreur réseau. Vérifiez votre connexion.',
+      message: error.message,
     } as IApiError
+  }
+
+  if (!data.session) {
+    throw {
+      message: 'Session introuvable après la connexion',
+    } as IApiError
+  }
+
+  if (!data.user) {
+    throw {
+      message: 'Utilisateur introuvable après la connexion',
+    } as IApiError
+  }
+
+  return {
+    user: { id: data.user.id, email: data.user.email ?? null },
+    accessToken: data.session.access_token,
+    refreshToken: data.session.refresh_token,
   }
 }
 
 export async function resendVerificationEmail(email: string): Promise<IResendVerificationResponse> {
-  try {
-    const url = getAuthEndpoint('resend-verification')
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), GatewayConfig.timeout)
+  const supabase = getSupabaseClient()
 
-    const requestData: IResendVerificationRequest = { email }
+  const requestData: IResendVerificationRequest = { email }
+  const { error } = await supabase.auth.resend({ type: 'signup', email: requestData.email })
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: GatewayConfig.defaultHeaders,
-      body: JSON.stringify(requestData),
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: `Erreur ${response.status}: ${response.statusText}`,
-      }))
-
-      throw {
-        message: errorData.message || "Erreur lors de l'envoi de l'email",
-        status: response.status,
-      } as IApiError
-    }
-
-    const data: IResendVerificationResponse = await response.json()
-    return data
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw {
-        message: 'La requête a expiré. Veuillez réessayer.',
-      } as IApiError
-    }
-    if (error && typeof error === 'object' && 'message' in error) {
-      throw error as IApiError
-    }
-
+  if (error) {
     throw {
-      message: 'Erreur réseau. Vérifiez votre connexion.',
+      message: error.message,
     } as IApiError
   }
+
+  return { ok: true }
 }
 
 export async function forgotPassword(email: string): Promise<IForgotPasswordResponse> {
-  try {
-    const url = getAuthEndpoint('forgot-password')
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), GatewayConfig.timeout)
-    const requestData: IForgotPasswordRequest = { email }
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: GatewayConfig.defaultHeaders,
-      body: JSON.stringify(requestData),
-      signal: controller.signal,
-    })
-    clearTimeout(timeoutId)
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: `Erreur ${response.status}: ${response.statusText}`,
-      }))
-      throw {
-        message: errorData.message || 'Erreur lors de la réinitialisation de mot de passe',
-      } as IApiError
-    }
-    const data: IForgotPasswordResponse = await response.json()
-    return data
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw {
-        message: 'La requête a expiré. Veuillez réessayer.',
-      } as IApiError
-    }
-    if (error && typeof error === 'object' && 'message' in error) {
-      throw error as IApiError
-    }
+  const supabase = getSupabaseClient()
 
+  const requestData: IForgotPasswordRequest = { email }
+  const redirectTo = getSupabaseRedirectTo()
+
+  const { error } = await supabase.auth.resetPasswordForEmail(requestData.email, redirectTo ? { redirectTo } : undefined)
+
+  if (error) {
     throw {
-      message: 'Erreur réseau. Vérifiez votre connexion.',
+      message: error.message,
     } as IApiError
   }
+
+  return { ok: true }
+}
+
+export async function getSession(): Promise<ISessionResponse> {
+  const supabase = getSupabaseClient()
+
+  const { data } = await supabase.auth.getSession()
+  const session = data.session
+
+  if (!session) return { user: null, accessToken: null, refreshToken: null }
+
+  return {
+    user: session.user ? { id: session.user.id, email: session.user.email ?? null } : null,
+    accessToken: session.access_token,
+    refreshToken: session.refresh_token,
+  }
+}
+
+export async function logout(): Promise<void> {
+  const supabase = getSupabaseClient()
+  await supabase.auth.signOut()
 }

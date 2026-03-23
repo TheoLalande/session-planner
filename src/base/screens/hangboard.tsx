@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -11,12 +11,17 @@ export default function Hangboard() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
+
+  useEffect(() => {
+    loadTrainings()
+  }, [loadTrainings])
 
   const { exercise, hasNext, nextIndex } = useMemo((): { exercise: TrainingExercise | null; hasNext: boolean; nextIndex: number | null } => {
-    const trainingIdNum = trainingId ? Number(trainingId) : NaN
+    const trainingIdValue = trainingId ?? ''
     const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
-    const training = trainings.find((t) => t.id === trainingIdNum)
-    if (!training || Number.isNaN(trainingIdNum) || Number.isNaN(indexNum)) {
+    const training = trainings.find((t) => t.id === trainingIdValue)
+    if (!training || !trainingIdValue || Number.isNaN(indexNum)) {
       return { exercise: null, hasNext: false, nextIndex: null }
     }
     const exercises = training.blocs.flatMap((b) => b.exercises)

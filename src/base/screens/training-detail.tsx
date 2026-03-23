@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from 'react'
+import React, { useEffect, useLayoutEffect } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -13,13 +13,18 @@ export default function TrainingDetail() {
   const { id } = useLocalSearchParams<{ id?: string }>()
   const router = useRouter()
   const navigation = useNavigation()
-  const trainingId = id ? Number(id) : NaN
+  const trainingId = id ?? ''
 
   const training = useTrainingStore((state) => state.trainings.find((t) => t.id === trainingId))
   const startEditingTraining = useTrainingStore((state) => state.startEditingTraining)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
+
+  useEffect(() => {
+    loadTrainings()
+  }, [loadTrainings])
 
   useLayoutEffect(() => {
-    if (!training || Number.isNaN(trainingId)) {
+    if (!training || !trainingId) {
       navigation.setOptions({ headerRight: undefined })
       return
     }
@@ -74,7 +79,7 @@ export default function TrainingDetail() {
     })
   }, [navigation, router, startEditingTraining, training, trainingId])
 
-  if (!training || Number.isNaN(trainingId)) {
+  if (!training || !trainingId) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ color: LightColors.grey }}>Entrainement introuvable.</Text>
