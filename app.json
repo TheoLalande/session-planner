@@ -3,7 +3,7 @@
     "name": "run4life",
     "slug": "run4life",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "run4life",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -16,6 +16,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
+    },
+    "androidNavigationBar": {
+      "visible": "immersive",
+      "barStyle": "dark-content",
+      "backgroundColor": "#00000000"
     },
     "plugins": [
       "expo-router",

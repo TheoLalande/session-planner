@@ -49,6 +49,16 @@ export function BottomNavBar({ onHomePress, onCalendarPress, onSettingsPress }: 
       >
         <MaterialIcons name="settings" size={28} color={LightColors.primary} />
       </TouchableOpacity>
+      <TouchableOpacity
+        onPress={async () => {
+          await haptic('tap')
+          router.push('/test')
+        }}
+        style={styles.iconWrapper}
+        activeOpacity={0.7}
+      >
+        <MaterialIcons name="person" size={28} color={LightColors.primary} />
+      </TouchableOpacity>
     </View>
   )
 }

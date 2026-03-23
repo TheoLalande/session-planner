@@ -1,12 +1,16 @@
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
+import * as NavigationBar from 'expo-navigation-bar'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
+import * as SystemUI from 'expo-system-ui'
 import { useEffect } from 'react'
+import { AppState, Platform } from 'react-native'
 import { PaperProvider } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { LightColors } from '../constants/theme'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -25,17 +29,44 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError])
 
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return
+    }
+
+    const setupNavigationBar = async () => {
+      await SystemUI.setBackgroundColorAsync('transparent')
+      await NavigationBar.setPositionAsync('absolute')
+      await NavigationBar.setBehaviorAsync('overlay-swipe')
+      await NavigationBar.setBackgroundColorAsync('#00000000')
+      await NavigationBar.setBorderColorAsync('#00000000')
+      await NavigationBar.setVisibilityAsync('hidden')
+    }
+
+    setupNavigationBar()
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        setupNavigationBar()
+      }
+    })
+
+    return () => {
+      subscription.remove()
+    }
+  }, [])
+
   if (!fontsLoaded && !fontError) {
     return null
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: LightColors.white }}>
       <ThemeProvider value={DefaultTheme}>
         <PaperProvider>
           <SafeAreaProvider>
-            <StatusBar style="dark" translucent={false} backgroundColor="#FFFFFF" />
-            <Stack>
+            <StatusBar hidden translucent backgroundColor="transparent" />
+            <Stack screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="home" options={{ headerShown: false, animation: 'none' }} />
               <Stack.Screen name="login" options={{ headerShown: false, animation: 'none' }} />

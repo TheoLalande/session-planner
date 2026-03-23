@@ -3,7 +3,7 @@ export default ({ config }) => ({
   name: 'SessionPlanner',
   slug: 'SessionPlanner',
   version: '1.0.0',
-  orientation: 'portrait',
+  orientation: 'default',
   scheme: 'SessionPlanner',
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
@@ -17,6 +17,11 @@ export default ({ config }) => ({
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
+  },
+  androidNavigationBar: {
+    visible: 'immersive',
+    barStyle: 'dark-content',
+    backgroundColor: '#00000000',
   },
   plugins: [
     [

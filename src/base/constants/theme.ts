@@ -8,6 +8,7 @@ export const DarkColors = {
 
 export const LightColors = {
   primary: '#008000',
+  secondary: '#60ab60',
   white: '#FFFFFF',
   grey: '#323232',
   lightGrey: '#444444',
