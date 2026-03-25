@@ -61,4 +61,5 @@ export interface IPlannedTraining {
   title: string
   description: string
   blocs: ITrainingBloc[]
+  transitionSecondsBetweenTimers: number
 }

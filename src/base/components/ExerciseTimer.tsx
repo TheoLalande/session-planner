@@ -2,12 +2,15 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } f
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import { Audio } from 'expo-av'
 import { LightColors } from '../constants/theme'
 
 type ExerciseTimerProps = {
   initialSeconds: number
   autoStart?: boolean
   hasNextExercise?: boolean
+  transitionSecondsBetweenTimers?: number
+  transparentBackground?: boolean
   onNextExercise?: () => void
   onStatusChange?: (status: { isRunning: boolean; isTransition: boolean; remainingSeconds: number }) => void
 }
@@ -18,28 +21,62 @@ export type ExerciseTimerHandle = {
 }
 
 export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>(
-  ({ initialSeconds, autoStart = false, hasNextExercise = false, onNextExercise, onStatusChange }, ref) => {
+  (
+    {
+      initialSeconds,
+      autoStart = false,
+      hasNextExercise = false,
+      transitionSecondsBetweenTimers = 5,
+      transparentBackground = false,
+      onNextExercise,
+      onStatusChange,
+    },
+    ref
+  ) => {
     const [remainingSeconds, setRemainingSeconds] = useState(initialSeconds)
     const [isRunning, setIsRunning] = useState(autoStart)
     const [isTransition, setIsTransition] = useState(false)
-    const [transitionSeconds, setTransitionSeconds] = useState(5)
+    const [transitionSeconds, setTransitionSeconds] = useState(transitionSecondsBetweenTimers)
 
     const elapsedSecondsRef = useRef(0)
     const minutesBuzzedRef = useRef(0)
     const finishedBuzzRef = useRef(false)
     const hapticsSeqRef = useRef(0)
     const nextExerciseCalledRef = useRef(false)
+    const bellSoundRef = useRef<Audio.Sound | null>(null)
+
+    const playBellSound = async () => {
+      try {
+        if (bellSoundRef.current) {
+          await bellSoundRef.current.replayAsync()
+          return
+        }
+        const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/bell-sound.mp3'))
+        bellSoundRef.current = sound
+        await sound.playAsync()
+      } catch {
+        return
+      }
+    }
+
+    useEffect(() => {
+      return () => {
+        if (bellSoundRef.current) {
+          void bellSoundRef.current.unloadAsync()
+        }
+      }
+    }, [])
 
     useEffect(() => {
       setRemainingSeconds(initialSeconds)
       setIsTransition(false)
-      setTransitionSeconds(5)
+      setTransitionSeconds(transitionSecondsBetweenTimers)
       setIsRunning(autoStart)
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
       nextExerciseCalledRef.current = false
-    }, [initialSeconds, autoStart])
+    }, [initialSeconds, autoStart, transitionSecondsBetweenTimers])
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -82,13 +119,14 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
             if (!finishedBuzzRef.current) {
               finishedBuzzRef.current = true
               runHapticsSequence(5, 'finish')
+              void playBellSound()
             }
 
             if (hasNextExercise && onNextExercise) {
               // Lance le timer de transition avant de passer au suivant
               nextExerciseCalledRef.current = false
               setIsTransition(true)
-              setTransitionSeconds(5)
+              setTransitionSeconds(transitionSecondsBetweenTimers)
             }
 
             return 0
@@ -110,7 +148,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       }, 1000)
 
       return () => clearInterval(interval)
-    }, [isRunning, isTransition, hasNextExercise, onNextExercise])
+    }, [isRunning, isTransition, hasNextExercise, onNextExercise, transitionSecondsBetweenTimers])
 
     // Timer de transition (5 secondes entre deux exercices)
     useEffect(() => {
@@ -164,18 +202,26 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       setIsRunning(false)
       setIsTransition(false)
       setRemainingSeconds(initialSeconds)
-      setTransitionSeconds(5)
+      setTransitionSeconds(transitionSecondsBetweenTimers)
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
       nextExerciseCalledRef.current = false
       // Stoppe toute séquence haptics en cours
       hapticsSeqRef.current += 1
+      if (bellSoundRef.current) {
+        void bellSoundRef.current.stopAsync()
+      }
     }
 
     const minutes = Math.floor(remainingSeconds / 60)
     const seconds = remainingSeconds % 60
-    const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    const formattedTime =
+      remainingSeconds < 60
+        ? String(remainingSeconds)
+        : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+
+    const transitionFormattedTime = transitionSeconds < 60 ? String(transitionSeconds) : `00:${String(transitionSeconds).padStart(2, '0')}`
 
     useImperativeHandle(ref, () => ({
       startPause: handleStartPause,
@@ -189,29 +235,26 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     }, [isRunning, isTransition, remainingSeconds, onStatusChange])
 
     const isActive = isRunning && !isTransition
-    const borderColor = isActive ? '#008000' : '#ff3b30'
-    const textColor = borderColor
+    const textColor = isTransition ? '#ff3b30' : LightColors.primary
 
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={handleStartPause}>
         <View style={styles.container}>
           {isTransition ? (
-            <View style={[styles.timerContainer, { borderColor }]}>
-              <Text style={[styles.timerText, { color: textColor }]}>00:{String(transitionSeconds).padStart(2, '0')}</Text>
+            <View style={[styles.timerContainer, { backgroundColor: transparentBackground ? 'transparent' : LightColors.white }]}>
+              <Text style={[styles.timerText, { color: textColor }]}>{transitionFormattedTime}</Text>
               <View style={styles.iconWrapper}>
                 <MaterialCommunityIcons name={isActive ? 'pause' : 'play'} size={24} color={textColor} />
               </View>
             </View>
           ) : (
-            <View style={[styles.timerContainer, { borderColor }]}>
+            <View style={[styles.timerContainer, { backgroundColor: transparentBackground ? 'transparent' : LightColors.white }]}>
               <Text style={[styles.timerText, { color: textColor }]}>{formattedTime}</Text>
               <View style={styles.iconWrapper}>
                 <MaterialCommunityIcons name={isActive ? 'pause' : 'play'} size={24} color={textColor} />
               </View>
             </View>
           )}
-
-          {!isTransition && remainingSeconds === 0 && <Text style={styles.finishedText}>Exercice terminé</Text>}
         </View>
       </TouchableOpacity>
     )
@@ -227,9 +270,7 @@ const styles = StyleSheet.create({
     minWidth: '100%',
     paddingVertical: 24,
     paddingHorizontal: 40,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: LightColors.primary,
+
     backgroundColor: LightColors.white,
     marginBottom: 16,
     justifyContent: 'center',

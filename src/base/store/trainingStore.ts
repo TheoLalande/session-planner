@@ -54,8 +54,8 @@ type TrainingState = {
   ) => Promise<void>
   removeBloc: (blocId: number) => void
   removeTraining: (trainingId: string) => Promise<void>
-  saveTraining: (title: string, description: string) => Promise<void>
-  updateTraining: (title: string, description: string) => Promise<void>
+  saveTraining: (title: string, description: string, transitionSecondsBetweenTimers: number) => Promise<void>
+  updateTraining: (title: string, description: string, transitionSecondsBetweenTimers: number) => Promise<void>
 }
 
 export const useTrainingStore = create<TrainingState>()((set, get) => ({
@@ -412,12 +412,13 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
       trainings: state.trainings.filter((training) => training.id !== trainingId),
     }))
   },
-  saveTraining: async (title, description) => {
+  saveTraining: async (title, description, transitionSecondsBetweenTimers) => {
     const state = get()
     const savedTraining = await createTraining({
       title,
       description,
       blocs: state.blocs,
+      transitionSecondsBetweenTimers,
     })
     set((current) => ({
       ...current,
@@ -426,7 +427,7 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
       editingTrainingId: null,
     }))
   },
-  updateTraining: async (title, description) => {
+  updateTraining: async (title, description, transitionSecondsBetweenTimers) => {
     const state = get()
     if (state.editingTrainingId == null) {
       return
@@ -435,6 +436,7 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
       title,
       description,
       blocs: state.blocs,
+      transitionSecondsBetweenTimers,
     })
     set((current) => ({
       ...current,
@@ -445,6 +447,7 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
               title,
               description,
               blocs: current.blocs,
+              transitionSecondsBetweenTimers,
             }
           : training,
       ),

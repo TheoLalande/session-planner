@@ -84,7 +84,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="create-training" options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }} />
               <Stack.Screen name="create-exercice" options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }} />
-              <Stack.Screen name="simple-timer" options={{ headerShown: true, title: 'Timer', headerBackTitle: 'Retour' }} />
+              <Stack.Screen name="simple-timer" options={{ headerShown: false }} />
               <Stack.Screen name="run-exercise" options={{ headerShown: false }} />
               <Stack.Screen
                 name="statistiques"
@@ -97,6 +97,7 @@ export default function RootLayout() {
               />
               <Stack.Screen name="climb-steps" options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }} />
               <Stack.Screen name="hangboard" options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }} />
+              <Stack.Screen name="test" options={{ headerShown: true, title: 'Test Timer', headerBackTitle: 'Retour' }} />
             </Stack>
           </SafeAreaProvider>
         </PaperProvider>

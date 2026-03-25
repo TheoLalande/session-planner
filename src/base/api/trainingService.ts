@@ -7,6 +7,7 @@ type TrainingRow = {
   id: string
   title: string
   description: string | null
+  transition_seconds_between_timers: number | null
 }
 
 type BlockRow = {
@@ -80,7 +81,7 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
 
   const { data: plansData, error: plansError } = await supabase
     .from('training_plans')
-    .select('id,title,description')
+    .select('id,title,description,transition_seconds_between_timers')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
@@ -153,10 +154,13 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
     title: plan.title ?? '',
     description: plan.description ?? '',
     blocs: blocksByPlanId.get(plan.id) ?? [],
+    transitionSecondsBetweenTimers: typeof plan.transition_seconds_between_timers === 'number' ? plan.transition_seconds_between_timers : 5,
   }))
 }
 
-export async function createTraining(payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs'>): Promise<IPlannedTraining> {
+export async function createTraining(
+  payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers'>,
+): Promise<IPlannedTraining> {
   const supabase = getSupabaseClient()
   const userId = await getCurrentUserId()
 
@@ -166,8 +170,9 @@ export async function createTraining(payload: Pick<IPlannedTraining, 'title' | '
       user_id: userId,
       title: payload.title,
       description: payload.description,
+      transition_seconds_between_timers: payload.transitionSecondsBetweenTimers,
     })
-    .select('id,title,description')
+    .select('id,title,description,transition_seconds_between_timers')
     .single()
 
   if (planError || !planData) {
@@ -220,10 +225,14 @@ export async function createTraining(payload: Pick<IPlannedTraining, 'title' | '
     title: plan.title ?? '',
     description: plan.description ?? '',
     blocs: payload.blocs,
+    transitionSecondsBetweenTimers: typeof plan.transition_seconds_between_timers === 'number' ? plan.transition_seconds_between_timers : payload.transitionSecondsBetweenTimers ?? 5,
   }
 }
 
-export async function updateTrainingById(trainingId: string, payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs'>): Promise<void> {
+export async function updateTrainingById(
+  trainingId: string,
+  payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers'>,
+): Promise<void> {
   const supabase = getSupabaseClient()
   const userId = await getCurrentUserId()
 
@@ -232,6 +241,7 @@ export async function updateTrainingById(trainingId: string, payload: Pick<IPlan
     .update({
       title: payload.title,
       description: payload.description,
+      transition_seconds_between_timers: payload.transitionSecondsBetweenTimers,
     })
     .eq('id', trainingId)
     .eq('user_id', userId)
@@ -245,21 +255,21 @@ export async function updateTrainingById(trainingId: string, payload: Pick<IPlan
     .select('id')
     .eq('plan_id', trainingId)
     .eq('user_id', userId)
-    .is('deleted_at', null)
 
   if (existingBlocksError) {
     throw new Error(existingBlocksError.message)
   }
 
   const existingBlockIds = (existingBlocks ?? []).map((block: any) => block.id)
-  const deletedAt = new Date().toISOString()
   if (existingBlockIds.length > 0) {
+    // IMPORTANT : on fait un hard delete
+    // sinon la contrainte unique (plan_id, position) peut rester bloquée si elle ne dépend pas de deleted_at.
     const { error: deleteExercisesError } = await supabase
       .from('training_plan_exercises')
-      .update({ deleted_at: deletedAt })
+      .delete()
       .in('block_id', existingBlockIds)
       .eq('user_id', userId)
-      .is('deleted_at', null)
+
     if (deleteExercisesError) {
       throw new Error(deleteExercisesError.message)
     }
@@ -267,10 +277,10 @@ export async function updateTrainingById(trainingId: string, payload: Pick<IPlan
 
   const { error: deleteBlocksError } = await supabase
     .from('training_plan_blocks')
-    .update({ deleted_at: deletedAt })
+    .delete()
     .eq('plan_id', trainingId)
     .eq('user_id', userId)
-    .is('deleted_at', null)
+
   if (deleteBlocksError) {
     throw new Error(deleteBlocksError.message)
   }

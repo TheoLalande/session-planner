@@ -8,10 +8,12 @@ import { LightColors } from '../constants/theme'
 import { useRouter } from 'expo-router'
 import { Portal, Dialog, Button, RadioButton, Text } from 'react-native-paper'
 import { ExerciseType } from '../types/trainingTypes'
+import { FormSlider } from '../components/FormSlider'
 
 export default function index() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [transitionSecondsBetweenTimers, setTransitionSecondsBetweenTimers] = useState(5)
   const router = useRouter()
   const [isBlocModalVisible, setIsBlocModalVisible] = useState(false)
   const [blocTitle, setBlocTitle] = useState('')
@@ -45,6 +47,7 @@ export default function index() {
     }
     setTitle(training.title)
     setDescription(training.description)
+    setTransitionSecondsBetweenTimers(training.transitionSecondsBetweenTimers ?? 5)
   }, [editingTrainingId, trainings])
 
   return (
@@ -66,6 +69,16 @@ export default function index() {
           <View style={{ width: '100%' }}>
             <TextField placeholder="Titre de l'entrainement" type="text" value={title} onChangeText={setTitle} />
             <TextField placeholder="Description de l'entrainement" type="text" value={description} onChangeText={setDescription} />
+            <FormSlider
+              label="Temps entre deux timers"
+              value={transitionSecondsBetweenTimers}
+              minimumValue={0}
+              maximumValue={30}
+              step={1}
+              onChange={setTransitionSecondsBetweenTimers}
+              unit="secondes"
+              valueUnit="seconds"
+            />
           </View>
 
           <View style={{ width: '100%', alignItems: 'center', gap: 20, marginBottom: 20 }}>
@@ -100,9 +113,9 @@ export default function index() {
               if (!title.trim()) return
               try {
                 if (editingTrainingId) {
-                  await updateTraining(title.trim(), description.trim())
+                  await updateTraining(title.trim(), description.trim(), transitionSecondsBetweenTimers)
                 } else {
-                  await saveTraining(title.trim(), description.trim())
+                  await saveTraining(title.trim(), description.trim(), transitionSecondsBetweenTimers)
                 }
                 setTitle('')
                 setDescription('')

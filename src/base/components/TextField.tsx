@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.white,
     height: 50,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: LightColors.lightGrey,
     padding: 0,
   },
   inputFocused: {
