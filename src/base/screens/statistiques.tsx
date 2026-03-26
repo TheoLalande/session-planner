@@ -6,6 +6,7 @@ import { LightColors } from '../constants/theme'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import { BarChart, LineChart } from 'react-native-gifted-charts'
 import LoadingIndicator from '../components/LoadingIndicator'
+import { useAppTheme } from '../providers/themeProvider'
 
 const extractGradeFromRouteLabel = (routeLabel: string) => {
   const parts = routeLabel.split(' · ')
@@ -63,6 +64,7 @@ const formatDate = (d: Date) => {
 }
 
 export default function Statistiques() {
+  const { mode, colors } = useAppTheme()
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
   const isLoadingAttempts = useClimbingAttemptsStore((state) => state.isLoadingAttempts)
   const loadAttempts = useClimbingAttemptsStore((state) => state.loadAttempts)
@@ -201,7 +203,7 @@ export default function Statistiques() {
         items.push({
           label: hasSuccess ? '' : d.grade,
           spacing: bigGap,
-          stacks: [{ value: d.fail, color: '#ff3b30' }],
+          stacks: [{ value: d.fail, color: LightColors.danger }],
         })
       }
 
@@ -215,45 +217,45 @@ export default function Statistiques() {
   const chartHeight = 260
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.main}>
-        <Text style={styles.title}>statistique</Text>
-
-        <View style={styles.dateRangeRow}>
-          <TouchableOpacity activeOpacity={0.7} style={styles.dateButton} onPress={() => setShowStartPicker(true)}>
-            <Text style={styles.dateLabel}>Du</Text>
-            <Text style={styles.dateValue}>{formatDate(startDate)}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity activeOpacity={0.7} style={styles.dateButton} onPress={() => setShowEndPicker(true)}>
-            <Text style={styles.dateLabel}>Au</Text>
-            <Text style={styles.dateValue}>{formatDate(endDate)}</Text>
-          </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+        <View style={styles.headerBlock}>
+          <Text style={[styles.title, { color: colors.primary }]}>Statistiques</Text>
+          <Text style={[styles.subtitle, { color: colors.grey }]}>Analyse tes tentatives de grimpe sur la période choisie.</Text>
         </View>
 
-        <View style={styles.legendRow}>
-          <StatusLegendItem color={LightColors.primary} label="Succès" />
-          <StatusLegendItem color="#ff3b30" label="Échecs" />
+        <View style={[styles.topCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+          <View style={styles.dateRangeRow}>
+            <TouchableOpacity activeOpacity={0.7} style={[styles.dateButton, { backgroundColor: colors.lightGrey, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} onPress={() => setShowStartPicker(true)}>
+              <Text style={[styles.dateLabel, { color: colors.primary }]}>Du</Text>
+              <Text style={[styles.dateValue, { color: colors.black }]}>{formatDate(startDate)}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity activeOpacity={0.7} style={[styles.dateButton, { backgroundColor: colors.lightGrey, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} onPress={() => setShowEndPicker(true)}>
+              <Text style={[styles.dateLabel, { color: colors.primary }]}>Au</Text>
+              <Text style={[styles.dateValue, { color: colors.black }]}>{formatDate(endDate)}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.legendRow}>
+            <StatusLegendItem color={colors.primary} label="Succès" />
+            <StatusLegendItem color={colors.danger} label="Échecs" />
+          </View>
         </View>
 
         {isLoadingAttempts ? (
-          <View style={styles.emptyBox}>
+          <View style={[styles.emptyCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
             <LoadingIndicator />
           </View>
         ) : attemptsInRange.length === 0 ? (
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>Aucune voie testée sur cette période.</Text>
+          <View style={[styles.emptyCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune voie testée sur cette période.</Text>
           </View>
         ) : (
-          <View>
+          <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
             <View style={styles.filtersSection}>
-              <Text style={styles.filtersTitle}>Cotation</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.filtersScroll}
-                keyboardShouldPersistTaps="handled"
-              >
+              <Text style={[styles.filtersTitle, { color: colors.black }]}>Cotation</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll} keyboardShouldPersistTaps="handled">
                 {gradeCounts.gradesToDisplay.map((grade) => {
                   const counts = gradeCounts.map.get(grade)
                   const total = (counts?.success ?? 0) + (counts?.fail ?? 0)
@@ -264,9 +266,15 @@ export default function Statistiques() {
                       key={grade}
                       activeOpacity={0.7}
                       onPress={() => setHiddenGrades((prev) => ({ ...prev, [grade]: !prev[grade] }))}
-                      style={[styles.gradeChip, isHidden ? styles.gradeChipHidden : styles.gradeChipVisible]}
+                      style={[
+                        styles.gradeChip,
+                        {
+                          backgroundColor: isHidden ? colors.white : colors.primary,
+                          borderColor: isHidden ? (mode === 'dark' ? colors.darkBorder : colors.cardBorder) : colors.primary,
+                        },
+                      ]}
                     >
-                      <Text style={[styles.gradeChipText, isHidden ? styles.gradeChipTextHidden : styles.gradeChipTextVisible]}>
+                      <Text style={[styles.gradeChipText, { color: isHidden ? colors.grey : colors.white }]}>
                         {grade} ({total})
                       </Text>
                     </TouchableOpacity>
@@ -277,69 +285,67 @@ export default function Statistiques() {
 
             {gradeData.length === 0 ? (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>Aucune cotation sélectionnée.</Text>
+                <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune cotation sélectionnée.</Text>
               </View>
             ) : (
-              <ScrollView contentContainerStyle={styles.chartScrollContent} keyboardShouldPersistTaps="handled">
-                <View style={styles.chartContainer}>
-                  <BarChart
-                    width={availableChartWidth}
-                    height={chartHeight}
-                    stackData={stackData}
-                    maxValue={maxCount}
-                    noOfSections={noOfSections}
-                    stepValue={stepValue}
-                    adjustToWidth
-                    parentWidth={availableChartWidth}
-                    disableScroll
-                    rotateLabel
-                    xAxisLabelsAtBottom
-                    yAxisTextStyle={styles.yAxisTextStyle}
-                    xAxisTextNumberOfLines={2}
-                  />
+              <View style={styles.chartContainer}>
+                <BarChart
+                  width={availableChartWidth}
+                  height={chartHeight}
+                  stackData={stackData}
+                  maxValue={maxCount}
+                  noOfSections={noOfSections}
+                  stepValue={stepValue}
+                  adjustToWidth
+                  parentWidth={availableChartWidth}
+                  disableScroll
+                  rotateLabel
+                  xAxisLabelsAtBottom
+                  yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
+                  xAxisTextNumberOfLines={2}
+                />
 
-                  <Text style={styles.lineChartTitle}>Taux de réussite (par jour)</Text>
+                <Text style={[styles.lineChartTitle, { color: colors.black }]}>Taux de réussite (par jour)</Text>
 
-                  {dailySuccessRate.length === 0 ? (
-                    <View style={styles.lineChartEmptyBox}>
-                      <Text style={styles.emptyText}>Pas assez de données pour la courbe.</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.lineChartContainer}>
-                      {(() => {
-                        const xAxisLabelTexts = dailySuccessRate.map((d) => d.label)
-                        const data = dailySuccessRate.map((d) => ({ value: d.value }))
-                        return (
-                          <LineChart
-                            height={220}
-                            data={data}
-                            xAxisLabelTexts={xAxisLabelTexts}
-                            maxValue={100}
-                            noOfSections={4}
-                            stepValue={25}
-                            adjustToWidth
-                            parentWidth={availableChartWidth}
-                            rotateLabel
-                            xAxisLabelsAtBottom
-                            color={LightColors.primary}
-                            thickness={2}
-                            dataPointsRadius={4}
-                            dataPointsColor={LightColors.primary}
-                            lineGradient={false}
-                            xAxisTextNumberOfLines={2}
-                            yAxisTextStyle={styles.yAxisTextStyle}
-                            disableScroll
-                          />
-                        )
-                      })()}
-                    </View>
-                  )}
-                </View>
-              </ScrollView>
+                {dailySuccessRate.length === 0 ? (
+                  <View style={styles.lineChartEmptyBox}>
+                    <Text style={[styles.emptyText, { color: colors.grey }]}>Pas assez de données pour la courbe.</Text>
+                  </View>
+                ) : (
+                  <View style={styles.lineChartContainer}>
+                    {(() => {
+                      const xAxisLabelTexts = dailySuccessRate.map((d) => d.label)
+                      const data = dailySuccessRate.map((d) => ({ value: d.value }))
+                      return (
+                        <LineChart
+                          height={220}
+                          data={data}
+                          xAxisLabelTexts={xAxisLabelTexts}
+                          maxValue={100}
+                          noOfSections={4}
+                          stepValue={25}
+                          adjustToWidth
+                          parentWidth={availableChartWidth}
+                          rotateLabel
+                          xAxisLabelsAtBottom
+                          color={colors.primary}
+                          thickness={2}
+                          dataPointsRadius={4}
+                          dataPointsColor={colors.primary}
+                          lineGradient={false}
+                          xAxisTextNumberOfLines={2}
+                          yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
+                          disableScroll
+                        />
+                      )
+                    })()}
+                  </View>
+                )}
+              </View>
             )}
           </View>
         )}
-      </View>
+      </ScrollView>
 
       {showStartPicker ? (
         <DateTimePicker
@@ -377,56 +383,72 @@ export default function Statistiques() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: LightColors.white,
   },
-  content: {
+  scroll: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 30,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   title: {
-    fontSize: 50,
+    fontSize: 28,
     fontWeight: '700',
-    color: LightColors.primary,
-    textAlign: 'center',
   },
-  main: {
-    flex: 1,
-    paddingHorizontal: 30,
-    paddingTop: 10,
+  subtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  headerBlock: {
+    marginBottom: 12,
+  },
+  topCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+  },
+  contentCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 12,
+  },
+  emptyCard: {
+    minHeight: 180,
+    borderWidth: 1,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
   },
   dateRangeRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
+    gap: 10,
   },
   dateButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: LightColors.primary,
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: LightColors.white,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   dateLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: LightColors.primary,
   },
   dateValue: {
     marginTop: 4,
     fontSize: 14,
     fontWeight: '700',
-    color: LightColors.black,
   },
   legendRow: {
     flexDirection: 'row',
-    gap: 18,
-    marginTop: 16,
+    gap: 16,
+    marginTop: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   legendItem: {
     flexDirection: 'row',
@@ -439,65 +461,42 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   legendLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: LightColors.black,
   },
   emptyBox: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingTop: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 18,
   },
   emptyText: {
     textAlign: 'center',
-    color: LightColors.grey,
     fontSize: 14,
     fontWeight: '600',
   },
-  chartScrollContent: {
-    paddingBottom: 20,
-  },
   filtersSection: {
-    marginTop: 10,
     marginBottom: 10,
-    alignItems: 'center',
   },
   filtersTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
-    color: LightColors.black,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   filtersScroll: {
     paddingHorizontal: 2,
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   gradeChip: {
-    borderRadius: 999,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    borderRadius: 9999,
+    paddingVertical: 7,
+    paddingHorizontal: 11,
     borderWidth: 1,
   },
-  gradeChipVisible: {
-    backgroundColor: LightColors.primary,
-    borderColor: LightColors.primary,
-  },
-  gradeChipHidden: {
-    backgroundColor: LightColors.white,
-    borderColor: LightColors.lightGrey,
-  },
   gradeChipText: {
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  gradeChipTextVisible: {
-    color: LightColors.white,
-  },
-  gradeChipTextHidden: {
-    color: LightColors.grey,
+    fontSize: 12,
+    fontWeight: '700',
   },
   chartContainer: {
     width: '100%',
@@ -507,7 +506,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     fontWeight: '700',
-    color: LightColors.black,
     alignSelf: 'flex-start',
   },
   lineChartContainer: {
@@ -526,72 +524,5 @@ const styles = StyleSheet.create({
   yAxisTextStyle: {
     fontSize: 12,
     fontWeight: '700',
-    color: LightColors.grey,
-  },
-  graphRow: {
-    flexDirection: 'row',
-    marginTop: 14,
-    alignItems: 'flex-start',
-  },
-  yAxis: {
-    width: 44,
-    alignItems: 'flex-end',
-    paddingRight: 8,
-    justifyContent: 'space-between',
-  },
-  yTickText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: LightColors.grey,
-  },
-  chartArea: {
-    flex: 1,
-    position: 'relative',
-  },
-  xAxisLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 1,
-    backgroundColor: LightColors.grey,
-    opacity: 0.4,
-  },
-  barsRow: {
-    alignItems: 'flex-end',
-    gap: 18,
-    paddingHorizontal: 6,
-    paddingBottom: 6,
-  },
-  gradeColumn: {
-    width: 62,
-    alignItems: 'center',
-  },
-  barArea: {
-    width: '100%',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  barGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    alignItems: 'flex-end',
-  },
-  barCol: {
-    width: 22,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  bar: {
-    width: 16,
-    borderRadius: 8,
-  },
-  gradeLabel: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: '700',
-    color: LightColors.black,
-    textAlign: 'center',
   },
 })

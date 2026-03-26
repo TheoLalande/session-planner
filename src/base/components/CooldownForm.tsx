@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { TextField } from './TextField'
 import { FormSlider } from './FormSlider'
 import { ICooldown } from '../types/trainingTypes'
+import { LightColors } from '../constants/theme'
 
 type CooldownFormProps = {
   value: ICooldown
@@ -50,13 +51,13 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
             borderRadius: 8,
             borderWidth: 1,
             borderStyle: 'dashed',
-            borderColor: '#ccc',
+            borderColor: LightColors.neutralBorder,
             padding: 10,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#555' }}>
+          <Text style={{ color: LightColors.mutedText }}>
             {value.picture ? "Changer l'image" : "Choisir une image depuis la galerie"}
           </Text>
         </View>
@@ -74,7 +75,7 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
             flexDirection: 'row',
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: '#ccc',
+            borderColor: LightColors.neutralBorder,
             overflow: 'hidden',
             marginBottom: 8,
           }}
@@ -86,10 +87,10 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
               flex: 1,
               paddingVertical: 6,
               alignItems: 'center',
-              backgroundColor: value.mode === 'time' ? '#008000' : '#FFFFFF',
+              backgroundColor: value.mode === 'time' ? LightColors.primary : LightColors.white,
             }}
           >
-            <Text style={{ color: value.mode === 'time' ? '#FFFFFF' : '#121212', fontWeight: '600' }}>Temps</Text>
+            <Text style={{ color: value.mode === 'time' ? LightColors.white : LightColors.black, fontWeight: '600' }}>Temps</Text>
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -98,10 +99,10 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
               flex: 1,
               paddingVertical: 6,
               alignItems: 'center',
-              backgroundColor: value.mode === 'reps' ? '#008000' : '#FFFFFF',
+              backgroundColor: value.mode === 'reps' ? LightColors.primary : LightColors.white,
             }}
           >
-            <Text style={{ color: value.mode === 'reps' ? '#FFFFFF' : '#121212', fontWeight: '600' }}>Répétitions</Text>
+            <Text style={{ color: value.mode === 'reps' ? LightColors.white : LightColors.black, fontWeight: '600' }}>Répétitions</Text>
           </TouchableOpacity>
         </View>
 

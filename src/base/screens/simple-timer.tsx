@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.85)',
+    backgroundColor: LightColors.overlayLightStrong,
     borderRadius: 22,
     elevation: 4,
   },

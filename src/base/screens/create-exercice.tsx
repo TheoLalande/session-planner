@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: LightColors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,

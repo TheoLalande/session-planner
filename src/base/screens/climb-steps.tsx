@@ -115,7 +115,7 @@ export default function ClimbSteps() {
               await markAttempt('fail')
             }}
             disabled={isAttemptsDone}
-            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? LightColors.lightGrey : '#ff3b30' }]}
+            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? LightColors.lightGrey : LightColors.danger }]}
           >
             <MaterialCommunityIcons name="close" size={22} color={LightColors.white} />
           </TouchableOpacity>
@@ -203,8 +203,8 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.primary,
   },
   attemptSquareFail: {
-    borderColor: '#ff3b30',
-    backgroundColor: '#ff3b30',
+    borderColor: LightColors.danger,
+    backgroundColor: LightColors.danger,
   },
   attemptButtonsRow: {
     width: '100%',

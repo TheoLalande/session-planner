@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'expo-router'
 import { View, Animated, Text } from 'react-native'
 import { Logo, MainText } from '../components'
-import { LightColors } from '../constants/theme'
 import { getSession } from '../api/authService'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { useTrainingStore } from '../store/trainingStore'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function Index() {
+  const { colors } = useAppTheme()
   const router = useRouter()
   const opacity = useRef(new Animated.Value(1)).current
   const [isCheckingSession, setIsCheckingSession] = useState(true)
@@ -69,6 +70,7 @@ export default function Index() {
       style={{
         flex: 1,
         opacity,
+        backgroundColor: colors.white,
       }}
     >
       <View
@@ -88,7 +90,7 @@ export default function Index() {
           }}
         >
           <Logo logo="logo-full.png" maxWidth={300} maxHeight={300} />
-          <MainText text="Plannifiez vos sessions d'entrainement" fontSize={30} color={LightColors.primary} />
+          <MainText text="Plannifiez vos sessions d'entrainement" fontSize={30} color={colors.primary} />
         </View>
         {isCheckingSession ? <LoadingIndicator /> : null}
       </View>

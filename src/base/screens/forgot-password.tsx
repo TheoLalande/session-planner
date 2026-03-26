@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   errorText: {
-    color: '#ff3b30',
+    color: LightColors.danger,
     textAlign: 'center',
     marginTop: 8,
   },

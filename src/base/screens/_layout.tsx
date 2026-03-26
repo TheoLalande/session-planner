@@ -1,4 +1,4 @@
-import { DefaultTheme, ThemeProvider } from '@react-navigation/native'
+import { ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
 import * as NavigationBar from 'expo-navigation-bar'
 import { Stack } from 'expo-router'
@@ -11,10 +11,11 @@ import { PaperProvider } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { LightColors } from '../constants/theme'
+import { AppThemeProvider, useAppTheme } from '../providers/themeProvider'
 
 SplashScreen.preventAutoHideAsync()
 
-export default function RootLayout() {
+function AppNavigator() {
   const [fontsLoaded, fontError] = useFonts({
     'Poppins-Thin': require('../assets/fonts/Poppins-Thin.ttf'),
     'Poppins-ExtraLight': require('../assets/fonts/Poppins-ExtraLight.ttf'),
@@ -22,6 +23,7 @@ export default function RootLayout() {
     'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
     'Saira_Condensed-Bold': require('../assets/fonts/Saira_Condensed-Bold.ttf'),
   })
+  const { isReady, navigationTheme, paperTheme } = useAppTheme()
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -38,8 +40,8 @@ export default function RootLayout() {
       await SystemUI.setBackgroundColorAsync('transparent')
       await NavigationBar.setPositionAsync('absolute')
       await NavigationBar.setBehaviorAsync('overlay-swipe')
-      await NavigationBar.setBackgroundColorAsync('#00000000')
-      await NavigationBar.setBorderColorAsync('#00000000')
+      await NavigationBar.setBackgroundColorAsync('transparent')
+      await NavigationBar.setBorderColorAsync('transparent')
       await NavigationBar.setVisibilityAsync('hidden')
     }
 
@@ -56,14 +58,14 @@ export default function RootLayout() {
     }
   }, [])
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !isReady) {
     return null
   }
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: LightColors.white }}>
-      <ThemeProvider value={DefaultTheme}>
-        <PaperProvider>
+      <ThemeProvider value={navigationTheme}>
+        <PaperProvider theme={paperTheme}>
           <SafeAreaProvider>
             <StatusBar hidden translucent backgroundColor="transparent" />
             <View style={{ flex: 1 }} onTouchMove={() => Keyboard.dismiss()}>
@@ -104,11 +106,20 @@ export default function RootLayout() {
                 />
                 <Stack.Screen name="climb-steps" options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="hangboard" options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="settings" options={{ headerShown: true, title: 'Paramètres', headerBackTitle: 'Retour' }} />
               </Stack>
             </View>
           </SafeAreaProvider>
         </PaperProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <AppThemeProvider>
+      <AppNavigator />
+    </AppThemeProvider>
   )
 }

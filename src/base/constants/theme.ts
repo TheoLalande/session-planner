@@ -1,19 +1,74 @@
-export const DarkColors = {
-  primary: '#992D1D',
-  white: '#FFFFFF',
-  grey: '#323232',
-  lightGrey: '#444444',
-  black: '#121212',
-}
-
-export const LightColors = {
+export const LightThemeColors = {
   primary: '#008000',
   secondary: '#C7E9C0',
   white: '#FFFFFF',
   grey: '#323232',
   lightGrey: '#E7E7E7',
   black: '#121212',
+  background: '#F7F9FC',
+  cardBorder: '#E5EBF3',
+  cardBorderMuted: '#E6ECF4',
+  shadow: '#0F172A',
+  badgeBackground: '#EEF4FF',
+  headerButtonBackground: '#F7FAFF',
+  overlayLight: 'rgba(255,255,255,0.7)',
+  overlayLightStrong: 'rgba(255,255,255,0.85)',
+  overlayDark: 'rgba(15,18,23,0.7)',
+  darkBorder: '#2A333D',
+  darkBadgeBackground: '#1E2630',
+  danger: '#ff3b30',
+  warmup: '#2A9D8F',
+  cooldown: '#E76F51',
+  stretching: '#3A86FF',
+  climbing: '#F4A261',
+  hangboard: '#8D5CF6',
+  translucentBorder: 'rgba(255,255,255,0.35)',
+  neutralBorder: '#CCCCCC',
+  mutedText: '#555555',
+  disabled: '#CDD5DF',
+  navIconBorder: '#E8EEF7',
+  softDangerBackground: '#FFF4F4',
+  softDangerBorder: '#FFD9D9',
+  activeRowBackground: '#F5F8FF',
 }
+
+export const DarkThemeColors = {
+  primary: '#6EE7A5',
+  secondary: '#1C3D2A',
+  white: '#101418',
+  grey: '#A9B4C0',
+  lightGrey: '#1A2026',
+  black: '#F3F6F9',
+  background: '#0F1217',
+  cardBorder: '#2A333D',
+  cardBorderMuted: '#2A333D',
+  shadow: '#0F172A',
+  badgeBackground: '#1E2630',
+  headerButtonBackground: '#1E2630',
+  overlayLight: 'rgba(255,255,255,0.7)',
+  overlayLightStrong: 'rgba(255,255,255,0.85)',
+  overlayDark: 'rgba(15,18,23,0.7)',
+  darkBorder: '#2A333D',
+  darkBadgeBackground: '#1E2630',
+  danger: '#ff3b30',
+  warmup: '#2A9D8F',
+  cooldown: '#E76F51',
+  stretching: '#3A86FF',
+  climbing: '#F4A261',
+  hangboard: '#8D5CF6',
+  translucentBorder: 'rgba(255,255,255,0.35)',
+  neutralBorder: '#3A3F45',
+  mutedText: '#A9B4C0',
+  disabled: '#555E69',
+  navIconBorder: '#2A333D',
+  softDangerBackground: '#3A1F24',
+  softDangerBorder: '#5C2D33',
+  activeRowBackground: '#1A2026',
+}
+
+export const LightColors = { ...LightThemeColors }
+
+export const DarkColors = DarkThemeColors
 
 export const Fonts = {
   poppins: {

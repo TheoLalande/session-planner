@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     color: LightColors.grey,
   },
   errorText: {
-    color: '#ff3b30',
+    color: LightColors.danger,
     textAlign: 'center',
     marginTop: 8,
   },

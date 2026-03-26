@@ -139,7 +139,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
             }}
             style={styles.deleteButton}
           >
-            <MaterialCommunityIcons name="trash-can-outline" size={18} color="#ff3b30" />
+            <MaterialCommunityIcons name="trash-can-outline" size={18} color={LightColors.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -189,11 +189,11 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
     padding: 12,
     minHeight: 100,
     justifyContent: 'center',
-    shadowColor: '#0F172A',
+    shadowColor: LightColors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 14,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF4FF',
+    backgroundColor: LightColors.badgeBackground,
   },
   countBadgeText: {
     fontSize: 12,
@@ -244,9 +244,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF4F4',
+    backgroundColor: LightColors.softDangerBackground,
     borderWidth: 1,
-    borderColor: '#FFD9D9',
+    borderColor: LightColors.softDangerBorder,
   },
   exercisesContainer: {
     width: '100%',
@@ -261,22 +261,22 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   activeExerciseRow: {
-    backgroundColor: '#F5F8FF',
+    backgroundColor: LightColors.activeRowBackground,
   },
   duplicateButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: '#F7FAFF',
+    backgroundColor: LightColors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
   },
   dragHandleButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: '#F7FAFF',
+    backgroundColor: LightColors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
   },
 })

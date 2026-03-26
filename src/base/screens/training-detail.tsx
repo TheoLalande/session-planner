@@ -9,8 +9,10 @@ import { LightColors } from '../constants/theme'
 import { TrainingBlocItem } from '../components/TrainingBlocItem'
 import { haptic } from '../utils/haptics'
 import LoadingIndicator from '../components/LoadingIndicator'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function TrainingDetail() {
+  const { mode, colors } = useAppTheme()
   const { id } = useLocalSearchParams<{ id?: string }>()
   const router = useRouter()
   const navigation = useNavigation()
@@ -46,8 +48,8 @@ export default function TrainingDetail() {
                 new Set(
                   exercises
                     .map((exercise) => (exercise.data as any)?.picture)
-                    .filter((uri): uri is string => typeof uri === 'string' && uri.trim().length > 0 && /^https?:\/\//i.test(uri)),
-                ),
+                    .filter((uri): uri is string => typeof uri === 'string' && uri.trim().length > 0 && /^https?:\/\//i.test(uri))
+                )
               )
 
               setIsStartingTraining(true)
@@ -64,9 +66,15 @@ export default function TrainingDetail() {
                 setIsStartingTraining(false)
               }
             }}
-            style={styles.headerIconButton}
+            style={[
+              styles.headerIconButton,
+              {
+                backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.headerButtonBackground,
+                borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder,
+              },
+            ]}
           >
-            <MaterialIcons name="play-arrow" size={22} color={LightColors.primary} />
+            <MaterialIcons name="play-arrow" size={22} color={colors.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -76,9 +84,15 @@ export default function TrainingDetail() {
               startEditingTraining(training.id)
               router.push('/create-training')
             }}
-            style={styles.headerIconButton}
+            style={[
+              styles.headerIconButton,
+              {
+                backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.headerButtonBackground,
+                borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder,
+              },
+            ]}
           >
-            <MaterialIcons name="edit" size={22} color={LightColors.primary} />
+            <MaterialIcons name="edit" size={22} color={colors.primary} />
           </TouchableOpacity>
         </View>
       ),
@@ -87,7 +101,7 @@ export default function TrainingDetail() {
 
   if (isLoadingTrainings) {
     return (
-      <SafeAreaView style={styles.emptyContainer}>
+      <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
         <LoadingIndicator />
       </SafeAreaView>
     )
@@ -95,8 +109,8 @@ export default function TrainingDetail() {
 
   if (!training || !trainingId) {
     return (
-      <SafeAreaView style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Entrainement introuvable.</Text>
+      <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.grey }]}>Entrainement introuvable.</Text>
       </SafeAreaView>
     )
   }
@@ -104,19 +118,24 @@ export default function TrainingDetail() {
   const totalExercises = training.blocs.reduce((acc, bloc) => acc + bloc.exercises.length, 0)
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
-        <Text style={styles.pageTitle}>{training.title}</Text>
-        {training.description ? <Text style={styles.pageDescription}>{training.description}</Text> : null}
-        <View style={styles.statsCard}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[styles.pageTitle, { color: colors.primary }]}>{training.title}</Text>
+        {training.description ? <Text style={[styles.pageDescription, { color: colors.grey }]}>{training.description}</Text> : null}
+        <View style={[styles.statsCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Blocs</Text>
-            <Text style={styles.statValue}>{training.blocs.length}</Text>
+            <Text style={[styles.statLabel, { color: colors.grey }]}>Blocs</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{training.blocs.length}</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Exercices</Text>
-            <Text style={styles.statValue}>{totalExercises}</Text>
+            <Text style={[styles.statLabel, { color: colors.grey }]}>Exercices</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{totalExercises}</Text>
           </View>
         </View>
 
@@ -125,27 +144,30 @@ export default function TrainingDetail() {
           const blocType = firstExercise?.type
           const blocTitleColor =
             blocType === 'warmup'
-              ? '#2A9D8F'
+              ? colors.warmup
               : blocType === 'cooldown'
-                ? '#E76F51'
+                ? colors.cooldown
                 : blocType === 'stretching'
-                  ? '#3A86FF'
+                  ? colors.stretching
                   : blocType === 'climbing'
-                    ? '#F4A261'
+                    ? colors.climbing
                     : blocType === 'hangboard'
-                      ? '#8D5CF6'
+                      ? colors.hangboard
                       : LightColors.black
 
           return (
-            <View key={bloc.id} style={styles.blocCard}>
+            <View
+              key={bloc.id}
+              style={[styles.blocCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}
+            >
               <View style={styles.blocHeader}>
                 <Text style={[styles.blocTitle, { color: blocTitleColor }]}>{bloc.title}</Text>
-                <View style={styles.blocBadge}>
-                  <Text style={styles.blocBadgeText}>{bloc.exercises.length}</Text>
+                <View style={[styles.blocBadge, { backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.badgeBackground }]}>
+                  <Text style={[styles.blocBadgeText, { color: colors.primary }]}>{bloc.exercises.length}</Text>
                 </View>
               </View>
               {bloc.exercises.length === 0 ? (
-                <Text style={styles.emptyBlocText}>Aucun exercice dans ce bloc.</Text>
+                <Text style={[styles.emptyBlocText, { color: colors.grey }]}>Aucun exercice dans ce bloc.</Text>
               ) : (
                 bloc.exercises.map((exercise, index) => (
                   <TouchableOpacity
@@ -174,7 +196,7 @@ export default function TrainingDetail() {
         })}
       </ScrollView>
       {isStartingTraining ? (
-        <View pointerEvents="none" style={styles.loadingOverlay}>
+        <View pointerEvents="none" style={[styles.loadingOverlay, { backgroundColor: mode === 'dark' ? colors.overlayDark : colors.overlayLight }]}>
           <LoadingIndicator />
         </View>
       ) : null}
@@ -185,7 +207,7 @@ export default function TrainingDetail() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: LightColors.background,
   },
   scroll: {
     flex: 1,
@@ -212,7 +234,7 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
     paddingVertical: 12,
     paddingHorizontal: 14,
     flexDirection: 'row',
@@ -237,16 +259,16 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 34,
-    backgroundColor: '#E5EBF3',
+    backgroundColor: LightColors.cardBorder,
   },
   blocCard: {
     marginBottom: 12,
     padding: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
     backgroundColor: LightColors.white,
-    shadowColor: '#0F172A',
+    shadowColor: LightColors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 14,
@@ -269,7 +291,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF4FF',
+    backgroundColor: LightColors.badgeBackground,
   },
   blocBadgeText: {
     fontSize: 12,
@@ -287,7 +309,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7F9FC',
+    backgroundColor: LightColors.background,
   },
   emptyText: {
     color: LightColors.grey,
@@ -301,9 +323,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: '#F7FAFF',
+    backgroundColor: LightColors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -313,7 +335,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: LightColors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,

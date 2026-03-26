@@ -13,7 +13,7 @@ export default ({ config }) => ({
   android: {
     package: 'com.gaston.sessionplanner',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: 'aliceblue',
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
@@ -21,7 +21,7 @@ export default ({ config }) => ({
   androidNavigationBar: {
     visible: 'immersive',
     barStyle: 'dark-content',
-    backgroundColor: '#00000000',
+    backgroundColor: 'transparent',
   },
   plugins: [
     [
@@ -36,9 +36,9 @@ export default ({ config }) => ({
         image: './src/base/assets/png/logo-full.png',
         imageWidth: 200,
         resizeMode: 'contain',
-        backgroundColor: '#ffffff',
+        backgroundColor: 'white',
         dark: {
-          backgroundColor: '#000000',
+          backgroundColor: 'black',
         },
       },
     ],

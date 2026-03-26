@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   textError: {
-    color: '#ff3b30',
+    color: LightColors.danger,
     textAlign: 'center',
   },
 })

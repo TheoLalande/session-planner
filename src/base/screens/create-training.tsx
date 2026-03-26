@@ -182,13 +182,13 @@ export default function index() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: LightColors.background,
   },
   loadingScreen: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7F9FC',
+    backgroundColor: LightColors.background,
   },
   scroll: {
     flex: 1,
@@ -209,11 +209,11 @@ const styles = StyleSheet.create({
     backgroundColor: LightColors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 8,
-    shadowColor: '#0F172A',
+    shadowColor: LightColors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 14,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: LightColors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,

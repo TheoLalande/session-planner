@@ -1,26 +1,34 @@
 import React from 'react'
 import { View, TouchableOpacity, StyleSheet } from 'react-native'
 import { MaterialIcons } from '@expo/vector-icons'
-import { LightColors } from '../constants/theme'
 import { router } from 'expo-router'
 import { haptic } from '../utils/haptics'
 import { useTrainingStore } from '../store/trainingStore'
+import { useAppTheme } from '../providers/themeProvider'
+import { LightColors } from '../constants/theme'
 
 export function BottomNavBar() {
   const clearEditingTraining = useTrainingStore((state) => state.clearEditingTraining)
+  const { mode, colors } = useAppTheme()
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorderMuted }]}>
       <TouchableOpacity
         onPress={async () => {
           await haptic('tap')
           clearEditingTraining()
           router.push('/create-training')
         }}
-        style={styles.iconWrapper}
+        style={[
+          styles.iconWrapper,
+          {
+            backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.headerButtonBackground,
+            borderColor: mode === 'dark' ? colors.darkBorder : colors.navIconBorder,
+          },
+        ]}
         activeOpacity={0.7}
       >
-        <MaterialIcons name="add-circle-outline" size={28} color={LightColors.primary} />
+        <MaterialIcons name="add-circle-outline" size={28} color={colors.primary} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -28,20 +36,32 @@ export function BottomNavBar() {
           await haptic('tap')
           router.push('/statistiques')
         }}
-        style={styles.iconWrapper}
+        style={[
+          styles.iconWrapper,
+          {
+            backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.headerButtonBackground,
+            borderColor: mode === 'dark' ? colors.darkBorder : colors.navIconBorder,
+          },
+        ]}
         activeOpacity={0.7}
       >
-        <MaterialIcons name="bar-chart" size={28} color={LightColors.primary} />
+        <MaterialIcons name="bar-chart" size={28} color={colors.primary} />
       </TouchableOpacity>
       <TouchableOpacity
         onPress={async () => {
           await haptic('tap')
           router.push('/settings')
         }}
-        style={styles.iconWrapper}
+        style={[
+          styles.iconWrapper,
+          {
+            backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.headerButtonBackground,
+            borderColor: mode === 'dark' ? colors.darkBorder : colors.navIconBorder,
+          },
+        ]}
         activeOpacity={0.7}
       >
-        <MaterialIcons name="settings" size={28} color={LightColors.primary} />
+        <MaterialIcons name="settings" size={28} color={colors.primary} />
       </TouchableOpacity>
     </View>
   )
@@ -56,11 +76,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: LightColors.white,
     borderWidth: 1,
-    borderColor: '#E6ECF4',
+    borderColor: LightColors.cardBorderMuted,
     borderRadius: 20,
-    shadowColor: '#0F172A',
+    shadowColor: LightColors.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
@@ -72,8 +91,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7FAFF',
+    backgroundColor: LightColors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: '#E8EEF7',
+    borderColor: LightColors.navIconBorder,
   },
 })

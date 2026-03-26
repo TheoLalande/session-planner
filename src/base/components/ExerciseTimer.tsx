@@ -216,10 +216,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
     const minutes = Math.floor(remainingSeconds / 60)
     const seconds = remainingSeconds % 60
-    const formattedTime =
-      remainingSeconds < 60
-        ? String(remainingSeconds)
-        : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    const formattedTime = remainingSeconds < 60 ? String(remainingSeconds) : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 
     const transitionFormattedTime = transitionSeconds < 60 ? String(transitionSeconds) : `00:${String(transitionSeconds).padStart(2, '0')}`
 
@@ -235,7 +232,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     }, [isRunning, isTransition, remainingSeconds, onStatusChange])
 
     const isActive = isRunning && !isTransition
-    const textColor = isTransition ? '#ff3b30' : LightColors.primary
+    const textColor = isTransition ? LightColors.danger : LightColors.primary
 
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={handleStartPause}>

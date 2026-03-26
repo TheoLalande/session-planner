@@ -10,8 +10,10 @@ import { haptic } from '../utils/haptics'
 import { getSession } from '../api/authService'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { MaterialIcons } from '@expo/vector-icons'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function index() {
+  const { mode, colors } = useAppTheme()
   const trainings = useTrainingStore((state) => state.trainings)
   const removeTraining = useTrainingStore((state) => state.removeTraining)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
@@ -54,14 +56,14 @@ export default function index() {
 
   if (isCheckingSession) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <LoadingIndicator />
       </SafeAreaView>
     )
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -69,15 +71,20 @@ export default function index() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.pageHeader}>
-          <Text style={styles.pageTitle}>Mes entrainements</Text>
-          <Text style={styles.pageSubtitle}>Retrouve et lance tes sessions en un geste.</Text>
+          <Text style={[styles.pageTitle, { color: colors.primary }]}>Mes entrainements</Text>
+          <Text style={[styles.pageSubtitle, { color: colors.grey }]}>Retrouve et lance tes sessions en un geste.</Text>
         </View>
 
         <View style={styles.listContainer}>
           {trainings.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>Aucun entrainement pour le moment</Text>
-              <Text style={styles.emptySubtitle}>Crée ton premier entrainement avec le bouton + en bas.</Text>
+            <View
+              style={[
+                styles.emptyState,
+                { backgroundColor: colors.lightGrey, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorderMuted },
+              ]}
+            >
+              <Text style={[styles.emptyTitle, { color: colors.black }]}>Aucun entrainement pour le moment</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.grey }]}>Crée ton premier entrainement avec le bouton + en bas.</Text>
             </View>
           ) : (
             trainings.map((training) => (
@@ -105,17 +112,20 @@ export default function index() {
                     await haptic('tap')
                     router.push({ pathname: '/training-detail', params: { id: String(training.id) } })
                   }}
-                  style={styles.trainingCard}
+                  style={[
+                    styles.trainingCard,
+                    { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder },
+                  ]}
                 >
                   <View style={styles.trainingTopRow}>
                     <View style={styles.trainingTextBlock}>
-                      <Text style={styles.trainingTitle}>{training.title}</Text>
-                      {training.description ? <Text style={styles.trainingDescription}>{training.description}</Text> : null}
+                      <Text style={[styles.trainingTitle, { color: colors.black }]}>{training.title}</Text>
+                      {training.description ? <Text style={[styles.trainingDescription, { color: colors.grey }]}>{training.description}</Text> : null}
                     </View>
-                    <MaterialIcons name="chevron-right" size={22} color="#98A5B8" />
+                    <MaterialIcons name="chevron-right" size={22} color={colors.grey} />
                   </View>
                   <View style={styles.trainingMetaRow}>
-                    <View style={styles.trainingMeta}>
+                    <View style={[styles.trainingMeta, { backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.badgeBackground }]}>
                       <Text style={styles.trainingMetaText}>{training.blocs.length} bloc(s) d'exercices</Text>
                     </View>
                   </View>
@@ -127,7 +137,7 @@ export default function index() {
       </ScrollView>
       <BottomNavBar />
       {isRemovingTraining ? (
-        <View pointerEvents="none" style={styles.loadingOverlay}>
+        <View pointerEvents="none" style={[styles.loadingOverlay, { backgroundColor: mode === 'dark' ? colors.overlayDark : colors.overlayLight }]}>
           <LoadingIndicator />
         </View>
       ) : null}
@@ -138,13 +148,13 @@ export default function index() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: LightColors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7F9FC',
+    backgroundColor: LightColors.background,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -152,7 +162,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: LightColors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,
@@ -189,7 +199,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#E6ECF4',
+    borderColor: LightColors.cardBorderMuted,
   },
   emptyTitle: {
     fontSize: 16,
@@ -212,9 +222,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#E5EBF3',
+    borderColor: LightColors.cardBorder,
     backgroundColor: LightColors.white,
-    shadowColor: '#0F172A',
+    shadowColor: LightColors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
     shadowRadius: 18,
@@ -250,7 +260,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: '#EEF4FF',
+    backgroundColor: LightColors.badgeBackground,
   },
   trainingMetaText: {
     fontSize: 12,
@@ -259,7 +269,7 @@ const styles = StyleSheet.create({
   },
   deleteBackground: {
     flex: 1,
-    backgroundColor: '#ff3b30',
+    backgroundColor: LightColors.danger,
     borderRadius: 16,
   },
 })
