@@ -103,19 +103,15 @@ export default function index() {
                   }}
                 >
                   <Text style={{ fontSize: 16, fontWeight: '600', color: LightColors.black }}>{training.title}</Text>
-                  {training.description ? (
-                    <Text style={{ marginTop: 4, color: LightColors.grey }}>{training.description}</Text>
-                  ) : null}
-                  <Text style={{ marginTop: 8, fontSize: 12, color: LightColors.grey }}>
-                    {training.blocs.length} bloc(s) d'exercices
-                  </Text>
+                  {training.description ? <Text style={{ marginTop: 4, color: LightColors.grey }}>{training.description}</Text> : null}
+                  <Text style={{ marginTop: 8, fontSize: 12, color: LightColors.grey }}>{training.blocs.length} bloc(s) d'exercices</Text>
                 </TouchableOpacity>
               </Swipeable>
             ))
           )}
         </View>
       </ScrollView>
-      <BottomNavBar onHomePress={() => {}} onCalendarPress={() => {}} onSettingsPress={() => {}} />
+      <BottomNavBar />
     </SafeAreaView>
   )
 }
