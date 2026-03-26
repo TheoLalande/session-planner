@@ -3,6 +3,9 @@ import { TrainingExercise } from '../types/trainingTypes'
 import { getSession } from './authService'
 import { getSupabaseClient } from './supabaseClient'
 
+const EXERCISE_IMAGES_BUCKET = 'exercice-images'
+const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7
+
 type TrainingRow = {
   id: string
   title: string
@@ -38,6 +41,34 @@ async function getCurrentUserId() {
     throw new Error('Utilisateur non connecté')
   }
   return userId
+}
+
+function extractStoragePathFromPictureUrl(pictureUrl: string): string | null {
+  if (!pictureUrl) return null
+  const publicMarker = `/storage/v1/object/public/${EXERCISE_IMAGES_BUCKET}/`
+  const signMarker = `/storage/v1/object/sign/${EXERCISE_IMAGES_BUCKET}/`
+  const idxPublic = pictureUrl.indexOf(publicMarker)
+  const idxSign = pictureUrl.indexOf(signMarker)
+  if (idxPublic === -1 && idxSign === -1) {
+    return pictureUrl.startsWith('http') ? null : pictureUrl
+  }
+  const marker = idxPublic !== -1 ? publicMarker : signMarker
+  const idx = idxPublic !== -1 ? idxPublic : idxSign
+  const afterMarker = pictureUrl.substring(idx + marker.length)
+  const pathEncoded = afterMarker.split('?')[0]
+  try {
+    return decodeURIComponent(pathEncoded)
+  } catch {
+    return pathEncoded
+  }
+}
+
+async function toSignedPictureUrl(pictureUrl: string, supabase: ReturnType<typeof getSupabaseClient>): Promise<string> {
+  const objectPath = extractStoragePathFromPictureUrl(pictureUrl)
+  if (!objectPath) return pictureUrl
+  const { data, error } = await supabase.storage.from(EXERCISE_IMAGES_BUCKET).createSignedUrl(objectPath, SIGNED_URL_EXPIRES_IN_SECONDS)
+  if (error || !data?.signedUrl) return pictureUrl
+  return data.signedUrl
 }
 
 function normalizeExerciseFromRow(row: ExerciseRow): TrainingExercise {
@@ -126,6 +157,13 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
     }
 
     exercises = (exercisesData ?? []) as ExerciseRow[]
+    exercises = await Promise.all(
+      exercises.map(async (exercise) => {
+        if (!exercise.picture_url) return exercise
+        const nextPictureUrl = await toSignedPictureUrl(exercise.picture_url, supabase)
+        return { ...exercise, picture_url: nextPictureUrl }
+      }),
+    )
   }
 
   const exercisesByBlockId = new Map<string, ExerciseRow[]>()

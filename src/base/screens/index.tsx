@@ -5,11 +5,13 @@ import { Logo, MainText } from '../components'
 import { LightColors } from '../constants/theme'
 import { getSession } from '../api/authService'
 import LoadingIndicator from '../components/LoadingIndicator'
+import { useTrainingStore } from '../store/trainingStore'
 
 export default function Index() {
   const router = useRouter()
   const opacity = useRef(new Animated.Value(1)).current
   const [isCheckingSession, setIsCheckingSession] = useState(true)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
 
   useEffect(() => {
     let isMounted = true
@@ -26,7 +28,13 @@ export default function Index() {
         }
         if (!isMounted) return
 
-        const target = session.accessToken ? '/home' : '/login'
+        const isAuthenticated = !!session.accessToken
+        if (isAuthenticated) {
+          await loadTrainings()
+          if (!isMounted) return
+        }
+
+        const target = isAuthenticated ? '/home' : '/login'
         Animated.timing(opacity, {
           toValue: 0,
           duration: 400,
@@ -54,7 +62,7 @@ export default function Index() {
     return () => {
       isMounted = false
     }
-  }, [opacity, router])
+  }, [loadTrainings, opacity, router])
 
   return (
     <Animated.View

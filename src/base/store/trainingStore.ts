@@ -245,6 +245,7 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
       title: nextTraining.title,
       description: nextTraining.description,
       blocs: nextTraining.blocs,
+      transitionSecondsBetweenTimers: nextTraining.transitionSecondsBetweenTimers ?? 5,
     })
     set((current) => ({
       ...current,
@@ -385,6 +386,7 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
       title: nextTraining.title,
       description: nextTraining.description,
       blocs: nextTraining.blocs,
+      transitionSecondsBetweenTimers: nextTraining.transitionSecondsBetweenTimers ?? 5,
     })
     set((current) => ({
       ...current,

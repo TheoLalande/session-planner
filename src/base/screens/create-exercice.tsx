@@ -166,6 +166,7 @@ export default function index() {
   }, [forcedType])
 
   const STORAGE_BUCKET = 'exercice-images'
+  const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7
   const isLocalUri = (uri: string) => !/^https?:\/\//i.test(uri)
 
   const extractStoragePathFromUrl = (storageUrl: string): string | null => {
@@ -226,9 +227,11 @@ export default function index() {
       .upload(objectPath, fileBytes as any, { contentType, upsert: false })
     if (uploadError) throw new Error(uploadError.message)
 
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
-    if (!supabaseUrl) throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL')
-    return `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${objectPath}`
+    const { data: signedData, error: signedError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .createSignedUrl(objectPath, SIGNED_URL_EXPIRES_IN_SECONDS)
+    if (signedError || !signedData?.signedUrl) throw new Error(signedError?.message ?? 'Impossible de signer l image')
+    return signedData.signedUrl
   }
 
   const handleNext = async () => {
@@ -289,6 +292,9 @@ export default function index() {
         setIsSaving(true)
         try {
           await updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise)
+        } catch (e: any) {
+          Alert.alert('Erreur', e?.message || 'Impossible de mettre a jour l exercice')
+          return
         } finally {
           setIsSaving(false)
         }

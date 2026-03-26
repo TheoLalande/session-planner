@@ -55,26 +55,19 @@ export default function index() {
   }, [editingTrainingId, trainings])
 
   return isLoadingTrainings ? (
-    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <SafeAreaView style={styles.loadingScreen}>
       <LoadingIndicator />
     </SafeAreaView>
   ) : (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={styles.screen}>
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          alignItems: 'center',
-          paddingHorizontal: 30,
-          paddingTop: 10,
-          paddingBottom: 30,
-          justifyContent: 'space-between',
-        }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ width: '100%', gap: 10 }}>
-          <View style={{ width: '100%' }}>
+        <View style={styles.headerSection}>
+          <View style={styles.formCard}>
             <TextField placeholder="Titre de l'entrainement" type="text" value={title} onChangeText={setTitle} />
             <TextField placeholder="Description de l'entrainement" type="text" value={description} onChangeText={setDescription} />
             <FormSlider
@@ -89,7 +82,7 @@ export default function index() {
             />
           </View>
 
-          <View style={{ width: '100%', alignItems: 'center', gap: 20, marginBottom: 20 }}>
+          <View style={styles.blocsSection}>
             {blocs.map((bloc) => (
               <TrainingBloc
                 key={bloc.id}
@@ -102,7 +95,7 @@ export default function index() {
           </View>
         </View>
 
-        <View style={{ width: '100%', alignItems: 'center', gap: 10 }}>
+        <View style={styles.footerActions}>
           <PrimaryButton
             title="Ajouter un bloc d'exercices"
             color={'transparent'}
@@ -148,7 +141,7 @@ export default function index() {
       ) : null}
 
       <Portal>
-        <Dialog visible={isBlocModalVisible} onDismiss={() => setIsBlocModalVisible(false)} style={{ marginTop: insets.top + 8 }}>
+        <Dialog visible={isBlocModalVisible} onDismiss={() => setIsBlocModalVisible(false)} style={[styles.dialog, { marginTop: insets.top + 8 }]}>
           <Dialog.Title>Nouveau bloc</Dialog.Title>
           <Dialog.Content>
             <TextField placeholder="Nom du bloc" type="text" value={blocTitle} onChangeText={setBlocTitle} />
@@ -187,6 +180,60 @@ export default function index() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#F7F9FC',
+  },
+  loadingScreen: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F7F9FC',
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 24,
+    justifyContent: 'space-between',
+  },
+  headerSection: {
+    width: '100%',
+    gap: 14,
+  },
+  formCard: {
+    width: '100%',
+    backgroundColor: LightColors.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5EBF3',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  blocsSection: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 8,
+  },
+  footerActions: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dialog: {
+    borderRadius: 16,
+    backgroundColor: LightColors.white,
+  },
   loadingOverlay: {
     position: 'absolute',
     top: 0,

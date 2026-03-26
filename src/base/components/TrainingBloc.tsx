@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native'
-import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { LightColors } from '../constants/theme'
 import { SecondaryRoundButton } from './SecondaryRoundButton'
@@ -78,7 +77,6 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
           activeOpacity={0.7}
           onLongPress={() => {
             drag()
-            // On déclenche le haptique sans await pour ne pas perturber la gesture drag
             haptic('tap')
           }}
           delayLongPress={120}
@@ -92,78 +90,83 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
 
   return (
     <View style={styles.container}>
-      {isEditingTitle ? (
-        <TextInput
-          style={styles.titleInput}
-          value={localTitle}
-          onChangeText={setLocalTitle}
-          autoFocus
-          onBlur={() => {
-            const trimmed = localTitle.trim()
-            const nextTitle = trimmed || title
-            setLocalTitle(nextTitle)
-            renameBloc(blocId, nextTitle)
-            setIsEditingTitle(false)
-          }}
-          returnKeyType="done"
-          onSubmitEditing={() => {
-            const trimmed = localTitle.trim()
-            const nextTitle = trimmed || title
-            setLocalTitle(nextTitle)
-            renameBloc(blocId, nextTitle)
-            setIsEditingTitle(false)
-          }}
-        />
-      ) : (
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => {
-            setLocalTitle(title)
-            setIsEditingTitle(true)
-          }}
-        >
-          <Text style={styles.title} numberOfLines={2}>
-            {title}
-          </Text>
-        </TouchableOpacity>
-      )}
-      <Swipeable
-        containerStyle={{ width: '100%' }}
-        overshootLeft={false}
-        overshootRight={false}
-        onSwipeableOpen={(direction) => {
-          if (direction === 'left' || direction === 'right') {
-            onDeleteBloc()
-          }
-        }}
-        renderLeftActions={() => <View style={styles.deleteBackground} />}
-        renderRightActions={() => <View style={styles.deleteBackground} />}
-      >
-        <View style={{ width: '100%' }}>
-          <View style={styles.square}>
-            <View style={styles.exercisesContainer}>
-              <DraggableFlatList
-                data={exercises}
-                keyExtractor={(item, index) => {
-                  const exerciseId = Number(item.data?.id ?? 0)
-                  if (exerciseId > 0) {
-                    return `${blocId}-${item.type}-${exerciseId}`
-                  }
-                  return `${blocId}-${item.type}-tmp-${index}`
-                }}
-                renderItem={renderExerciseItem}
-                onDragEnd={({ data }) => {
-                  reorderExercisesInBloc(blocId, data)
-                }}
-                scrollEnabled={false}
-                activationDistance={8}
-                containerStyle={{ width: '100%' }}
-              />
-            </View>
-            <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
+      <View style={styles.headerRow}>
+        {isEditingTitle ? (
+          <TextInput
+            style={styles.titleInput}
+            value={localTitle}
+            onChangeText={setLocalTitle}
+            autoFocus
+            onBlur={() => {
+              const trimmed = localTitle.trim()
+              const nextTitle = trimmed || title
+              setLocalTitle(nextTitle)
+              renameBloc(blocId, nextTitle)
+              setIsEditingTitle(false)
+            }}
+            returnKeyType="done"
+            onSubmitEditing={() => {
+              const trimmed = localTitle.trim()
+              const nextTitle = trimmed || title
+              setLocalTitle(nextTitle)
+              renameBloc(blocId, nextTitle)
+              setIsEditingTitle(false)
+            }}
+          />
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={styles.titlePressable}
+            onPress={() => {
+              setLocalTitle(title)
+              setIsEditingTitle(true)
+            }}
+          >
+            <Text style={styles.title} numberOfLines={2}>
+              {title}
+            </Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.headerActions}>
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{exercises.length}</Text>
           </View>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={async () => {
+              await haptic('tap')
+              onDeleteBloc()
+            }}
+            style={styles.deleteButton}
+          >
+            <MaterialCommunityIcons name="trash-can-outline" size={18} color="#ff3b30" />
+          </TouchableOpacity>
         </View>
-      </Swipeable>
+      </View>
+      <View style={{ width: '100%' }}>
+        <View style={styles.square}>
+          <View style={styles.exercisesContainer}>
+            <DraggableFlatList
+              data={exercises}
+              keyExtractor={(item, index) => {
+                const exerciseId = Number(item.data?.id ?? 0)
+                if (exerciseId > 0) {
+                  return `${blocId}-${item.type}-${exerciseId}`
+                }
+                return `${blocId}-${item.type}-tmp-${index}`
+              }}
+              renderItem={renderExerciseItem}
+              onDragEnd={({ data }) => {
+                reorderExercisesInBloc(blocId, data)
+              }}
+              scrollEnabled={false}
+              activationDistance={1000}
+              containerStyle={{ width: '100%' }}
+            />
+          </View>
+          <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
+        </View>
+      </View>
     </View>
   )
 }
@@ -172,32 +175,78 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  headerRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   square: {
     width: '100%',
     backgroundColor: LightColors.white,
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.primary,
+    borderColor: '#E5EBF3',
     padding: 12,
     minHeight: 100,
     justifyContent: 'center',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  titlePressable: {
+    flex: 1,
+    paddingLeft: 4,
+    paddingRight: 8,
   },
   title: {
     color: LightColors.black,
-    fontSize: 16,
-    paddingLeft: 12,
-    textAlign: 'center',
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   titleInput: {
+    flex: 1,
     color: LightColors.black,
-    fontSize: 16,
-    paddingLeft: 12,
-    textAlign: 'center',
-    fontWeight: '600',
+    fontSize: 17,
+    paddingLeft: 4,
+    paddingRight: 8,
+    fontWeight: '700',
     borderBottomWidth: 1,
     borderBottomColor: LightColors.primary,
+  },
+  countBadge: {
+    minWidth: 28,
+    height: 24,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF4FF',
+  },
+  countBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: LightColors.primary,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  deleteButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF4F4',
+    borderWidth: 1,
+    borderColor: '#FFD9D9',
   },
   exercisesContainer: {
     width: '100%',
@@ -207,23 +256,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    borderRadius: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
   },
   activeExerciseRow: {
-    opacity: 0.85,
+    backgroundColor: '#F5F8FF',
   },
   duplicateButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 10,
+    backgroundColor: '#F7FAFF',
+    borderWidth: 1,
+    borderColor: '#E5EBF3',
   },
   dragHandleButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 10,
-  },
-  deleteBackground: {
-    flex: 1,
-    backgroundColor: '#ff3b30',
-    borderRadius: 12,
+    backgroundColor: '#F7FAFF',
+    borderWidth: 1,
+    borderColor: '#E5EBF3',
   },
 })

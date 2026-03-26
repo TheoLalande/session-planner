@@ -24,6 +24,8 @@ export function PrimaryButton({
 
   return (
     <Button
+      mode="contained"
+      contentStyle={styles.content}
       style={[buttonStyle, { backgroundColor: color, borderColor: borderColor, borderWidth: 1 }]}
       onPress={
         isClickable
@@ -42,18 +44,31 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 5,
-    borderRadius: 30,
-    marginHorizontal: 30,
+    borderRadius: 14,
+    marginHorizontal: 20,
     width: '100%',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  content: {
+    minHeight: 52,
+    paddingVertical: 4,
   },
   buttonDisabled: {
-    backgroundColor: LightColors.grey,
+    backgroundColor: '#CDD5DF',
+    borderColor: '#CDD5DF',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   title: {
     textAlign: 'center',
     color: LightColors.white,
     alignSelf: 'center',
     fontFamily: Fonts.poppins.medium,
+    fontSize: 15,
+    letterSpacing: 0.2,
   },
 })

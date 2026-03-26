@@ -23,7 +23,7 @@ export const SecondaryRoundButton = ({ blocId, onPress, color = LightColors.prim
 
   return (
     <View style={styles.container}>
-      <Button style={[styles.button, { backgroundColor: color }]} contentStyle={styles.buttonContent} compact onPress={handlePress}>
+      <Button mode="contained" style={[styles.button, { backgroundColor: color }]} contentStyle={styles.buttonContent} compact onPress={handlePress}>
         <Icon source="plus" size={20} color={LightColors.white} />
       </Button>
     </View>
@@ -33,15 +33,22 @@ export const SecondaryRoundButton = ({ blocId, onPress, color = LightColors.prim
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 40,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
   },
   button: {
-    width: 40,
-    height: 40,
-    borderRadius: 40 / 2,
-    marginTop: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 3,
   },
   buttonContent: {
     flexDirection: 'row',
@@ -51,8 +58,8 @@ const styles = StyleSheet.create({
     marginVertical: 0,
     paddingVertical: 0,
     paddingHorizontal: 0,
-    minWidth: 40,
-    width: 40,
-    height: 40,
+    minWidth: 44,
+    width: 44,
+    height: 44,
   },
 })

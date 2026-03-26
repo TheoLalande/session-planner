@@ -35,7 +35,9 @@ export default function index() {
       }
 
       try {
-        await loadTrainings()
+        if (trainings.length === 0) {
+          await loadTrainings()
+        }
       } catch {
         if (!isMounted) return
       } finally {
@@ -48,7 +50,7 @@ export default function index() {
     return () => {
       isMounted = false
     }
-  }, [loadTrainings])
+  }, [loadTrainings, trainings.length])
 
   if (isCheckingSession) {
     return (
