@@ -66,12 +66,21 @@ const formatMonthTitle = (d: Date) =>
 
 const getMonthStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1)
 const getMonthEnd = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0)
+const GRADE_SCALE = ['5c', '5c+', '6a', '6a+', '6b', '6b+', '6c', '6c+', '7a', '7a+', '7b', '7b+', '7c', '7c+', '8a'] as const
 const toDayKey = (timestamp: number) => {
   const d = new Date(timestamp)
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+const gradeToScore = (grade: string) => GRADE_SCALE.findIndex((value) => value === grade)
+
+const scoreToGrade = (score: number) => {
+  const rounded = Math.round(score)
+  const clamped = Math.max(0, Math.min(GRADE_SCALE.length - 1, rounded))
+  return GRADE_SCALE[clamped]
 }
 
 export default function Statistiques() {
@@ -208,8 +217,7 @@ export default function Statistiques() {
   }, [gradeData])
 
   const availableChartWidth = useMemo(() => {
-    // main a `paddingHorizontal: 30`, donc on retire 60 à la largeur de l'écran
-    return Math.max(240, Math.floor(windowWidth - 60))
+    return Math.max(220, Math.floor(windowWidth - 76))
   }, [windowWidth])
 
   const stackData = useMemo(() => {
@@ -296,10 +304,40 @@ export default function Statistiques() {
     return colors.climbing
   }
 
+  const dailyAverageGrades = useMemo(() => {
+    const byDay = new Map<number, number[]>()
+
+    attemptsInRange.forEach((attempt) => {
+      const rawGrade = extractGradeFromRouteLabel(attempt.routeLabel)
+      const grade = normalizeGradeLabel(rawGrade)
+      const score = gradeToScore(grade)
+      if (score < 0) {
+        return
+      }
+      const dayKey = toStartOfDay(new Date(attempt.createdAt))
+      const current = byDay.get(dayKey) ?? []
+      current.push(score)
+      byDay.set(dayKey, current)
+    })
+
+    return Array.from(byDay.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([dayKey, scores]) => {
+        const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
+        const d = new Date(dayKey)
+        const label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+        return {
+          value: Math.round(avgScore * 10) / 10,
+          label,
+          gradeLabel: scoreToGrade(avgScore),
+        }
+      })
+  }, [attemptsInRange])
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
-        <StatisticsHeader titleColor={colors.primary} subtitleColor={colors.grey} />
+        <StatisticsHeader mode={mode} colors={colors} titleColor={colors.primary} subtitleColor={colors.grey} />
 
         <StatisticsDateRangeCard
           mode={mode}
@@ -337,6 +375,7 @@ export default function Statistiques() {
           noOfSections={noOfSections}
           stepValue={stepValue}
           dailySuccessRate={dailySuccessRate}
+          dailyAverageGrades={dailyAverageGrades}
         />
       </ScrollView>
 

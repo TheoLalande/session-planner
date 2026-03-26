@@ -31,6 +31,7 @@ type Props = {
   noOfSections: number
   stepValue: number
   dailySuccessRate: Array<{ value: number; label: string }>
+  dailyAverageGrades: Array<{ value: number; label: string; gradeLabel: string }>
 }
 
 export default function StatisticsClimbingChartsCard({
@@ -49,6 +50,7 @@ export default function StatisticsClimbingChartsCard({
   noOfSections,
   stepValue,
   dailySuccessRate,
+  dailyAverageGrades,
 }: Props) {
   if (isLoadingAttempts) {
     return (
@@ -66,93 +68,156 @@ export default function StatisticsClimbingChartsCard({
     )
   }
 
-  return (
-    <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-      <View style={styles.filtersSection}>
-        <Text style={[styles.filtersTitle, { color: colors.black }]}>Cotation</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll} keyboardShouldPersistTaps="handled">
-          {gradeCounts.gradesToDisplay.map((grade) => {
-            const counts = gradeCounts.map.get(grade)
-            const total = (counts?.success ?? 0) + (counts?.fail ?? 0)
-            const isHidden = !!hiddenGrades[grade]
+  const buildSparseLabels = (labels: string[]) => {
+    if (labels.length <= 6) {
+      return labels
+    }
+    const step = Math.ceil(labels.length / 6)
+    return labels.map((label, index) => (index % step === 0 || index === labels.length - 1 ? label : ''))
+  }
 
-            return (
-              <TouchableOpacity
-                key={grade}
-                activeOpacity={0.7}
-                onPress={() => onToggleGrade(grade)}
-                style={[
-                  styles.gradeChip,
-                  {
-                    backgroundColor: isHidden ? colors.white : colors.primary,
-                    borderColor: isHidden ? (mode === 'dark' ? colors.darkBorder : colors.cardBorder) : colors.primary,
-                  },
-                ]}
-              >
-                <Text style={[styles.gradeChipText, { color: isHidden ? colors.grey : colors.white }]}>
-                  {grade} ({total})
-                </Text>
-              </TouchableOpacity>
-            )
-          })}
-        </ScrollView>
+  const successRateLabels = buildSparseLabels(dailySuccessRate.map((d) => d.label))
+  const averageGradeLabels = buildSparseLabels(dailyAverageGrades.map((d) => d.label))
+
+  return (
+    <>
+      <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+        <View style={styles.filtersSection}>
+          <Text style={[styles.filtersTitle, { color: colors.black }]}>Cotation</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll} keyboardShouldPersistTaps="handled">
+            {gradeCounts.gradesToDisplay.map((grade) => {
+              const counts = gradeCounts.map.get(grade)
+              const total = (counts?.success ?? 0) + (counts?.fail ?? 0)
+              const isHidden = !!hiddenGrades[grade]
+
+              return (
+                <TouchableOpacity
+                  key={grade}
+                  activeOpacity={0.7}
+                  onPress={() => onToggleGrade(grade)}
+                  style={[
+                    styles.gradeChip,
+                    {
+                      backgroundColor: isHidden ? colors.white : colors.primary,
+                      borderColor: isHidden ? (mode === 'dark' ? colors.darkBorder : colors.cardBorder) : colors.primary,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.gradeChipText, { color: isHidden ? colors.grey : colors.white }]}>
+                    {grade} ({total})
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+        </View>
       </View>
 
       {gradeData.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune cotation sélectionnée.</Text>
+        <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+          <View style={styles.emptyBox}>
+            <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune cotation sélectionnée.</Text>
+          </View>
         </View>
       ) : (
-        <View style={styles.chartContainer}>
-          <BarChart
-            width={availableChartWidth}
-            height={chartHeight}
-            stackData={stackData}
-            maxValue={maxCount}
-            noOfSections={noOfSections}
-            stepValue={stepValue}
-            adjustToWidth
-            parentWidth={availableChartWidth}
-            disableScroll
-            rotateLabel
-            xAxisLabelsAtBottom
-            yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
-            xAxisTextNumberOfLines={2}
-          />
-
-          <Text style={[styles.lineChartTitle, { color: colors.black }]}>Taux de réussite (par jour)</Text>
-
-          {dailySuccessRate.length === 0 ? (
-            <View style={styles.lineChartEmptyBox}>
-              <Text style={[styles.emptyText, { color: colors.grey }]}>Pas assez de données pour la courbe.</Text>
-            </View>
-          ) : (
-            <View style={styles.lineChartContainer}>
-              <LineChart
-                height={220}
-                data={dailySuccessRate.map((d) => ({ value: d.value }))}
-                xAxisLabelTexts={dailySuccessRate.map((d) => d.label)}
-                maxValue={100}
-                noOfSections={4}
-                stepValue={25}
+        <>
+          <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <Text style={[styles.lineChartTitle, { color: colors.black }]}>Succès / Échecs par cotation</Text>
+            <View style={styles.chartContainer}>
+              <BarChart
+                width={availableChartWidth}
+                height={chartHeight}
+                stackData={stackData}
+                maxValue={maxCount}
+                noOfSections={noOfSections}
+                stepValue={stepValue}
                 adjustToWidth
                 parentWidth={availableChartWidth}
+                disableScroll
                 rotateLabel
                 xAxisLabelsAtBottom
-                color={colors.primary}
-                thickness={2}
-                dataPointsRadius={4}
-                dataPointsColor={colors.primary}
-                lineGradient={false}
-                xAxisTextNumberOfLines={2}
                 yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
-                disableScroll
+                xAxisTextNumberOfLines={2}
               />
             </View>
-          )}
-        </View>
+          </View>
+
+          <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <Text style={[styles.lineChartTitle, { color: colors.black }]}>Taux de réussite (par jour)</Text>
+            {dailySuccessRate.length === 0 ? (
+              <View style={styles.lineChartEmptyBox}>
+                <Text style={[styles.emptyText, { color: colors.grey }]}>Pas assez de données pour la courbe.</Text>
+              </View>
+            ) : (
+              <View style={styles.lineChartContainer}>
+                <LineChart
+                  height={220}
+                  data={dailySuccessRate.map((d) => ({ value: d.value }))}
+                  xAxisLabelTexts={successRateLabels}
+                  maxValue={100}
+                  noOfSections={4}
+                  stepValue={25}
+                  adjustToWidth
+                  parentWidth={availableChartWidth}
+                  rotateLabel={false}
+                  xAxisLabelsAtBottom
+                  initialSpacing={14}
+                  endSpacing={26}
+                  labelsExtraHeight={12}
+                  color={colors.primary}
+                  thickness={2}
+                  dataPointsRadius={4}
+                  dataPointsColor={colors.primary}
+                  lineGradient={false}
+                  xAxisTextNumberOfLines={1}
+                  xAxisLabelTextStyle={[styles.xAxisLabelText, { color: colors.grey }]}
+                  yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
+                  disableScroll
+                />
+              </View>
+            )}
+          </View>
+
+          <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <Text style={[styles.lineChartTitle, { color: colors.black }]}>Cotation moyenne (par jour)</Text>
+            {dailyAverageGrades.length === 0 ? (
+              <View style={styles.lineChartEmptyBox}>
+                <Text style={[styles.emptyText, { color: colors.grey }]}>Pas assez de données pour calculer la moyenne.</Text>
+              </View>
+            ) : (
+              <View style={styles.lineChartContainer}>
+                <BarChart
+                  width={availableChartWidth}
+                  height={220}
+                  data={dailyAverageGrades.map((d, index) => ({
+                    value: d.value,
+                    label: averageGradeLabels[index] ?? '',
+                    frontColor: colors.secondary,
+                    topLabelComponent: () => <Text style={[styles.avgGradeLabel, { color: colors.black }]}>{d.gradeLabel}</Text>,
+                  }))}
+                  maxValue={14}
+                  noOfSections={7}
+                  stepValue={2}
+                  adjustToWidth
+                  parentWidth={availableChartWidth}
+                  disableScroll
+                  rotateLabel={false}
+                  xAxisLabelsAtBottom
+                  barWidth={14}
+                  spacing={10}
+                  initialSpacing={14}
+                  endSpacing={26}
+                  labelsExtraHeight={12}
+                  yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
+                  xAxisTextNumberOfLines={1}
+                  xAxisLabelTextStyle={[styles.xAxisLabelText, { color: colors.grey }]}
+                />
+              </View>
+            )}
+          </View>
+        </>
       )}
-    </View>
+    </>
   )
 }
 
@@ -161,6 +226,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     padding: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
   },
   emptyCard: {
     minHeight: 180,
@@ -209,10 +276,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   lineChartTitle: {
-    marginTop: 16,
     fontSize: 14,
     fontWeight: '700',
     alignSelf: 'flex-start',
+    marginBottom: 8,
   },
   lineChartContainer: {
     width: '100%',
@@ -227,5 +294,14 @@ const styles = StyleSheet.create({
   yAxisTextStyle: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  xAxisLabelText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  avgGradeLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 3,
   },
 })
