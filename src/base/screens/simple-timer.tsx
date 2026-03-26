@@ -212,8 +212,8 @@ export default function SimpleTimer() {
     }
 
     router.replace({
-      pathname: '/training-detail',
-      params: { id: String(trainingId) },
+      pathname: '/session-complete',
+      params: { trainingId: String(trainingId) },
     })
   }
 

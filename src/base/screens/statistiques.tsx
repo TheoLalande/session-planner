@@ -1,12 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native'
+import { Platform, ScrollView, StyleSheet, useWindowDimensions } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { LightColors } from '../constants/theme'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
-import { BarChart, LineChart } from 'react-native-gifted-charts'
-import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
+import { CompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
+import { ExerciseType } from '../types/trainingTypes'
+import StatisticsHeader from '../components/StatisticsHeader'
+import StatisticsDateRangeCard from '../components/StatisticsDateRangeCard'
+import StatisticsCalendarCard from '../components/StatisticsCalendarCard'
+import StatisticsClimbingChartsCard from '../components/StatisticsClimbingChartsCard'
 
 const extractGradeFromRouteLabel = (routeLabel: string) => {
   const parts = routeLabel.split(' · ')
@@ -35,15 +39,6 @@ const gradeSortKey = (grade: string) => {
   return numN * 100 + letterIndex * 2 + plusIndex
 }
 
-function StatusLegendItem({ color, label }: { color: string; label: string }) {
-  return (
-    <View style={styles.legendItem}>
-      <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendLabel}>{label}</Text>
-    </View>
-  )
-}
-
 const toStartOfDay = (d: Date) => {
   const next = new Date(d)
   next.setHours(0, 0, 0, 0)
@@ -63,6 +58,22 @@ const formatDate = (d: Date) => {
   return `${day}/${month}/${year}`
 }
 
+const formatMonthTitle = (d: Date) =>
+  d.toLocaleDateString('fr-FR', {
+    month: 'long',
+    year: 'numeric',
+  })
+
+const getMonthStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1)
+const getMonthEnd = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0)
+const toDayKey = (timestamp: number) => {
+  const d = new Date(timestamp)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export default function Statistiques() {
   const { mode, colors } = useAppTheme()
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
@@ -80,10 +91,38 @@ export default function Statistiques() {
 
   const [showStartPicker, setShowStartPicker] = useState(false)
   const [showEndPicker, setShowEndPicker] = useState(false)
+  const [completedSessions, setCompletedSessions] = useState<CompletedSession[]>([])
+  const [isLoadingCompletedSessions, setIsLoadingCompletedSessions] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date())
 
   useEffect(() => {
     loadAttempts()
   }, [loadAttempts])
+
+  useEffect(() => {
+    let isMounted = true
+    const loadCompletedSessions = async () => {
+      try {
+        setIsLoadingCompletedSessions(true)
+        const data = await fetchCompletedSessions({
+          startAt: toStartOfDay(startDate),
+          endAt: toEndOfDay(endDate),
+        })
+        if (!isMounted) {
+          return
+        }
+        setCompletedSessions(data)
+      } finally {
+        if (isMounted) {
+          setIsLoadingCompletedSessions(false)
+        }
+      }
+    }
+    loadCompletedSessions()
+    return () => {
+      isMounted = false
+    }
+  }, [endDate, startDate])
 
   const attemptsInRange = useMemo(() => {
     const start = toStartOfDay(startDate)
@@ -216,135 +255,89 @@ export default function Statistiques() {
 
   const chartHeight = 260
 
+  const monthStart = useMemo(() => getMonthStart(calendarMonth), [calendarMonth])
+  const monthEnd = useMemo(() => getMonthEnd(calendarMonth), [calendarMonth])
+  const firstWeekDay = useMemo(() => {
+    const jsDay = monthStart.getDay()
+    return jsDay === 0 ? 6 : jsDay - 1
+  }, [monthStart])
+
+  const sessionsByDay = useMemo(() => {
+    const map = new Map<string, Set<ExerciseType>>()
+    completedSessions.forEach((session) => {
+      const key = toDayKey(session.completedAt)
+      const current = map.get(key) ?? new Set<ExerciseType>()
+      session.blockTypes.forEach((type) => current.add(type))
+      map.set(key, current)
+    })
+    return map
+  }, [completedSessions])
+
+  const calendarCells = useMemo(() => {
+    const totalDays = monthEnd.getDate()
+    const cells: Array<{ day: number | null; key: string; blockTypes: ExerciseType[] }> = []
+    for (let i = 0; i < firstWeekDay; i += 1) {
+      cells.push({ day: null, key: `empty-${i}`, blockTypes: [] })
+    }
+    for (let day = 1; day <= totalDays; day += 1) {
+      const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), day)
+      const key = toDayKey(date.getTime())
+      const dayTypes = Array.from(sessionsByDay.get(key) ?? [])
+      cells.push({ day, key, blockTypes: dayTypes })
+    }
+    return cells
+  }, [firstWeekDay, monthEnd, monthStart, sessionsByDay])
+
+  const getTypeColor = (type: ExerciseType) => {
+    if (type === 'warmup') return colors.warmup
+    if (type === 'cooldown') return colors.cooldown
+    if (type === 'stretching') return colors.stretching
+    if (type === 'hangboard') return colors.hangboard
+    return colors.climbing
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
-        <View style={styles.headerBlock}>
-          <Text style={[styles.title, { color: colors.primary }]}>Statistiques</Text>
-          <Text style={[styles.subtitle, { color: colors.grey }]}>Analyse tes tentatives de grimpe sur la période choisie.</Text>
-        </View>
+        <StatisticsHeader titleColor={colors.primary} subtitleColor={colors.grey} />
 
-        <View style={[styles.topCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-          <View style={styles.dateRangeRow}>
-            <TouchableOpacity activeOpacity={0.7} style={[styles.dateButton, { backgroundColor: colors.lightGrey, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} onPress={() => setShowStartPicker(true)}>
-              <Text style={[styles.dateLabel, { color: colors.primary }]}>Du</Text>
-              <Text style={[styles.dateValue, { color: colors.black }]}>{formatDate(startDate)}</Text>
-            </TouchableOpacity>
+        <StatisticsDateRangeCard
+          mode={mode}
+          colors={colors}
+          startDateLabel={formatDate(startDate)}
+          endDateLabel={formatDate(endDate)}
+          onPressStartDate={() => setShowStartPicker(true)}
+          onPressEndDate={() => setShowEndPicker(true)}
+        />
 
-            <TouchableOpacity activeOpacity={0.7} style={[styles.dateButton, { backgroundColor: colors.lightGrey, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} onPress={() => setShowEndPicker(true)}>
-              <Text style={[styles.dateLabel, { color: colors.primary }]}>Au</Text>
-              <Text style={[styles.dateValue, { color: colors.black }]}>{formatDate(endDate)}</Text>
-            </TouchableOpacity>
-          </View>
+        <StatisticsCalendarCard
+          mode={mode}
+          colors={colors}
+          monthTitle={formatMonthTitle(calendarMonth)}
+          isLoading={isLoadingCompletedSessions}
+          calendarCells={calendarCells}
+          onPrevMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+          onNextMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+          getTypeColor={getTypeColor}
+        />
 
-          <View style={styles.legendRow}>
-            <StatusLegendItem color={colors.primary} label="Succès" />
-            <StatusLegendItem color={colors.danger} label="Échecs" />
-          </View>
-        </View>
-
-        {isLoadingAttempts ? (
-          <View style={[styles.emptyCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-            <LoadingIndicator />
-          </View>
-        ) : attemptsInRange.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-            <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune voie testée sur cette période.</Text>
-          </View>
-        ) : (
-          <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-            <View style={styles.filtersSection}>
-              <Text style={[styles.filtersTitle, { color: colors.black }]}>Cotation</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll} keyboardShouldPersistTaps="handled">
-                {gradeCounts.gradesToDisplay.map((grade) => {
-                  const counts = gradeCounts.map.get(grade)
-                  const total = (counts?.success ?? 0) + (counts?.fail ?? 0)
-                  const isHidden = !!hiddenGrades[grade]
-
-                  return (
-                    <TouchableOpacity
-                      key={grade}
-                      activeOpacity={0.7}
-                      onPress={() => setHiddenGrades((prev) => ({ ...prev, [grade]: !prev[grade] }))}
-                      style={[
-                        styles.gradeChip,
-                        {
-                          backgroundColor: isHidden ? colors.white : colors.primary,
-                          borderColor: isHidden ? (mode === 'dark' ? colors.darkBorder : colors.cardBorder) : colors.primary,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.gradeChipText, { color: isHidden ? colors.grey : colors.white }]}>
-                        {grade} ({total})
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </ScrollView>
-            </View>
-
-            {gradeData.length === 0 ? (
-              <View style={styles.emptyBox}>
-                <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune cotation sélectionnée.</Text>
-              </View>
-            ) : (
-              <View style={styles.chartContainer}>
-                <BarChart
-                  width={availableChartWidth}
-                  height={chartHeight}
-                  stackData={stackData}
-                  maxValue={maxCount}
-                  noOfSections={noOfSections}
-                  stepValue={stepValue}
-                  adjustToWidth
-                  parentWidth={availableChartWidth}
-                  disableScroll
-                  rotateLabel
-                  xAxisLabelsAtBottom
-                  yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
-                  xAxisTextNumberOfLines={2}
-                />
-
-                <Text style={[styles.lineChartTitle, { color: colors.black }]}>Taux de réussite (par jour)</Text>
-
-                {dailySuccessRate.length === 0 ? (
-                  <View style={styles.lineChartEmptyBox}>
-                    <Text style={[styles.emptyText, { color: colors.grey }]}>Pas assez de données pour la courbe.</Text>
-                  </View>
-                ) : (
-                  <View style={styles.lineChartContainer}>
-                    {(() => {
-                      const xAxisLabelTexts = dailySuccessRate.map((d) => d.label)
-                      const data = dailySuccessRate.map((d) => ({ value: d.value }))
-                      return (
-                        <LineChart
-                          height={220}
-                          data={data}
-                          xAxisLabelTexts={xAxisLabelTexts}
-                          maxValue={100}
-                          noOfSections={4}
-                          stepValue={25}
-                          adjustToWidth
-                          parentWidth={availableChartWidth}
-                          rotateLabel
-                          xAxisLabelsAtBottom
-                          color={colors.primary}
-                          thickness={2}
-                          dataPointsRadius={4}
-                          dataPointsColor={colors.primary}
-                          lineGradient={false}
-                          xAxisTextNumberOfLines={2}
-                          yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
-                          disableScroll
-                        />
-                      )
-                    })()}
-                  </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
+        <StatisticsClimbingChartsCard
+          mode={mode}
+          colors={colors}
+          isLoadingAttempts={isLoadingAttempts}
+          attemptsInRangeCount={attemptsInRange.length}
+          gradeCounts={gradeCounts}
+          hiddenGrades={hiddenGrades}
+          onToggleGrade={(grade) => setHiddenGrades((prev) => ({ ...prev, [grade]: !prev[grade] }))}
+          gradeData={gradeData}
+          availableChartWidth={availableChartWidth}
+          chartHeight={chartHeight}
+          stackData={stackData}
+          maxCount={maxCount}
+          noOfSections={noOfSections}
+          stepValue={stepValue}
+          dailySuccessRate={dailySuccessRate}
+        />
       </ScrollView>
 
       {showStartPicker ? (
@@ -391,138 +384,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  headerBlock: {
-    marginBottom: 12,
-  },
-  topCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-  },
-  contentCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 12,
-  },
-  emptyCard: {
-    minHeight: 180,
-    borderWidth: 1,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-  },
-  dateRangeRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  dateButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  dateLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dateValue: {
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  legendRow: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 12,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  emptyBox: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 18,
-  },
-  emptyText: {
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  filtersSection: {
-    marginBottom: 10,
-  },
-  filtersTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  filtersScroll: {
-    paddingHorizontal: 2,
-    alignItems: 'center',
-    gap: 8,
-  },
-  gradeChip: {
-    borderRadius: 9999,
-    paddingVertical: 7,
-    paddingHorizontal: 11,
-    borderWidth: 1,
-  },
-  gradeChipText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  chartContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  lineChartTitle: {
-    marginTop: 16,
-    fontSize: 14,
-    fontWeight: '700',
-    alignSelf: 'flex-start',
-  },
-  lineChartContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 6,
-  },
-  lineChartEmptyBox: {
-    marginTop: 10,
-    width: '100%',
-    alignItems: 'center',
-  },
-  chartHorizontalScroll: {
-    paddingBottom: 10,
-  },
-  yAxisTextStyle: {
-    fontSize: 12,
-    fontWeight: '700',
   },
 })

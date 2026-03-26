@@ -57,8 +57,8 @@ export default function ClimbSteps() {
     }
 
     router.replace({
-      pathname: '/training-detail',
-      params: { id: String(trainingId) },
+      pathname: '/session-complete',
+      params: { trainingId: String(trainingId) },
     })
   }
 

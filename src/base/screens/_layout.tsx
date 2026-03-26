@@ -106,6 +106,7 @@ function AppNavigator() {
                 />
                 <Stack.Screen name="climb-steps" options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="hangboard" options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="session-complete" options={{ headerShown: true, title: 'Fin de session', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="settings" options={{ headerShown: true, title: 'Paramètres', headerBackTitle: 'Retour' }} />
               </Stack>
             </View>
