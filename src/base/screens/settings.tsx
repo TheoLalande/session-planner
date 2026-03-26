@@ -54,7 +54,6 @@ export default function settings() {
           />
         </View>
       </View>
-      <BottomNavBar onHomePress={() => router.push('/home')} onCalendarPress={() => {}} onSettingsPress={() => {}} />
     </SafeAreaView>
   )
 }

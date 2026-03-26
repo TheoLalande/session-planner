@@ -6,13 +6,7 @@ import { router } from 'expo-router'
 import { haptic } from '../utils/haptics'
 import { useTrainingStore } from '../store/trainingStore'
 
-interface BottomNavBarProps {
-  onHomePress?: () => void
-  onCalendarPress?: () => void
-  onSettingsPress?: () => void
-}
-
-export function BottomNavBar({ onHomePress, onCalendarPress, onSettingsPress }: BottomNavBarProps) {
+export function BottomNavBar() {
   const clearEditingTraining = useTrainingStore((state) => state.clearEditingTraining)
 
   return (

@@ -66,13 +66,19 @@ export default function RootLayout() {
         <PaperProvider>
           <SafeAreaProvider>
             <StatusBar hidden translucent backgroundColor="transparent" />
-            <Stack screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
+            <Stack
+              screenOptions={{
+                contentStyle: { backgroundColor: 'transparent' },
+                animation: 'none',
+              }}
+            >
               <Stack.Screen name="index" options={{ headerShown: false }} />
               <Stack.Screen name="home" options={{ headerShown: false, animation: 'none' }} />
               <Stack.Screen name="login" options={{ headerShown: false, animation: 'none' }} />
               <Stack.Screen name="register" options={{ headerShown: false, animation: 'none' }} />
               <Stack.Screen name="forgot-password" options={{ headerShown: false, animation: 'none' }} />
               <Stack.Screen name="verify-email" options={{ headerShown: false, animation: 'none' }} />
+
               <Stack.Screen
                 name="training-detail"
                 options={{
@@ -97,7 +103,6 @@ export default function RootLayout() {
               />
               <Stack.Screen name="climb-steps" options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }} />
               <Stack.Screen name="hangboard" options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }} />
-              <Stack.Screen name="test" options={{ headerShown: true, title: 'Test Timer', headerBackTitle: 'Retour' }} />
             </Stack>
           </SafeAreaProvider>
         </PaperProvider>

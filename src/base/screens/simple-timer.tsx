@@ -33,6 +33,7 @@ export default function SimpleTimer() {
   const progressAnimRef = useRef(new Animated.Value(0))
   const hasTimerStatusRef = useRef(false)
   const [bottomPanelWidth, setBottomPanelWidth] = useState(0)
+  const isFirstProgressUpdateRef = useRef<boolean>(true)
 
   useEffect(() => {
     loadTrainings()
@@ -43,6 +44,7 @@ export default function SimpleTimer() {
     progressAnimRef.current.stopAnimation()
     progressAnimRef.current.setValue(0)
     hasTimerStatusRef.current = false
+    isFirstProgressUpdateRef.current = true
   }, [exerciseIndex])
 
   const {
@@ -159,38 +161,35 @@ export default function SimpleTimer() {
     progressAnimRef.current.stopAnimation()
     progressAnimRef.current.setValue(0)
     hasTimerStatusRef.current = false
+    isFirstProgressUpdateRef.current = true
   }, [initialDurationSeconds])
 
   useEffect(() => {
-    if (isReps) {
-      progressAnimRef.current.stopAnimation()
-      progressAnimRef.current.setValue(0)
-      hasTimerStatusRef.current = false
-      return
-    }
-
-    if (!hasTimerStatusRef.current) {
+    if (isReps || isTransition || !hasTimerStatusRef.current) {
       progressAnimRef.current.stopAnimation()
       progressAnimRef.current.setValue(0)
       return
     }
 
-    if (isTransition) {
+    const elapsedSeconds = Math.max(0, initialDurationSeconds - remainingSeconds)
+    const ratio = initialDurationSeconds > 0 ? Math.min(1, elapsedSeconds / initialDurationSeconds) : 0
+
+    if (isFirstProgressUpdateRef.current) {
       progressAnimRef.current.stopAnimation()
+      progressAnimRef.current.setValue(ratio)
+      isFirstProgressUpdateRef.current = false
       return
     }
 
-    const targetRatio =
-      initialDurationSeconds > 0 ? Math.min(1, Math.max(0, (initialDurationSeconds - remainingSeconds) / initialDurationSeconds)) : 0
-
-    if (!isRunning || remainingSeconds === 0) {
+    if (!isRunning) {
       progressAnimRef.current.stopAnimation()
-      progressAnimRef.current.setValue(targetRatio)
+      progressAnimRef.current.setValue(ratio)
       return
     }
 
+    progressAnimRef.current.stopAnimation()
     Animated.timing(progressAnimRef.current, {
-      toValue: targetRatio,
+      toValue: ratio,
       duration: 1000,
       easing: Easing.linear,
       useNativeDriver: false,
