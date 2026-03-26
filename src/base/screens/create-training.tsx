@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PrimaryButton, TextField } from '../components'
-import { Alert, ScrollView, View } from 'react-native'
+import { Alert, ScrollView, View, StyleSheet } from 'react-native'
 import { TrainingBloc } from '../components/TrainingBloc'
 import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router'
 import { Portal, Dialog, Button, RadioButton, Text } from 'react-native-paper'
 import { ExerciseType } from '../types/trainingTypes'
 import { FormSlider } from '../components/FormSlider'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function index() {
   const [title, setTitle] = useState('')
@@ -30,8 +31,11 @@ export default function index() {
   const saveTraining = useTrainingStore((state) => state.saveTraining)
   const updateTraining = useTrainingStore((state) => state.updateTraining)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
+  const isLoadingTrainings = useTrainingStore((state) => state.isLoadingTrainings)
 
   const defaultBlocName = useMemo(() => `Bloc ${blocs.length + 1}`, [blocs.length])
+
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     loadTrainings()
@@ -50,7 +54,11 @@ export default function index() {
     setTransitionSecondsBetweenTimers(training.transitionSecondsBetweenTimers ?? 5)
   }, [editingTrainingId, trainings])
 
-  return (
+  return isLoadingTrainings ? (
+    <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <LoadingIndicator />
+    </SafeAreaView>
+  ) : (
     <SafeAreaView style={{ flex: 1 }}>
       <ScrollView
         style={{ flex: 1 }}
@@ -111,6 +119,7 @@ export default function index() {
             title={editingTrainingId ? 'Mettre à jour' : 'Enregistrer'}
             onPress={async () => {
               if (!title.trim()) return
+              setIsSaving(true)
               try {
                 if (editingTrainingId) {
                   await updateTraining(title.trim(), description.trim(), transitionSecondsBetweenTimers)
@@ -123,11 +132,20 @@ export default function index() {
               } catch (e) {
                 const message = e && typeof e === 'object' && 'message' in e ? String((e as any).message) : "Erreur d'enregistrement"
                 Alert.alert('Erreur', message)
+              } finally {
+                setIsSaving(false)
               }
             }}
+            isClickable={!isSaving}
           />
         </View>
       </ScrollView>
+
+      {isSaving ? (
+        <View pointerEvents="none" style={styles.loadingOverlay}>
+          <LoadingIndicator />
+        </View>
+      ) : null}
 
       <Portal>
         <Dialog visible={isBlocModalVisible} onDismiss={() => setIsBlocModalVisible(false)} style={{ marginTop: insets.top + 8 }}>
@@ -167,3 +185,17 @@ export default function index() {
     </SafeAreaView>
   )
 }
+
+const styles = StyleSheet.create({
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 50,
+  },
+})

@@ -25,7 +25,6 @@ export default function SimpleTimer() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const trainings = useTrainingStore((state) => state.trainings)
-  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
   const timerRef = useRef<ExerciseTimerHandle | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [isTransition, setIsTransition] = useState(false)
@@ -34,10 +33,6 @@ export default function SimpleTimer() {
   const hasTimerStatusRef = useRef(false)
   const [bottomPanelWidth, setBottomPanelWidth] = useState(0)
   const isFirstProgressUpdateRef = useRef<boolean>(true)
-
-  useEffect(() => {
-    loadTrainings()
-  }, [loadTrainings])
 
   useEffect(() => {
     // Reset quand on change d'exercice (avant même le premier onStatusChange).
@@ -200,6 +195,7 @@ export default function SimpleTimer() {
     if (nextIndex === null || !trainingId) {
       return
     }
+
     router.replace({
       pathname: '/run-exercise',
       params: {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Keyboard, Alert } from 'react-native'
+import { ScrollView, View, Keyboard, Alert, StyleSheet } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching, TrainingExercise } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -12,6 +12,10 @@ import { CooldownForm } from '../components/CooldownForm'
 import { StretchingForm } from '../components/StretchingForm'
 import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
+import { getSession } from '../api/authService'
+import { getSupabaseClient } from '../api/supabaseClient'
+import LoadingIndicator from '../components/LoadingIndicator'
+import * as ImageManipulator from 'expo-image-manipulator'
 
 export default function index() {
   const params = useLocalSearchParams<{
@@ -67,6 +71,8 @@ export default function index() {
   }, [blocType, isEditTrainingMode, isEditBlocMode])
 
   const [selectedType, setSelectedType] = useState<ExerciceTypes | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const [hangboardData, setHangboardData] = useState<Ihangboard>({
     id: 0,
@@ -159,6 +165,72 @@ export default function index() {
     setSelectedType(forcedType)
   }, [forcedType])
 
+  const STORAGE_BUCKET = 'exercice-images'
+  const isLocalUri = (uri: string) => !/^https?:\/\//i.test(uri)
+
+  const extractStoragePathFromUrl = (storageUrl: string): string | null => {
+    const publicMarker = `/storage/v1/object/public/${STORAGE_BUCKET}/`
+    const signMarker = `/storage/v1/object/sign/${STORAGE_BUCKET}/`
+    const idxPublic = storageUrl.indexOf(publicMarker)
+    const idxSign = storageUrl.indexOf(signMarker)
+    const idx = idxPublic !== -1 ? idxPublic : idxSign
+    const marker = idxPublic !== -1 ? publicMarker : signMarker
+    if (idx === -1) return null
+    const afterMarker = storageUrl.substring(idx + marker.length)
+    const pathEncoded = afterMarker.split('?')[0]
+    try {
+      return decodeURIComponent(pathEncoded)
+    } catch {
+      return pathEncoded
+    }
+  }
+
+  const deleteExercisePictureFromStorage = async (pictureUrl?: string) => {
+    if (!pictureUrl) return
+    if (!pictureUrl.startsWith('http')) return
+    const objectPath = extractStoragePathFromUrl(pictureUrl)
+    if (!objectPath) return
+    const supabase = getSupabaseClient()
+    const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([objectPath])
+    if (error) {
+      Alert.alert('Erreur', error.message)
+    }
+  }
+
+  const uploadExercisePictureToStorage = async (localUri: string, userId: string): Promise<string> => {
+    const supabase = getSupabaseClient()
+    const manipulated = await ImageManipulator.manipulateAsync(
+      localUri,
+      [{ resize: { width: 1280 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
+    )
+
+    const response = await fetch(manipulated.uri)
+    const arrayBuffer = await response.arrayBuffer()
+    const contentType = 'image/jpeg'
+
+    const fileNameRaw = localUri.split('/').pop() ?? 'image'
+    const fileNameBase = fileNameRaw.split('?')[0] || 'image'
+    const safeBase = fileNameBase.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const lastDotIdx = safeBase.lastIndexOf('.')
+    const hasExt = lastDotIdx !== -1 && lastDotIdx < safeBase.length - 1
+    const ext = hasExt ? safeBase.slice(lastDotIdx + 1).toLowerCase() : 'jpg'
+    const baseNoExt = hasExt ? safeBase.slice(0, lastDotIdx) : safeBase
+    const safeBaseNoExt = baseNoExt || 'image'
+    const objectPath = `users/${userId}/exercises/${Date.now()}-${safeBaseNoExt}.${ext}`
+
+    const fileBytes = new Uint8Array(arrayBuffer)
+
+    const { error: uploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(objectPath, fileBytes as any, { contentType, upsert: false })
+    if (uploadError) throw new Error(uploadError.message)
+
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+    if (!supabaseUrl) throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL')
+    return `${supabaseUrl}/storage/v1/object/public/${STORAGE_BUCKET}/${objectPath}`
+  }
+
   const handleNext = async () => {
     if (!blocId || !selectedType) {
       router.back()
@@ -180,8 +252,46 @@ export default function index() {
     }
 
     if (exercise) {
+      const dataAny = exercise.data as any
+      const pictureValue = typeof dataAny.picture === 'string' ? dataAny.picture : ''
+
+      const existingPicture = currentExercise && (currentExercise.data as any).picture ? (currentExercise.data as any).picture : undefined
+
+      if (pictureValue && pictureValue !== existingPicture) {
+        if (isLocalUri(pictureValue)) {
+          setIsSaving(true)
+          try {
+            const session = await getSession()
+            const userId = session.user?.id
+            if (!userId) {
+              Alert.alert('Erreur', 'Utilisateur non connecté')
+              return
+            }
+
+            const uploadedUrl = await uploadExercisePictureToStorage(pictureValue, userId)
+            dataAny.picture = uploadedUrl
+
+            if (existingPicture) {
+              await deleteExercisePictureFromStorage(existingPicture)
+            }
+          } catch (e: any) {
+            Alert.alert('Erreur', e?.message || 'Impossible de televerser l image')
+            return
+          } finally {
+            setIsSaving(false)
+          }
+        } else {
+          dataAny.picture = pictureValue
+        }
+      }
+
       if (isEditTrainingMode && trainingId !== null && exerciseIndex !== null) {
-        await updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise)
+        setIsSaving(true)
+        try {
+          await updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise)
+        } finally {
+          setIsSaving(false)
+        }
       } else if (isEditBlocMode && exerciseIndex !== null) {
         updateExerciseInBloc(blocId, exerciseIndex, exercise)
       } else {
@@ -202,15 +312,25 @@ export default function index() {
       {
         text: 'Supprimer',
         style: 'destructive',
-        onPress: () => {
-          if (isEditTrainingMode && trainingId !== null) {
-            removeExerciseFromTraining(trainingId, blocId, exerciseIndex).then(() => {
+        onPress: async () => {
+          try {
+            setIsDeleting(true)
+            if (currentExercise && (currentExercise.data as any)?.picture) {
+              await deleteExercisePictureFromStorage((currentExercise.data as any).picture)
+            }
+
+            if (isEditTrainingMode && trainingId !== null) {
+              await removeExerciseFromTraining(trainingId, blocId, exerciseIndex)
               router.back()
-            })
-            return
+              return
+            }
+            removeExerciseFromBloc(blocId, exerciseIndex)
+            router.back()
+          } catch (e: any) {
+            Alert.alert('Erreur', e?.message || 'Impossible de supprimer l image')
+          } finally {
+            setIsDeleting(false)
           }
-          removeExerciseFromBloc(blocId, exerciseIndex)
-          router.back()
         },
       },
     ])
@@ -252,12 +372,37 @@ export default function index() {
         {!forcedType && !isEditTrainingMode && !isEditBlocMode ? <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} /> : null}
         {renderForm()}
         <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
-          <PrimaryButton title="Ajouter l'exercice" onPress={handleNext} />
+          <PrimaryButton title="Ajouter l'exercice" onPress={handleNext} isClickable={!isSaving && !isDeleting} />
           {isEditTrainingMode || isEditBlocMode ? (
-            <PrimaryButton title="Supprimer l'exercice" onPress={handleDelete} color={LightColors.primary} borderColor={LightColors.primary} />
+            <PrimaryButton
+              title="Supprimer l'exercice"
+              onPress={handleDelete}
+              color={LightColors.primary}
+              borderColor={LightColors.primary}
+              isClickable={!isSaving && !isDeleting}
+            />
           ) : null}
         </View>
       </ScrollView>
+      {isSaving || isDeleting ? (
+        <View pointerEvents="none" style={styles.loadingOverlay}>
+          <LoadingIndicator />
+        </View>
+      ) : null}
     </SafeAreaView>
   )
 }
+
+const styles = StyleSheet.create({
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 50,
+  },
+})

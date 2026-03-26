@@ -16,6 +16,7 @@ export default function index() {
   const removeTraining = useTrainingStore((state) => state.removeTraining)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
+  const [isRemovingTraining, setIsRemovingTraining] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -87,7 +88,12 @@ export default function index() {
                 renderRightActions={() => <View style={styles.deleteBackground} />}
                 onSwipeableOpen={async (direction) => {
                   if (direction === 'left' || direction === 'right') {
-                    await removeTraining(training.id)
+                    setIsRemovingTraining(true)
+                    try {
+                      await removeTraining(training.id)
+                    } finally {
+                      setIsRemovingTraining(false)
+                    }
                   }
                 }}
               >
@@ -118,6 +124,11 @@ export default function index() {
         </View>
       </ScrollView>
       <BottomNavBar />
+      {isRemovingTraining ? (
+        <View pointerEvents="none" style={styles.loadingOverlay}>
+          <LoadingIndicator />
+        </View>
+      ) : null}
     </SafeAreaView>
   )
 }
@@ -132,6 +143,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F7F9FC',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 50,
   },
   scroll: {
     flex: 1,

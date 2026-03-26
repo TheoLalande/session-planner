@@ -1,6 +1,6 @@
-import React, { useEffect, useLayoutEffect } from 'react'
+import React, { useEffect, useLayoutEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useNavigation } from '@react-navigation/native'
 import { MaterialIcons } from '@expo/vector-icons'
@@ -8,6 +8,7 @@ import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
 import { TrainingBlocItem } from '../components/TrainingBlocItem'
 import { haptic } from '../utils/haptics'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function TrainingDetail() {
   const { id } = useLocalSearchParams<{ id?: string }>()
@@ -18,6 +19,8 @@ export default function TrainingDetail() {
   const training = useTrainingStore((state) => state.trainings.find((t) => t.id === trainingId))
   const startEditingTraining = useTrainingStore((state) => state.startEditingTraining)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
+  const isLoadingTrainings = useTrainingStore((state) => state.isLoadingTrainings)
+  const [isStartingTraining, setIsStartingTraining] = useState(false)
 
   useEffect(() => {
     loadTrainings()
@@ -39,13 +42,27 @@ export default function TrainingDetail() {
               const exercises = training.blocs.flatMap((bloc) => bloc.exercises)
               if (exercises.length === 0) return
 
-              router.push({
-                pathname: '/run-exercise',
-                params: {
-                  trainingId: String(training.id),
-                  exerciseIndex: '0',
-                },
-              })
+              const imageUris = Array.from(
+                new Set(
+                  exercises
+                    .map((exercise) => (exercise.data as any)?.picture)
+                    .filter((uri): uri is string => typeof uri === 'string' && uri.trim().length > 0 && /^https?:\/\//i.test(uri)),
+                ),
+              )
+
+              setIsStartingTraining(true)
+              try {
+                await Promise.allSettled(imageUris.map((uri) => Image.prefetch(uri)))
+                router.push({
+                  pathname: '/run-exercise',
+                  params: {
+                    trainingId: String(training.id),
+                    exerciseIndex: '0',
+                  },
+                })
+              } finally {
+                setIsStartingTraining(false)
+              }
             }}
             style={styles.headerIconButton}
           >
@@ -67,6 +84,14 @@ export default function TrainingDetail() {
       ),
     })
   }, [navigation, router, startEditingTraining, training, trainingId])
+
+  if (isLoadingTrainings) {
+    return (
+      <SafeAreaView style={styles.emptyContainer}>
+        <LoadingIndicator />
+      </SafeAreaView>
+    )
+  }
 
   if (!training || !trainingId) {
     return (
@@ -148,6 +173,11 @@ export default function TrainingDetail() {
           )
         })}
       </ScrollView>
+      {isStartingTraining ? (
+        <View pointerEvents="none" style={styles.loadingOverlay}>
+          <LoadingIndicator />
+        </View>
+      ) : null}
     </SafeAreaView>
   )
 }
@@ -276,5 +306,16 @@ const styles = StyleSheet.create({
     borderColor: '#E5EBF3',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 50,
   },
 })

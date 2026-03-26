@@ -14,7 +14,6 @@ export default function ClimbSteps() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
-  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
 
   const { exercise, hasNext, nextIndex } = useMemo((): { exercise: TrainingExercise | null; hasNext: boolean; nextIndex: number | null } => {
     const trainingIdValue = trainingId ?? ''
@@ -42,10 +41,6 @@ export default function ClimbSteps() {
   const isAttemptsDone = nextAttemptIndex === -1
 
   const addAttempt = useClimbingAttemptsStore((state) => state.addAttempt)
-
-  useEffect(() => {
-    loadTrainings()
-  }, [loadTrainings])
 
   if (!exercise || exercise.type !== 'climbing') {
     return (

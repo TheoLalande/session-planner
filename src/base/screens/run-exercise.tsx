@@ -11,14 +11,9 @@ export default function RunExercise() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
-  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
-
-  useEffect(() => {
-    loadTrainings()
-  }, [loadTrainings])
+  const trainingIdValue = trainingId ?? ''
 
   const { exercise, isValid } = useMemo((): { exercise: TrainingExercise | null; isValid: boolean } => {
-    const trainingIdValue = trainingId ?? ''
     const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
 
     const training = trainings.find((t) => t.id === trainingIdValue)
