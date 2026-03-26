@@ -5,6 +5,7 @@ import { router } from 'expo-router'
 import { TextField, PrimaryButton } from '../components'
 import { LightColors } from '../constants/theme'
 import { getSession, login } from '../api/authService'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -45,7 +46,7 @@ export default function Login() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          <Text style={styles.loadingText}>Chargement...</Text>
+          <LoadingIndicator />
         </View>
       </SafeAreaView>
     )
@@ -115,4 +116,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 })
-

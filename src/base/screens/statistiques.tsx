@@ -2,11 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { router } from 'expo-router'
-import { BottomNavBar } from '../components'
 import { LightColors } from '../constants/theme'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import { BarChart, LineChart } from 'react-native-gifted-charts'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 const extractGradeFromRouteLabel = (routeLabel: string) => {
   const parts = routeLabel.split(' · ')
@@ -239,7 +238,7 @@ export default function Statistiques() {
 
         {isLoadingAttempts ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>Chargement...</Text>
+            <LoadingIndicator />
           </View>
         ) : attemptsInRange.length === 0 ? (
           <View style={styles.emptyBox}>

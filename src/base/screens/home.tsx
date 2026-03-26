@@ -8,6 +8,7 @@ import { router } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
 import { haptic } from '../utils/haptics'
 import { getSession } from '../api/authService'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function index() {
   const trainings = useTrainingStore((state) => state.trainings)
@@ -50,7 +51,7 @@ export default function index() {
   if (isCheckingSession) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: LightColors.grey }}>Chargement...</Text>
+        <LoadingIndicator />
       </SafeAreaView>
     )
   }

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { View, Text, StyleSheet } from 'react-native'
 import { router } from 'expo-router'
-import { BottomNavBar, PrimaryButton } from '../components'
+import { PrimaryButton } from '../components'
 import { LightColors } from '../constants/theme'
 import { getSession, logout } from '../api/authService'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function settings() {
   const [isCheckingSession, setIsCheckingSession] = useState(true)
@@ -34,7 +35,7 @@ export default function settings() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
-          <Text style={styles.title}>Chargement...</Text>
+          <LoadingIndicator />
         </View>
       </SafeAreaView>
     )

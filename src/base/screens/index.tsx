@@ -4,6 +4,7 @@ import { View, Animated, Text } from 'react-native'
 import { Logo, MainText } from '../components'
 import { LightColors } from '../constants/theme'
 import { getSession } from '../api/authService'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function Index() {
   const router = useRouter()
@@ -69,7 +70,7 @@ export default function Index() {
           <Logo logo="logo-full.png" maxWidth={300} maxHeight={300} />
           <MainText text="Plannifiez vos sessions d'entrainement" fontSize={30} color={LightColors.primary} />
         </View>
-        {isCheckingSession ? <Text style={{ color: LightColors.grey, marginBottom: 20 }}>Chargement...</Text> : null}
+        {isCheckingSession ? <LoadingIndicator /> : null}
       </View>
     </Animated.View>
   )

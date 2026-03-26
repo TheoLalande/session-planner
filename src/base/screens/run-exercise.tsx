@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
 import { LightColors } from '../constants/theme'
 import { TrainingExercise } from '../types/trainingTypes'
+import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function RunExercise() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
@@ -74,9 +75,8 @@ export default function RunExercise() {
   return (
     <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <View>
-        <Text style={{ color: LightColors.grey }}>Chargement...</Text>
+        <LoadingIndicator />
       </View>
     </SafeAreaView>
   )
 }
-
