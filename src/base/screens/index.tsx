@@ -15,8 +15,15 @@ export default function Index() {
     let isMounted = true
 
     const check = async () => {
+      const startedAt = Date.now()
       try {
         const session = await getSession()
+        if (!isMounted) return
+
+        const elapsed = Date.now() - startedAt
+        if (elapsed < 1000) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed))
+        }
         if (!isMounted) return
 
         const target = session.accessToken ? '/home' : '/login'
@@ -29,6 +36,11 @@ export default function Index() {
           router.replace(target)
         })
       } catch {
+        if (!isMounted) return
+        const elapsed = Date.now() - startedAt
+        if (elapsed < 2000) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 - elapsed))
+        }
         if (!isMounted) return
         router.replace('/login')
       } finally {

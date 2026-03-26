@@ -15,13 +15,6 @@ export const LightColors = {
   black: '#121212',
 }
 
-export const ExerciceColors = {
-  warmup: '#008000',
-  cooldown: '#992D1D',
-  stretching: '#0000FF',
-  hangboard: '#FFA500',
-}
-
 export const Fonts = {
   poppins: {
     extraLight: 'Poppins-ExtraLight',

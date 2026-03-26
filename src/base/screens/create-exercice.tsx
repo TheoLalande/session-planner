@@ -11,7 +11,7 @@ import { WarmupForm } from '../components/WarmupForm'
 import { CooldownForm } from '../components/CooldownForm'
 import { StretchingForm } from '../components/StretchingForm'
 import { useTrainingStore } from '../store/trainingStore'
-import { ExerciceColors } from '../constants/theme'
+import { LightColors } from '../constants/theme'
 
 export default function index() {
   const params = useLocalSearchParams<{
@@ -254,12 +254,7 @@ export default function index() {
         <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
           <PrimaryButton title="Ajouter l'exercice" onPress={handleNext} />
           {isEditTrainingMode || isEditBlocMode ? (
-            <PrimaryButton
-              title="Supprimer l'exercice"
-              onPress={handleDelete}
-              color={ExerciceColors.cooldown}
-              borderColor={ExerciceColors.cooldown}
-            />
+            <PrimaryButton title="Supprimer l'exercice" onPress={handleDelete} color={LightColors.primary} borderColor={LightColors.primary} />
           ) : null}
         </View>
       </ScrollView>

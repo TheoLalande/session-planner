@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useNavigation } from '@react-navigation/native'
 import { MaterialIcons } from '@expo/vector-icons'
 import { useTrainingStore } from '../store/trainingStore'
-import { LightColors, ExerciceColors } from '../constants/theme'
+import { LightColors } from '../constants/theme'
 import { TrainingBlocItem } from '../components/TrainingBlocItem'
 import { haptic } from '../utils/haptics'
 
@@ -103,8 +103,8 @@ export default function TrainingDetail() {
 
         {training.blocs.map((bloc) => {
           const firstExercise = bloc.exercises[0]
-          const type = firstExercise?.type as keyof typeof ExerciceColors | undefined
-          const blocTitleColor = type && ExerciceColors[type] ? ExerciceColors[type] : LightColors.black
+          const type = firstExercise?.type as keyof typeof LightColors | undefined
+          const blocTitleColor = type && LightColors[type] ? LightColors[type] : LightColors.black
 
           return (
             <View

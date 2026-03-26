@@ -64,7 +64,7 @@ export default function Login() {
 
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <View style={{ width: '100%', marginTop: 10 }}>
+        <View style={{ marginTop: 10, alignItems: 'center' }}>
           <PrimaryButton title="Se connecter" onPress={onSubmit} isClickable={email.trim().length > 0 && password.length > 0} />
         </View>
 
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   title: {
-    fontSize: 40,
+    fontSize: 30,
     fontWeight: '700',
     color: LightColors.primary,
     textAlign: 'center',
