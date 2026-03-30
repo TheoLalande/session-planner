@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { StyleSheet } from 'react-native'
 import { TextInput } from 'react-native-paper'
-import { LightColors } from '../constants/theme'
+import { useAppTheme } from '../providers/themeProvider'
 
 interface TextFieldProps {
   icon?: string
@@ -12,6 +12,7 @@ interface TextFieldProps {
 }
 
 export function TextField({ icon, placeholder, value: controlledValue, onChangeText, type = 'text' }: TextFieldProps) {
+  const { colors } = useAppTheme()
   const isPassword = type === 'password'
   const isEmail = type === 'email'
   const isNumber = type === 'number'
@@ -31,20 +32,20 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
 
   return (
     <TextInput
-      left={icon ? <TextInput.Icon icon={icon} color={LightColors.primary} /> : null}
+      left={icon ? <TextInput.Icon icon={icon} color={colors.primary} /> : null}
       right={
         isPassword && hasValue ? (
           <TextInput.Icon
             icon={isPasswordVisible ? 'eye' : 'eye-off'}
-            color={LightColors.primary}
+            color={colors.primary}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
           />
         ) : null
       }
-      textColor={LightColors.black}
-      cursorColor={LightColors.primary}
+      textColor={colors.black}
+      cursorColor={colors.primary}
       caretHidden={false}
-      selectionColor={LightColors.primary}
+      selectionColor={colors.primary}
       placeholder={isFocused ? '' : placeholder}
       value={value}
       onChangeText={handleChangeText}
@@ -52,9 +53,13 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
       keyboardType={isEmail ? 'email-address' : isNumber ? 'numeric' : 'default'}
       autoCapitalize={isEmail || isPassword ? 'none' : 'sentences'}
       autoCorrect={false}
-      style={[styles.input, isFocused && styles.inputFocused]}
+      style={[
+        styles.input,
+        { backgroundColor: colors.white, borderColor: colors.lightGrey },
+        isFocused && { borderColor: colors.primary },
+      ]}
       contentStyle={styles.content}
-      placeholderTextColor={LightColors.black}
+      placeholderTextColor={colors.black}
       underlineColor="transparent"
       activeUnderlineColor="transparent"
       onFocus={() => setIsFocused(true)}
@@ -71,14 +76,14 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     borderTopLeftRadius: 17,
     borderTopRightRadius: 17,
-    backgroundColor: LightColors.white,
+    backgroundColor: 'transparent',
     height: 50,
     borderWidth: 1,
-    borderColor: LightColors.lightGrey,
+    borderColor: 'transparent',
     padding: 0,
   },
   inputFocused: {
-    borderColor: LightColors.primary,
+    borderColor: 'transparent',
   },
   content: {
     paddingLeft: 14,

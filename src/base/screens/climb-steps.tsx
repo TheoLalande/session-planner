@@ -9,6 +9,7 @@ import { TrainingExercise } from '../types/trainingTypes'
 import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { haptic } from '../utils/haptics'
+import { buildClimbingRouteLabel } from '../api/climbingRoutesService'
 
 export default function ClimbSteps() {
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
@@ -67,7 +68,11 @@ export default function ClimbSteps() {
       return
     }
 
-    const routeLabel = `${exercise.data.title || 'Climbing'} · ${exercise.data.grade}`
+    const routeLabel = buildClimbingRouteLabel({
+      routeType: 'falaise',
+      routeName: exercise.data.title || 'Climbing',
+      routeGrade: exercise.data.grade,
+    })
     await addAttempt({ routeLabel, status })
 
     setAttemptResults((prev) => {

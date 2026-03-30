@@ -236,6 +236,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  navLinkButton: {
+    width: '100%',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 6,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navLinkText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
   themeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
