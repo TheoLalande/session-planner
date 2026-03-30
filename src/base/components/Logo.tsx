@@ -1,18 +1,32 @@
 import { Image, StyleSheet } from 'react-native'
+import { useAppTheme } from '../providers/themeProvider'
 
 interface LogoProps {
   maxWidth?: number
   maxHeight?: number
-  logo: 'logo-full.png' | 'logo-mignify.png'
+  logo: 'logo-full.png'
 }
 
 const logoMap = {
   'logo-full.png': require('../assets/png/logo-full.png'),
-  'logo-mignify.png': require('../assets/png/logo-mignify.png'),
 }
 
 export function Logo({ maxWidth, maxHeight, logo }: LogoProps) {
-  return <Image source={logoMap[logo]} style={[styles.logo, { maxHeight: maxHeight ?? 300, maxWidth: maxWidth ?? 300 }]} />
+  const { colors } = useAppTheme()
+
+  return (
+    <Image
+      source={logoMap[logo]}
+      style={[
+        styles.logo,
+        {
+          maxHeight: maxHeight ?? 300,
+          maxWidth: maxWidth ?? 300,
+          tintColor: colors.black,
+        },
+      ]}
+    />
+  )
 }
 
 const styles = StyleSheet.create({

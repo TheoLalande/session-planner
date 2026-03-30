@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { View, Text, StyleSheet, Switch, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView } from 'react-native'
 import { router } from 'expo-router'
 import { PrimaryButton } from '../components'
 import { getSession, logout } from '../api/authService'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
-import { LightColors } from '../constants/theme'
+import { LightColors, ThemeOptions } from '../constants/theme'
 
 export default function settings() {
   const [isCheckingSession, setIsCheckingSession] = useState(true)
-  const { mode, setMode, colors } = useAppTheme()
+  const { mode, setMode, themeId, setThemeId, colors } = useAppTheme()
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric')
   const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h')
   const [autoStartNextExercise, setAutoStartNextExercise] = useState(true)
@@ -49,100 +49,126 @@ export default function settings() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.white }]}>
-      <View style={styles.content}>
-        <View style={[styles.panel, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-          <Text style={[styles.panelTitle, { color: colors.black }]}>Apparence</Text>
-          <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: colors.black }]}>Thème sombre</Text>
-            <Switch value={mode === 'dark'} onValueChange={(enabled) => setMode(enabled ? 'dark' : 'light')} />
-          </View>
-        </View>
-
-        <View style={[styles.panel, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-          <Text style={[styles.panelTitle, { color: colors.black }]}>Préférences d'entraînement</Text>
-          <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: colors.black }]}>Démarrer automatiquement l'exercice suivant</Text>
-            <Switch value={autoStartNextExercise} onValueChange={setAutoStartNextExercise} />
-          </View>
-          <View style={styles.row}>
-            <Text style={[styles.rowLabel, { color: colors.black }]}>Rappel quotidien</Text>
-            <Switch value={dailyReminder} onValueChange={setDailyReminder} />
-          </View>
-
-          <View style={styles.group}>
-            <Text style={[styles.groupTitle, { color: colors.grey }]}>Unités de mesure</Text>
-            <View style={styles.segmentedRow}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[
-                  styles.segmentButton,
-                  {
-                    backgroundColor: unitSystem === 'metric' ? colors.primary : colors.white,
-                    borderColor: unitSystem === 'metric' ? colors.primary : colors.cardBorder,
-                  },
-                ]}
-                onPress={() => setUnitSystem('metric')}
-              >
-                <Text style={[styles.segmentText, { color: unitSystem === 'metric' ? colors.white : colors.black }]}>Métrique</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[
-                  styles.segmentButton,
-                  {
-                    backgroundColor: unitSystem === 'imperial' ? colors.primary : colors.white,
-                    borderColor: unitSystem === 'imperial' ? colors.primary : colors.cardBorder,
-                  },
-                ]}
-                onPress={() => setUnitSystem('imperial')}
-              >
-                <Text style={[styles.segmentText, { color: unitSystem === 'imperial' ? colors.white : colors.black }]}>Impérial</Text>
-              </TouchableOpacity>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
+          <View style={[styles.panel, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <Text style={[styles.panelTitle, { color: colors.black }]}>Apparence</Text>
+            <View style={styles.row}>
+              <Text style={[styles.rowLabel, { color: colors.black }]}>Thème sombre</Text>
+              <Switch value={mode === 'dark'} onValueChange={(enabled) => setMode(enabled ? 'dark' : 'light')} />
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.rowLabel, { color: colors.black }]}>Thème</Text>
+            </View>
+            <View style={styles.themeGrid}>
+              {ThemeOptions.map((t) => {
+                const isActive = themeId === t.id
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.themeButton,
+                      {
+                        backgroundColor: isActive ? colors.primary : colors.white,
+                        borderColor: isActive ? colors.primary : colors.cardBorder,
+                      },
+                    ]}
+                    onPress={() => setThemeId(t.id)}
+                  >
+                    <Text style={[styles.themeButtonText, { color: isActive ? colors.white : colors.black }]}>{t.label}</Text>
+                  </TouchableOpacity>
+                )
+              })}
             </View>
           </View>
 
-          <View style={styles.group}>
-            <Text style={[styles.groupTitle, { color: colors.grey }]}>Format de l'heure</Text>
-            <View style={styles.segmentedRow}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[
-                  styles.segmentButton,
-                  {
-                    backgroundColor: timeFormat === '24h' ? colors.primary : colors.white,
-                    borderColor: timeFormat === '24h' ? colors.primary : colors.cardBorder,
-                  },
-                ]}
-                onPress={() => setTimeFormat('24h')}
-              >
-                <Text style={[styles.segmentText, { color: timeFormat === '24h' ? colors.white : colors.black }]}>24h</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={[
-                  styles.segmentButton,
-                  {
-                    backgroundColor: timeFormat === '12h' ? colors.primary : colors.white,
-                    borderColor: timeFormat === '12h' ? colors.primary : colors.cardBorder,
-                  },
-                ]}
-                onPress={() => setTimeFormat('12h')}
-              >
-                <Text style={[styles.segmentText, { color: timeFormat === '12h' ? colors.white : colors.black }]}>12h</Text>
-              </TouchableOpacity>
+          <View style={[styles.panel, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <Text style={[styles.panelTitle, { color: colors.black }]}>Préférences d'entraînement</Text>
+            <View style={styles.row}>
+              <Text style={[styles.rowLabel, { color: colors.black }]}>Démarrer automatiquement l'exercice suivant</Text>
+              <Switch value={autoStartNextExercise} onValueChange={setAutoStartNextExercise} />
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.rowLabel, { color: colors.black }]}>Rappel quotidien</Text>
+              <Switch value={dailyReminder} onValueChange={setDailyReminder} />
+            </View>
+
+            <View style={styles.group}>
+              <Text style={[styles.groupTitle, { color: colors.grey }]}>Unités de mesure</Text>
+              <View style={styles.segmentedRow}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[
+                    styles.segmentButton,
+                    {
+                      backgroundColor: unitSystem === 'metric' ? colors.primary : colors.white,
+                      borderColor: unitSystem === 'metric' ? colors.primary : colors.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setUnitSystem('metric')}
+                >
+                  <Text style={[styles.segmentText, { color: unitSystem === 'metric' ? colors.white : colors.black }]}>Métrique</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[
+                    styles.segmentButton,
+                    {
+                      backgroundColor: unitSystem === 'imperial' ? colors.primary : colors.white,
+                      borderColor: unitSystem === 'imperial' ? colors.primary : colors.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setUnitSystem('imperial')}
+                >
+                  <Text style={[styles.segmentText, { color: unitSystem === 'imperial' ? colors.white : colors.black }]}>Impérial</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.group}>
+              <Text style={[styles.groupTitle, { color: colors.grey }]}>Format de l'heure</Text>
+              <View style={styles.segmentedRow}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[
+                    styles.segmentButton,
+                    {
+                      backgroundColor: timeFormat === '24h' ? colors.primary : colors.white,
+                      borderColor: timeFormat === '24h' ? colors.primary : colors.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setTimeFormat('24h')}
+                >
+                  <Text style={[styles.segmentText, { color: timeFormat === '24h' ? colors.white : colors.black }]}>24h</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[
+                    styles.segmentButton,
+                    {
+                      backgroundColor: timeFormat === '12h' ? colors.primary : colors.white,
+                      borderColor: timeFormat === '12h' ? colors.primary : colors.cardBorder,
+                    },
+                  ]}
+                  onPress={() => setTimeFormat('12h')}
+                >
+                  <Text style={[styles.segmentText, { color: timeFormat === '12h' ? colors.white : colors.black }]}>12h</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
+          <View style={styles.buttonWrapper}>
+            <PrimaryButton
+              title="Se déconnecter"
+              onPress={async () => {
+                await logout()
+                router.replace('/login')
+              }}
+            />
+          </View>
         </View>
-        <View style={styles.buttonWrapper}>
-          <PrimaryButton
-            title="Se déconnecter"
-            onPress={async () => {
-              await logout()
-              router.replace('/login')
-            }}
-          />
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
@@ -152,12 +178,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flex: 1,
-    justifyContent: 'flex-start',
     width: '100%',
+    justifyContent: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   panel: {
     width: '100%',
@@ -207,6 +235,24 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  themeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  themeButton: {
+    flexBasis: '48%',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   buttonWrapper: {
     width: '100%',
