@@ -50,6 +50,22 @@ export function BottomNavBar() {
       <TouchableOpacity
         onPress={async () => {
           await haptic('tap')
+          router.push('/add-cust')
+        }}
+        style={[
+          styles.iconWrapper,
+          {
+            backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.headerButtonBackground,
+            borderColor: mode === 'dark' ? colors.darkBorder : colors.navIconBorder,
+          },
+        ]}
+        activeOpacity={0.7}
+      >
+        <MaterialIcons name="route" size={28} color={colors.primary} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={async () => {
+          await haptic('tap')
           router.push('/climbing-routes')
         }}
         style={[

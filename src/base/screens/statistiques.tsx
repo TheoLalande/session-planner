@@ -17,6 +17,13 @@ const extractGradeFromRouteLabel = (routeLabel: string) => {
   return (parts[parts.length - 1] ?? '').trim()
 }
 
+const extractGradeFromAttempt = (attempt: { grade?: string; routeLabel: string }) => {
+  if (attempt.grade && attempt.grade.trim().length > 0) {
+    return attempt.grade
+  }
+  return extractGradeFromRouteLabel(attempt.routeLabel)
+}
+
 const normalizeGradeLabel = (grade: string) => {
   let g = grade.trim().replace(/\s+/g, '').toLowerCase()
   const mMidPlus = g.match(/^(\d+)\+([abc])$/)
@@ -150,7 +157,7 @@ export default function Statistiques() {
     >()
 
     for (const attempt of attemptsInRange) {
-      const rawGrade = extractGradeFromRouteLabel(attempt.routeLabel)
+      const rawGrade = extractGradeFromAttempt(attempt)
       const grade = normalizeGradeLabel(rawGrade)
       if (!grade) continue
 
@@ -189,7 +196,7 @@ export default function Statistiques() {
     const map = new Map<number, { success: number; fail: number }>()
 
     for (const attempt of attemptsInRange) {
-      const rawGrade = extractGradeFromRouteLabel(attempt.routeLabel)
+      const rawGrade = extractGradeFromAttempt(attempt)
       const grade = normalizeGradeLabel(rawGrade)
       if (!visibleGradesSet.has(grade)) continue
 
@@ -308,7 +315,7 @@ export default function Statistiques() {
     const byDay = new Map<number, number[]>()
 
     attemptsInRange.forEach((attempt) => {
-      const rawGrade = extractGradeFromRouteLabel(attempt.routeLabel)
+      const rawGrade = extractGradeFromAttempt(attempt)
       const grade = normalizeGradeLabel(rawGrade)
       const score = gradeToScore(grade)
       if (score < 0) {

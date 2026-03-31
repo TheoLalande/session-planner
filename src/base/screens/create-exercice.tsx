@@ -94,6 +94,8 @@ export default function index() {
     grade: '6a',
     restingTime: 0,
     attempts: 0,
+    climbingType: 'bloc',
+    routeProfile: 'verticale',
     notes: '',
   })
 

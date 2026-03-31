@@ -9,9 +9,11 @@ interface TextFieldProps {
   value?: string
   onChangeText?: (text: string) => void
   type?: 'text' | 'email' | 'password' | 'number'
+  onFocus?: () => void
+  onBlur?: () => void
 }
 
-export function TextField({ icon, placeholder, value: controlledValue, onChangeText, type = 'text' }: TextFieldProps) {
+export function TextField({ icon, placeholder, value: controlledValue, onChangeText, type = 'text', onFocus, onBlur }: TextFieldProps) {
   const { colors } = useAppTheme()
   const isPassword = type === 'password'
   const isEmail = type === 'email'
@@ -62,8 +64,14 @@ export function TextField({ icon, placeholder, value: controlledValue, onChangeT
       placeholderTextColor={colors.black}
       underlineColor="transparent"
       activeUnderlineColor="transparent"
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => setIsFocused(false)}
+      onFocus={() => {
+        setIsFocused(true)
+        onFocus?.()
+      }}
+      onBlur={() => {
+        setIsFocused(false)
+        onBlur?.()
+      }}
     />
   )
 }

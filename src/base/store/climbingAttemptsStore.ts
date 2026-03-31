@@ -6,6 +6,8 @@ export type ClimbingAttemptStatus = 'success' | 'fail'
 export type ClimbingAttempt = {
   id: string
   createdAt: number
+  routeName: string
+  grade: string
   routeLabel: string
   status: ClimbingAttemptStatus
 }

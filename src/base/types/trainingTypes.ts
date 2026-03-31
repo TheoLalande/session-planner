@@ -6,6 +6,8 @@ export type ExerciceTypes = ExerciseType
 
 export type TimeUnit = 'minutes' | 'seconds'
 export type QuantityMode = 'time' | 'reps'
+export type ClimbingSessionType = 'bloc' | 'voie' | 'grande voie'
+export type ClimbingWallProfile = 'dalle' | 'verticale' | 'devers' | 'toit'
 
 export interface ICommonWorkout {
   id: number
@@ -28,6 +30,8 @@ export interface IClimbing extends ICommonWorkout {
   grade: ClimbingGrades
   restingTime: number
   attempts: number
+  climbingType?: ClimbingSessionType
+  routeProfile?: ClimbingWallProfile
 }
 
 export interface IWarmUp extends ICommonWorkout {
