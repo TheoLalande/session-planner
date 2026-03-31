@@ -5,11 +5,11 @@ import { router } from 'expo-router'
 import { haptic } from '../utils/haptics'
 import { useTrainingStore } from '../store/trainingStore'
 import { useAppTheme } from '../providers/themeProvider'
-import { LightColors } from '../constants/theme'
 
 export function BottomNavBar() {
   const clearEditingTraining = useTrainingStore((state) => state.clearEditingTraining)
   const { mode, colors } = useAppTheme()
+  const styles = createStyles(colors)
 
   return (
     <View style={[styles.container, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorderMuted }]}>
@@ -99,7 +99,7 @@ export function BottomNavBar() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     marginBottom: 14,
@@ -109,9 +109,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: LightColors.cardBorderMuted,
+    borderColor: colors.cardBorderMuted,
     borderRadius: 20,
-    shadowColor: LightColors.shadow,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: LightColors.headerButtonBackground,
+    backgroundColor: colors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: LightColors.navIconBorder,
+    borderColor: colors.navIconBorder,
   },
 })

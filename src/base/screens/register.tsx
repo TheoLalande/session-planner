@@ -3,10 +3,12 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { router } from 'expo-router'
 import { TextField, PrimaryButton } from '../components'
-import { LightColors } from '../constants/theme'
 import { register } from '../api/authService'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function Register() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const [nickname, setNickname] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -68,7 +70,7 @@ export default function Register() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -81,17 +83,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 40,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   errorText: {
-    color: LightColors.danger,
+    color: colors.danger,
     textAlign: 'center',
     marginTop: 8,
   },
   successText: {
-    color: LightColors.primary,
+    color: colors.primary,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -99,7 +101,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   linkText: {
-    color: LightColors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
 })

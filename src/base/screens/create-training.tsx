@@ -4,14 +4,16 @@ import { PrimaryButton, TextField } from '../components'
 import { Alert, ScrollView, View, StyleSheet } from 'react-native'
 import { TrainingBloc } from '../components/TrainingBloc'
 import { useTrainingStore } from '../store/trainingStore'
-import { LightColors } from '../constants/theme'
 import { useRouter } from 'expo-router'
 import { Portal, Dialog, Button, RadioButton, Text } from 'react-native-paper'
 import { ExerciseType } from '../types/trainingTypes'
 import { FormSlider } from '../components/FormSlider'
 import LoadingIndicator from '../components/LoadingIndicator'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function index() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [transitionSecondsBetweenTimers, setTransitionSecondsBetweenTimers] = useState(5)
@@ -99,8 +101,8 @@ export default function index() {
           <PrimaryButton
             title="Ajouter un bloc d'exercices"
             color={'transparent'}
-            borderColor={LightColors.primary}
-            textColor={LightColors.primary}
+            borderColor={colors.primary}
+            textColor={colors.primary}
             onPress={() => {
               setBlocTitle(defaultBlocName)
               setBlocDescription('')
@@ -179,16 +181,16 @@ export default function index() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: LightColors.background,
+    backgroundColor: colors.background,
   },
   loadingScreen: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: LightColors.background,
+    backgroundColor: colors.background,
   },
   scroll: {
     flex: 1,
@@ -206,14 +208,14 @@ const styles = StyleSheet.create({
   },
   formCard: {
     width: '100%',
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
+    borderColor: colors.cardBorder,
     paddingHorizontal: 14,
     paddingTop: 12,
     paddingBottom: 8,
-    shadowColor: LightColors.shadow,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 14,
@@ -232,7 +234,7 @@ const styles = StyleSheet.create({
   },
   dialog: {
     borderRadius: 16,
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -240,7 +242,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: LightColors.overlayLight,
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,

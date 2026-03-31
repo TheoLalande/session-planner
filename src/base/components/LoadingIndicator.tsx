@@ -1,7 +1,10 @@
 import * as React from 'react'
 import { ActivityIndicator } from 'react-native-paper'
-import { LightColors } from '../constants/theme'
+import { useAppTheme } from '../providers/themeProvider'
 
-const LoadingIndicator = () => <ActivityIndicator animating={true} color={LightColors.primary} />
+const LoadingIndicator = () => {
+  const { colors } = useAppTheme()
+  return <ActivityIndicator animating={true} color={colors.primary} />
+}
 
 export default LoadingIndicator

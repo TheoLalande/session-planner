@@ -11,13 +11,15 @@ import { WarmupForm } from '../components/WarmupForm'
 import { CooldownForm } from '../components/CooldownForm'
 import { StretchingForm } from '../components/StretchingForm'
 import { useTrainingStore } from '../store/trainingStore'
-import { LightColors } from '../constants/theme'
 import { getSession } from '../api/authService'
 import { getSupabaseClient } from '../api/supabaseClient'
 import LoadingIndicator from '../components/LoadingIndicator'
 import * as ImageManipulator from 'expo-image-manipulator'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function index() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const params = useLocalSearchParams<{
     blocId?: string
     trainingId?: string
@@ -385,8 +387,8 @@ export default function index() {
             <PrimaryButton
               title="Supprimer l'exercice"
               onPress={handleDelete}
-              color={LightColors.primary}
-              borderColor={LightColors.primary}
+              color={colors.primary}
+              borderColor={colors.primary}
               isClickable={!isSaving && !isDeleting}
             />
           ) : null}
@@ -401,14 +403,14 @@ export default function index() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   loadingOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: LightColors.overlayLight,
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,

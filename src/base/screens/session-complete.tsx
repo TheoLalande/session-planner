@@ -3,11 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Alert, StyleSheet, Text, View } from 'react-native'
 import { useLocalSearchParams, router } from 'expo-router'
 import { PrimaryButton } from '../components'
-import { LightColors } from '../constants/theme'
 import { useTrainingStore } from '../store/trainingStore'
 import { createCompletedSession } from '../api/completedSessionsService'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function SessionComplete() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const { trainingId } = useLocalSearchParams<{ trainingId?: string }>()
   const [isSaving, setIsSaving] = useState(false)
   const trainings = useTrainingStore((state) => state.trainings)
@@ -65,9 +67,9 @@ export default function SessionComplete() {
           />
           <PrimaryButton
             title="Pas encore"
-            color={LightColors.white}
-            borderColor={LightColors.primary}
-            textColor={LightColors.primary}
+            color={colors.white}
+            borderColor={colors.primary}
+            textColor={colors.primary}
             onPress={() => {
               if (!trainingId) {
                 router.replace('/home')
@@ -82,10 +84,10 @@ export default function SessionComplete() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: LightColors.background,
+    backgroundColor: colors.background,
   },
   content: {
     flex: 1,
@@ -96,13 +98,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
     textAlign: 'center',
   },
   subtitle: {
     marginTop: 8,
     fontSize: 14,
-    color: LightColors.grey,
+    color: colors.grey,
     textAlign: 'center',
   },
   buttons: {

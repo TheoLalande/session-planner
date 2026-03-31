@@ -4,14 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
-import { LightColors } from '../constants/theme'
 import { TrainingExercise } from '../types/trainingTypes'
 import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { haptic } from '../utils/haptics'
 import { buildClimbingRouteLabel } from '../api/climbingRoutesService'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function ClimbSteps() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
@@ -109,9 +111,9 @@ export default function ClimbSteps() {
               await markAttempt('success')
             }}
             disabled={isAttemptsDone}
-            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? LightColors.lightGrey : LightColors.primary }]}
+            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? colors.lightGrey : colors.primary }]}
           >
-            <MaterialCommunityIcons name="check" size={22} color={LightColors.white} />
+            <MaterialCommunityIcons name="check" size={22} color={colors.white} />
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -120,9 +122,9 @@ export default function ClimbSteps() {
               await markAttempt('fail')
             }}
             disabled={isAttemptsDone}
-            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? LightColors.lightGrey : LightColors.danger }]}
+            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? colors.lightGrey : colors.danger }]}
           >
-            <MaterialCommunityIcons name="close" size={22} color={LightColors.white} />
+            <MaterialCommunityIcons name="close" size={22} color={colors.white} />
           </TouchableOpacity>
         </View>
 
@@ -160,10 +162,10 @@ export default function ClimbSteps() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 30,
@@ -180,11 +182,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
   },
   subtitle: {
     fontSize: 16,
-    color: LightColors.grey,
+    color: colors.grey,
   },
   attemptsRow: {
     width: '100%',
@@ -200,16 +202,16 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: LightColors.grey,
+    borderColor: colors.grey,
     backgroundColor: 'transparent',
   },
   attemptSquareSuccess: {
-    borderColor: LightColors.primary,
-    backgroundColor: LightColors.primary,
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   attemptSquareFail: {
-    borderColor: LightColors.danger,
-    backgroundColor: LightColors.danger,
+    borderColor: colors.danger,
+    backgroundColor: colors.danger,
   },
   attemptButtonsRow: {
     width: '100%',
@@ -225,20 +227,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   muted: {
-    color: LightColors.grey,
+    color: colors.grey,
   },
   nextButton: {
     marginTop: 24,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 24,
-    backgroundColor: LightColors.primary,
+    backgroundColor: colors.primary,
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   nextText: {
-    color: LightColors.white,
+    color: colors.white,
     fontWeight: '600',
   },
 })

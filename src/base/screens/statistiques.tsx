@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Platform, ScrollView, StyleSheet, useWindowDimensions } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { LightColors } from '../constants/theme'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import { useAppTheme } from '../providers/themeProvider'
 import { CompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
@@ -249,7 +248,7 @@ export default function Statistiques() {
         items.push({
           label: d.grade,
           spacing: hasFail ? smallGap : bigGap,
-          stacks: [{ value: d.success, color: LightColors.primary }],
+          stacks: [{ value: d.success, color: colors.primary }],
         })
       }
 
@@ -257,7 +256,7 @@ export default function Statistiques() {
         items.push({
           label: hasSuccess ? '' : d.grade,
           spacing: bigGap,
-          stacks: [{ value: d.fail, color: LightColors.danger }],
+          stacks: [{ value: d.fail, color: colors.danger }],
         })
       }
 

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BottomNavBar } from '../components'
-import { LightColors } from '../constants/theme'
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
 import { router } from 'expo-router'
@@ -14,6 +13,7 @@ import { useAppTheme } from '../providers/themeProvider'
 
 export default function index() {
   const { mode, colors } = useAppTheme()
+  const styles = createStyles(colors)
   const trainings = useTrainingStore((state) => state.trainings)
   const removeTraining = useTrainingStore((state) => state.removeTraining)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
@@ -145,16 +145,16 @@ export default function index() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: LightColors.background,
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: LightColors.background,
+    backgroundColor: colors.background,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: LightColors.overlayLight,
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,
@@ -182,11 +182,11 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
   },
   pageSubtitle: {
     marginTop: 4,
-    color: LightColors.grey,
+    color: colors.grey,
     fontSize: 14,
   },
   listContainer: {
@@ -194,23 +194,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyState: {
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
     borderRadius: 16,
     paddingVertical: 24,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: LightColors.cardBorderMuted,
+    borderColor: colors.cardBorderMuted,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: LightColors.black,
+    color: colors.black,
     textAlign: 'center',
   },
   emptySubtitle: {
     marginTop: 6,
     fontSize: 13,
-    color: LightColors.grey,
+    color: colors.grey,
     textAlign: 'center',
   },
   swipeContainer: {
@@ -222,9 +222,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
-    backgroundColor: LightColors.white,
-    shadowColor: LightColors.shadow,
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.white,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
     shadowRadius: 18,
@@ -242,11 +242,11 @@ const styles = StyleSheet.create({
   trainingTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: LightColors.black,
+    color: colors.black,
   },
   trainingDescription: {
     marginTop: 6,
-    color: LightColors.grey,
+    color: colors.grey,
     fontSize: 14,
   },
   trainingMetaRow: {
@@ -260,16 +260,16 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: LightColors.badgeBackground,
+    backgroundColor: colors.badgeBackground,
   },
   trainingMetaText: {
     fontSize: 12,
-    color: LightColors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
   deleteBackground: {
     flex: 1,
-    backgroundColor: LightColors.danger,
+    backgroundColor: colors.danger,
     borderRadius: 16,
   },
 })

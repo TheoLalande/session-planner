@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { TextField } from './TextField'
 import { FormSlider } from './FormSlider'
 import { IWarmUp } from '../types/trainingTypes'
-import { LightColors } from '../constants/theme'
+import { useAppTheme } from '../providers/themeProvider'
 
 type WarmupFormProps = {
   value: IWarmUp
@@ -12,6 +12,7 @@ type WarmupFormProps = {
 }
 
 export function WarmupForm({ value, onChange }: WarmupFormProps) {
+  const { colors } = useAppTheme()
   const handleChange = (field: keyof IWarmUp, newValue: string) => {
     if (['duration', 'id'].includes(field as string)) {
       const num = Number(newValue)
@@ -42,13 +43,13 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
             borderRadius: 8,
             borderWidth: 1,
             borderStyle: 'dashed',
-            borderColor: LightColors.neutralBorder,
+            borderColor: colors.neutralBorder,
             padding: 10,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: LightColors.mutedText }}>{value.picture ? "Changer l'image" : 'Choisir une image depuis la galerie'}</Text>
+          <Text style={{ color: colors.mutedText }}>{value.picture ? "Changer l'image" : 'Choisir une image depuis la galerie'}</Text>
         </View>
       </TouchableOpacity>
       {value.picture ? (
@@ -60,7 +61,7 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
             flexDirection: 'row',
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: LightColors.neutralBorder,
+            borderColor: colors.neutralBorder,
             overflow: 'hidden',
             marginBottom: 8,
           }}
@@ -72,10 +73,10 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
               flex: 1,
               paddingVertical: 6,
               alignItems: 'center',
-              backgroundColor: value.mode === 'time' ? LightColors.primary : LightColors.white,
+              backgroundColor: value.mode === 'time' ? colors.primary : colors.white,
             }}
           >
-            <Text style={{ color: value.mode === 'time' ? LightColors.white : LightColors.black, fontWeight: '600' }}>Temps</Text>
+            <Text style={{ color: value.mode === 'time' ? colors.white : colors.black, fontWeight: '600' }}>Temps</Text>
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.7}
@@ -84,10 +85,10 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
               flex: 1,
               paddingVertical: 6,
               alignItems: 'center',
-              backgroundColor: value.mode === 'reps' ? LightColors.primary : LightColors.white,
+              backgroundColor: value.mode === 'reps' ? colors.primary : colors.white,
             }}
           >
-            <Text style={{ color: value.mode === 'reps' ? LightColors.white : LightColors.black, fontWeight: '600' }}>Répétitions</Text>
+            <Text style={{ color: value.mode === 'reps' ? colors.white : colors.black, fontWeight: '600' }}>Répétitions</Text>
           </TouchableOpacity>
         </View>
 

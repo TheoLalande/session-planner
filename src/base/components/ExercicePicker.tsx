@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { View, ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native'
-import { LightColors } from '../constants/theme'
 import { ExerciceTypes } from '../types/trainingTypes'
+import { useAppTheme } from '../providers/themeProvider'
 
 type Props = {
   selectedType: ExerciceTypes | null
@@ -11,6 +11,8 @@ type Props = {
 const EXERCICE_TYPES: ExerciceTypes[] = ['hangboard', 'climbing', 'warmup', 'cooldown', 'stretching']
 
 export const ExercicePicker: React.FC<Props> = ({ selectedType, onSelect }) => {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   useEffect(() => {
     if (!selectedType) {
       onSelect(EXERCICE_TYPES[0])
@@ -44,7 +46,7 @@ export const ExercicePicker: React.FC<Props> = ({ selectedType, onSelect }) => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   typesContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -54,25 +56,25 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.primary,
+    borderColor: colors.primary,
     margin: 4,
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
   },
   typeButtonSelected: {
-    backgroundColor: LightColors.primary,
-    borderColor: LightColors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   typeText: {
-    color: LightColors.black,
+    color: colors.black,
   },
   typeTextSelected: {
-    color: LightColors.white,
+    color: colors.white,
   },
   hintText: {
     marginTop: 8,
     textAlign: 'center',
     fontSize: 12,
-    color: LightColors.grey,
+    color: colors.grey,
   },
 })
 

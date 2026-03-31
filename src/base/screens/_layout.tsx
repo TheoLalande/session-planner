@@ -10,7 +10,6 @@ import { AppState, Keyboard, Platform, View } from 'react-native'
 import { PaperProvider } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { LightColors } from '../constants/theme'
 import { AppThemeProvider, useAppTheme } from '../providers/themeProvider'
 
 SplashScreen.preventAutoHideAsync()
@@ -23,7 +22,7 @@ function AppNavigator() {
     'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
     'Saira_Condensed-Bold': require('../assets/fonts/Saira_Condensed-Bold.ttf'),
   })
-  const { isReady, navigationTheme, paperTheme } = useAppTheme()
+  const { isReady, navigationTheme, paperTheme, colors } = useAppTheme()
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -63,7 +62,7 @@ function AppNavigator() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: LightColors.white }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.white }}>
       <ThemeProvider value={navigationTheme}>
         <PaperProvider theme={paperTheme}>
           <SafeAreaProvider>

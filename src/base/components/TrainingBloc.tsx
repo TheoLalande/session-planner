@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { LightColors } from '../constants/theme'
 import { SecondaryRoundButton } from './SecondaryRoundButton'
 import { TrainingBlocItem } from './TrainingBlocItem'
 import { useTrainingStore } from '../store/trainingStore'
@@ -9,6 +8,7 @@ import { useRouter } from 'expo-router'
 import { haptic } from '../utils/haptics'
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
 import { TrainingExercise } from '../types/trainingTypes'
+import { useAppTheme } from '../providers/themeProvider'
 
 type TrainingBlocProps = {
   blocId: number
@@ -18,6 +18,8 @@ type TrainingBlocProps = {
 }
 
 export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }: TrainingBlocProps) => {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const exercises = useTrainingStore((state) => state.blocs.find((b) => b.id === blocId)?.exercises || [])
   const ensureExerciseIds = useTrainingStore((state) => state.ensureExerciseIds)
   const renameBloc = useTrainingStore((state) => state.renameBloc)
@@ -70,7 +72,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
           }}
           style={styles.duplicateButton}
         >
-          <MaterialCommunityIcons name="content-duplicate" size={18} color={LightColors.primary} />
+          <MaterialCommunityIcons name="content-duplicate" size={18} color={colors.primary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -82,7 +84,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
           delayLongPress={120}
           style={styles.dragHandleButton}
         >
-          <MaterialCommunityIcons name="drag-vertical" size={20} color={LightColors.grey} />
+          <MaterialCommunityIcons name="drag-vertical" size={20} color={colors.grey} />
         </TouchableOpacity>
       </View>
     )
@@ -139,7 +141,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
             }}
             style={styles.deleteButton}
           >
-            <MaterialCommunityIcons name="trash-can-outline" size={18} color={LightColors.danger} />
+            <MaterialCommunityIcons name="trash-can-outline" size={18} color={colors.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -164,14 +166,14 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
               containerStyle={{ width: '100%' }}
             />
           </View>
-          <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={LightColors.primary} />
+          <SecondaryRoundButton blocId={blocId} onPress={onPressAddExercise} color={colors.primary} />
         </View>
       </View>
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     width: '100%',
     alignItems: 'flex-start',
@@ -186,14 +188,14 @@ const styles = StyleSheet.create({
   },
   square: {
     width: '100%',
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
+    borderColor: colors.cardBorder,
     padding: 12,
     minHeight: 100,
     justifyContent: 'center',
-    shadowColor: LightColors.shadow,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 14,
@@ -205,19 +207,19 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   title: {
-    color: LightColors.black,
+    color: colors.black,
     fontSize: 17,
     fontWeight: '700',
   },
   titleInput: {
     flex: 1,
-    color: LightColors.black,
+    color: colors.black,
     fontSize: 17,
     paddingLeft: 4,
     paddingRight: 8,
     fontWeight: '700',
     borderBottomWidth: 1,
-    borderBottomColor: LightColors.primary,
+    borderBottomColor: colors.primary,
   },
   countBadge: {
     minWidth: 28,
@@ -226,12 +228,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: LightColors.badgeBackground,
+    backgroundColor: colors.badgeBackground,
   },
   countBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
   },
   headerActions: {
     flexDirection: 'row',
@@ -244,9 +246,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: LightColors.softDangerBackground,
+    backgroundColor: colors.softDangerBackground,
     borderWidth: 1,
-    borderColor: LightColors.softDangerBorder,
+    borderColor: colors.softDangerBorder,
   },
   exercisesContainer: {
     width: '100%',
@@ -261,22 +263,22 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   activeExerciseRow: {
-    backgroundColor: LightColors.activeRowBackground,
+    backgroundColor: colors.activeRowBackground,
   },
   duplicateButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: LightColors.headerButtonBackground,
+    backgroundColor: colors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
+    borderColor: colors.cardBorder,
   },
   dragHandleButton: {
     paddingHorizontal: 6,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: LightColors.headerButtonBackground,
+    backgroundColor: colors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
+    borderColor: colors.cardBorder,
   },
 })

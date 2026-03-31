@@ -3,11 +3,12 @@ import { View, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
-import { LightColors } from '../constants/theme'
 import { TrainingExercise } from '../types/trainingTypes'
 import LoadingIndicator from '../components/LoadingIndicator'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function RunExercise() {
+  const { colors } = useAppTheme()
   const { trainingId, exerciseIndex, pendingTransitionSeconds } = useLocalSearchParams<{
     trainingId?: string
     exerciseIndex?: string
@@ -78,7 +79,7 @@ export default function RunExercise() {
   if (!isValid) {
     return (
       <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: LightColors.grey }}>Exercice introuvable.</Text>
+        <Text style={{ color: colors.grey }}>Exercice introuvable.</Text>
       </SafeAreaView>
     )
   }

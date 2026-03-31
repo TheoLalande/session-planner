@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useNavigation } from '@react-navigation/native'
 import { MaterialIcons } from '@expo/vector-icons'
 import { useTrainingStore } from '../store/trainingStore'
-import { LightColors } from '../constants/theme'
 import { TrainingBlocItem } from '../components/TrainingBlocItem'
 import { haptic } from '../utils/haptics'
 import LoadingIndicator from '../components/LoadingIndicator'
@@ -13,6 +12,7 @@ import { useAppTheme } from '../providers/themeProvider'
 
 export default function TrainingDetail() {
   const { mode, colors } = useAppTheme()
+  const styles = createStyles(colors)
   const { id } = useLocalSearchParams<{ id?: string }>()
   const router = useRouter()
   const navigation = useNavigation()
@@ -153,7 +153,7 @@ export default function TrainingDetail() {
                     ? colors.climbing
                     : blocType === 'hangboard'
                       ? colors.hangboard
-                      : LightColors.black
+                      : colors.black
 
           return (
             <View
@@ -204,10 +204,10 @@ export default function TrainingDetail() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: LightColors.background,
+    backgroundColor: colors.background,
   },
   scroll: {
     flex: 1,
@@ -221,20 +221,20 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
   },
   pageDescription: {
     marginTop: 6,
-    color: LightColors.grey,
+    color: colors.grey,
     fontSize: 14,
     marginBottom: 14,
   },
   statsCard: {
     width: '100%',
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
+    borderColor: colors.cardBorder,
     paddingVertical: 12,
     paddingHorizontal: 14,
     flexDirection: 'row',
@@ -247,28 +247,28 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: LightColors.grey,
+    color: colors.grey,
     fontWeight: '600',
   },
   statValue: {
     marginTop: 2,
     fontSize: 22,
-    color: LightColors.primary,
+    color: colors.primary,
     fontWeight: '700',
   },
   statDivider: {
     width: 1,
     height: 34,
-    backgroundColor: LightColors.cardBorder,
+    backgroundColor: colors.cardBorder,
   },
   blocCard: {
     marginBottom: 12,
     padding: 12,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
-    backgroundColor: LightColors.white,
-    shadowColor: LightColors.shadow,
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.white,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.05,
     shadowRadius: 14,
@@ -291,15 +291,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: LightColors.badgeBackground,
+    backgroundColor: colors.badgeBackground,
   },
   blocBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
   },
   emptyBlocText: {
-    color: LightColors.grey,
+    color: colors.grey,
     fontSize: 13,
   },
   exerciseRow: {
@@ -309,10 +309,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: LightColors.background,
+    backgroundColor: colors.background,
   },
   emptyText: {
-    color: LightColors.grey,
+    color: colors.grey,
   },
   headerActions: {
     flexDirection: 'row',
@@ -323,9 +323,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: LightColors.headerButtonBackground,
+    backgroundColor: colors.headerButtonBackground,
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
+    borderColor: colors.cardBorder,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: LightColors.overlayLight,
+    backgroundColor: colors.overlayLight,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,

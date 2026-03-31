@@ -3,9 +3,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { StyleSheet, Text, View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { getSupabaseClient } from '../api/supabaseClient'
-import { LightColors } from '../constants/theme'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function VerifyEmail() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const router = useRouter()
   const params = useLocalSearchParams<{ access_token?: string; refresh_token?: string }>()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
@@ -61,7 +63,7 @@ export default function VerifyEmail() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -72,15 +74,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
   },
   text: {
-    color: LightColors.grey,
+    color: colors.grey,
     textAlign: 'center',
   },
   textSuccess: {
-    color: LightColors.primary,
+    color: colors.primary,
     textAlign: 'center',
   },
   textError: {
-    color: LightColors.danger,
+    color: colors.danger,
     textAlign: 'center',
   },
 })

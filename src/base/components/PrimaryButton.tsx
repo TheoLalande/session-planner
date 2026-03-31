@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native'
 import { Button, Text } from 'react-native-paper'
-import { Fonts, LightColors } from '../constants/theme'
+import { Fonts } from '../constants/theme'
+import { useAppTheme } from '../providers/themeProvider'
 import { haptic } from '../utils/haptics'
 
 interface PrimaryButtonProps {
@@ -16,17 +17,22 @@ export function PrimaryButton({
   title,
   onPress,
   isClickable = true,
-  color = LightColors.primary,
-  borderColor = LightColors.primary,
-  textColor = LightColors.white,
+  color,
+  borderColor,
+  textColor,
 }: PrimaryButtonProps) {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
+  const resolvedColor = color ?? colors.primary
+  const resolvedBorderColor = borderColor ?? colors.primary
+  const resolvedTextColor = textColor ?? colors.white
   const buttonStyle = [styles.button, !isClickable && styles.buttonDisabled]
 
   return (
     <Button
       mode="contained"
       contentStyle={styles.content}
-      style={[buttonStyle, { backgroundColor: color, borderColor: borderColor, borderWidth: 1 }]}
+      style={[buttonStyle, { backgroundColor: resolvedColor, borderColor: resolvedBorderColor, borderWidth: 1 }]}
       onPress={
         isClickable
           ? async () => {
@@ -37,17 +43,17 @@ export function PrimaryButton({
       }
       disabled={!isClickable}
     >
-      <Text style={[styles.title, { color: textColor }]}>{title}</Text>
+      <Text style={[styles.title, { color: resolvedTextColor }]}>{title}</Text>
     </Button>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   button: {
     borderRadius: 14,
     marginHorizontal: 20,
     width: '100%',
-    shadowColor: LightColors.shadow,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
     shadowRadius: 14,
@@ -58,14 +64,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   buttonDisabled: {
-    backgroundColor: LightColors.disabled,
-    borderColor: LightColors.disabled,
+    backgroundColor: colors.disabled,
+    borderColor: colors.disabled,
     shadowOpacity: 0,
     elevation: 0,
   },
   title: {
     textAlign: 'center',
-    color: LightColors.white,
+    color: colors.white,
     alignSelf: 'center',
     fontFamily: Fonts.poppins.medium,
     fontSize: 15,

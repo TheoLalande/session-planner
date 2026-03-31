@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
-import { LightColors } from '../constants/theme'
 import { TrainingExercise } from '../types/trainingTypes'
 import { haptic } from '../utils/haptics'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function Hangboard() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
@@ -79,10 +81,10 @@ export default function Hangboard() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 30,
@@ -96,24 +98,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
   },
   subtitle: {
     fontSize: 16,
-    color: LightColors.grey,
+    color: colors.grey,
   },
   muted: {
-    color: LightColors.grey,
+    color: colors.grey,
   },
   nextButton: {
     marginTop: 24,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 24,
-    backgroundColor: LightColors.primary,
+    backgroundColor: colors.primary,
   },
   nextText: {
-    color: LightColors.white,
+    color: colors.white,
     fontWeight: '600',
   },
 })

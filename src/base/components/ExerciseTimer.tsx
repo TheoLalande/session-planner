@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Audio } from 'expo-av'
-import { LightColors } from '../constants/theme'
+import { useAppTheme } from '../providers/themeProvider'
 
 type ExerciseTimerProps = {
   initialSeconds: number
@@ -35,6 +35,8 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     },
     ref
   ) => {
+    const { colors } = useAppTheme()
+    const styles = createStyles(colors)
     const [remainingSeconds, setRemainingSeconds] = useState(initialSeconds)
     const [isRunning, setIsRunning] = useState(autoStart && initialTransitionSeconds <= 0)
     const [isTransition, setIsTransition] = useState(initialTransitionSeconds > 0)
@@ -245,20 +247,20 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     }, [isRunning, isTransition, remainingSeconds, onStatusChange])
 
     const isActive = isRunning && !isTransition
-    const textColor = isTransition ? LightColors.danger : LightColors.primary
+    const textColor = isTransition ? colors.danger : colors.primary
 
     return (
       <TouchableOpacity activeOpacity={0.8} onPress={handleStartPause}>
         <View style={styles.container}>
           {isTransition ? (
-            <View style={[styles.timerContainer, { backgroundColor: transparentBackground ? 'transparent' : LightColors.white }]}>
+            <View style={[styles.timerContainer, { backgroundColor: transparentBackground ? 'transparent' : colors.white }]}>
               <Text style={[styles.timerText, { color: textColor }]}>{transitionFormattedTime}</Text>
               <View style={styles.iconWrapper}>
                 <MaterialCommunityIcons name={isActive ? 'pause' : 'play'} size={24} color={textColor} />
               </View>
             </View>
           ) : (
-            <View style={[styles.timerContainer, { backgroundColor: transparentBackground ? 'transparent' : LightColors.white }]}>
+            <View style={[styles.timerContainer, { backgroundColor: transparentBackground ? 'transparent' : colors.white }]}>
               <Text style={[styles.timerText, { color: textColor }]}>{formattedTime}</Text>
               <View style={styles.iconWrapper}>
                 <MaterialCommunityIcons name={isActive ? 'pause' : 'play'} size={24} color={textColor} />
@@ -271,7 +273,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
   }
 )
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     alignItems: 'center',
   },
@@ -281,7 +283,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 40,
 
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
     marginBottom: 16,
     justifyContent: 'center',
     alignItems: 'center',
@@ -289,13 +291,13 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 48,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
   },
   finishedText: {
     marginTop: 8,
     marginBottom: 16,
     fontSize: 16,
-    color: LightColors.grey,
+    color: colors.grey,
   },
   iconWrapper: {
     position: 'absolute',

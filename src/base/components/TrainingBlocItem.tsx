@@ -1,13 +1,15 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { LightColors } from '../constants/theme'
 import { TrainingExercise } from '../types/trainingTypes'
+import { useAppTheme } from '../providers/themeProvider'
 
 type Props = {
   exercise: TrainingExercise
 }
 
 export const TrainingBlocItem = ({ exercise }: Props) => {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const { type, data } = exercise
 
   let label = ''
@@ -54,19 +56,19 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     width: '100%',
     marginBottom: 6,
   },
   type: {
     fontSize: 11,
-    color: LightColors.primary,
+    color: colors.primary,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   label: {
     fontSize: 13,
-    color: LightColors.black,
+    color: colors.black,
   },
 })

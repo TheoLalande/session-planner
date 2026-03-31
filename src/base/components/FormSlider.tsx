@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { View, Text, StyleSheet, ViewStyle, TextStyle, TouchableOpacity } from 'react-native'
 import Slider from '@react-native-community/slider'
-import { LightColors } from '../constants/theme'
+import { useAppTheme } from '../providers/themeProvider'
 
 type FormSliderProps = {
   label: string
@@ -36,6 +36,8 @@ export function FormSlider({
   valueUnit,
   onUnitChange,
 }: FormSliderProps) {
+  const { colors } = useAppTheme()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const [internalUnit, setInternalUnit] = useState<'minutes' | 'seconds'>(() => {
     if (unit === 'seconds' || unit === 'secondes') return 'seconds'
     if (unit === 'minutes') return 'minutes'
@@ -149,13 +151,13 @@ export function FormSlider({
         minimumValue={displayMin}
         maximumValue={displayMax}
         step={step}
-        minimumTrackTintColor={LightColors.primary}
+        minimumTrackTintColor={colors.primary}
       />
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     marginVertical: 10,
     width: '100%',
@@ -170,30 +172,30 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
     textAlign: 'left',
-    color: LightColors.black,
+    color: colors.black,
   },
   toggleContainer: {
     flexDirection: 'row',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: LightColors.lightGrey,
+    borderColor: colors.lightGrey,
     overflow: 'hidden',
     marginBottom: 8,
   },
   toggleButton: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    backgroundColor: LightColors.white,
+    backgroundColor: colors.white,
   },
   toggleButtonActive: {
-    backgroundColor: LightColors.primary,
+    backgroundColor: colors.primary,
   },
   toggleText: {
     fontSize: 12,
-    color: LightColors.black,
+    color: colors.black,
   },
   toggleTextActive: {
-    color: LightColors.white,
+    color: colors.white,
     fontWeight: '600',
   },
 })

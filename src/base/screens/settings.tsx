@@ -6,7 +6,7 @@ import { PrimaryButton } from '../components'
 import { getSession, logout } from '../api/authService'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
-import { LightColors, ThemeOptions } from '../constants/theme'
+import { ThemeOptions } from '../constants/theme'
 
 export default function settings() {
   const [isCheckingSession, setIsCheckingSession] = useState(true)
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   panel: {
     width: '100%',
     borderWidth: 1,
-    borderColor: LightColors.cardBorder,
+    borderColor: 'transparent',
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,

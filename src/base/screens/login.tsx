@@ -3,11 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { router } from 'expo-router'
 import { TextField, PrimaryButton } from '../components'
-import { LightColors } from '../constants/theme'
 import { getSession, login } from '../api/authService'
 import LoadingIndicator from '../components/LoadingIndicator'
+import { useAppTheme } from '../providers/themeProvider'
 
 export default function Login() {
+  const { colors } = useAppTheme()
+  const styles = createStyles(colors)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -81,7 +83,7 @@ export default function Login() {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -94,15 +96,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '700',
-    color: LightColors.primary,
+    color: colors.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   loadingText: {
-    color: LightColors.grey,
+    color: colors.grey,
   },
   errorText: {
-    color: LightColors.danger,
+    color: colors.danger,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -112,7 +114,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   linkText: {
-    color: LightColors.primary,
+    color: colors.primary,
     fontWeight: '600',
   },
 })
