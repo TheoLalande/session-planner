@@ -126,7 +126,9 @@ export default function index() {
                   </View>
                   <View style={styles.trainingMetaRow}>
                     <View style={[styles.trainingMeta, { backgroundColor: mode === 'dark' ? colors.darkBadgeBackground : colors.badgeBackground }]}>
-                      <Text style={styles.trainingMetaText}>{training.blocs.length} bloc(s) d'exercices</Text>
+                      <Text style={styles.trainingMetaText}>
+                        {training.blocs.length} {training.blocs.length > 1 ? 'blocs' : 'bloc'} d'exercices
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -145,131 +147,132 @@ export default function index() {
   )
 }
 
-const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.overlayLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 50,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-  },
-  pageHeader: {
-    marginBottom: 16,
-  },
-  pageTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  pageSubtitle: {
-    marginTop: 4,
-    color: colors.grey,
-    fontSize: 14,
-  },
-  listContainer: {
-    width: '100%',
-    gap: 12,
-  },
-  emptyState: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorderMuted,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.black,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    marginTop: 6,
-    fontSize: 13,
-    color: colors.grey,
-    textAlign: 'center',
-  },
-  swipeContainer: {
-    width: '100%',
-  },
-  trainingCard: {
-    width: '100%',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    backgroundColor: colors.white,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-    elevation: 2,
-  },
-  trainingTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  trainingTextBlock: {
-    flex: 1,
-  },
-  trainingTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.black,
-  },
-  trainingDescription: {
-    marginTop: 6,
-    color: colors.grey,
-    fontSize: 14,
-  },
-  trainingMetaRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  trainingMeta: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: colors.badgeBackground,
-  },
-  trainingMetaText: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  deleteBackground: {
-    flex: 1,
-    backgroundColor: colors.danger,
-    borderRadius: 16,
-  },
-})
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.background,
+    },
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.overlayLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 50,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingHorizontal: 20,
+      paddingTop: 20,
+      paddingBottom: 24,
+    },
+    pageHeader: {
+      marginBottom: 16,
+    },
+    pageTitle: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    pageSubtitle: {
+      marginTop: 4,
+      color: colors.grey,
+      fontSize: 14,
+    },
+    listContainer: {
+      width: '100%',
+      gap: 12,
+    },
+    emptyState: {
+      backgroundColor: colors.white,
+      borderRadius: 16,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorderMuted,
+    },
+    emptyTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.black,
+      textAlign: 'center',
+    },
+    emptySubtitle: {
+      marginTop: 6,
+      fontSize: 13,
+      color: colors.grey,
+      textAlign: 'center',
+    },
+    swipeContainer: {
+      width: '100%',
+    },
+    trainingCard: {
+      width: '100%',
+      paddingVertical: 14,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.white,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.06,
+      shadowRadius: 18,
+      elevation: 2,
+    },
+    trainingTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    trainingTextBlock: {
+      flex: 1,
+    },
+    trainingTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: colors.black,
+    },
+    trainingDescription: {
+      marginTop: 6,
+      color: colors.grey,
+      fontSize: 14,
+    },
+    trainingMetaRow: {
+      marginTop: 10,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    trainingMeta: {
+      alignSelf: 'flex-start',
+      paddingVertical: 4,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      backgroundColor: colors.badgeBackground,
+    },
+    trainingMetaText: {
+      fontSize: 12,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    deleteBackground: {
+      flex: 1,
+      backgroundColor: colors.danger,
+      borderRadius: 16,
+    },
+  })

@@ -204,11 +204,10 @@ export default function index() {
 
   const uploadExercisePictureToStorage = async (localUri: string, userId: string): Promise<string> => {
     const supabase = getSupabaseClient()
-    const manipulated = await ImageManipulator.manipulateAsync(
-      localUri,
-      [{ resize: { width: 1280 } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
-    )
+    const manipulated = await ImageManipulator.manipulateAsync(localUri, [{ resize: { width: 1280 } }], {
+      compress: 0.7,
+      format: ImageManipulator.SaveFormat.JPEG,
+    })
 
     const response = await fetch(manipulated.uri)
     const arrayBuffer = await response.arrayBuffer()
@@ -226,9 +225,7 @@ export default function index() {
 
     const fileBytes = new Uint8Array(arrayBuffer)
 
-    const { error: uploadError } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(objectPath, fileBytes as any, { contentType, upsert: false })
+    const { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(objectPath, fileBytes as any, { contentType, upsert: false })
     if (uploadError) throw new Error(uploadError.message)
 
     const { data: signedData, error: signedError } = await supabase.storage
@@ -374,6 +371,7 @@ export default function index() {
           flexGrow: 1,
           alignItems: 'center',
           paddingBottom: 30,
+          paddingTop: 20,
         }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
@@ -403,16 +401,17 @@ export default function index() {
   )
 }
 
-const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.overlayLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 50,
-  },
-})
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) =>
+  StyleSheet.create({
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.overlayLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 50,
+    },
+  })

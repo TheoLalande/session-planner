@@ -162,7 +162,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
                 reorderExercisesInBloc(blocId, data)
               }}
               scrollEnabled={false}
-              activationDistance={1000}
+              activationDistance={0}
               containerStyle={{ width: '100%' }}
             />
           </View>
