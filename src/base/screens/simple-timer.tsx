@@ -5,6 +5,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Easing } fro
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useTrainingStore } from '../store/trainingStore'
 import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
+import TrainingProgressSegments from '../components/TrainingProgressSegments'
 import { LightColors } from '../constants/theme'
 import { haptic } from '../utils/haptics'
 
@@ -12,6 +13,8 @@ type TimerConfig = {
   initialDurationSeconds: number
   hasNextExercise: boolean
   nextIndex: number | null
+  currentIndex: number
+  totalExercises: number
   exerciseTitle: string
   exerciseImage: string | null
   autoStart: boolean
@@ -21,7 +24,11 @@ type TimerConfig = {
 }
 
 export default function SimpleTimer() {
-  const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
+  const { trainingId, exerciseIndex, pendingTransitionSeconds } = useLocalSearchParams<{
+    trainingId?: string
+    exerciseIndex?: string
+    pendingTransitionSeconds?: string
+  }>()
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const trainings = useTrainingStore((state) => state.trainings)
@@ -33,6 +40,14 @@ export default function SimpleTimer() {
   const hasTimerStatusRef = useRef(false)
   const [bottomPanelWidth, setBottomPanelWidth] = useState(0)
   const isFirstProgressUpdateRef = useRef<boolean>(true)
+  const pendingTransitionSecondsValue = useMemo(() => {
+    const rawValue = Array.isArray(pendingTransitionSeconds) ? pendingTransitionSeconds[0] : pendingTransitionSeconds
+    const parsed = Number(rawValue ?? 0)
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      return 0
+    }
+    return parsed
+  }, [pendingTransitionSeconds])
 
   useEffect(() => {
     // Reset quand on change d'exercice (avant même le premier onStatusChange).
@@ -46,6 +61,8 @@ export default function SimpleTimer() {
     initialDurationSeconds,
     hasNextExercise,
     nextIndex,
+    currentIndex,
+    totalExercises,
     exerciseTitle,
     exerciseImage,
     autoStart,
@@ -62,6 +79,8 @@ export default function SimpleTimer() {
         initialDurationSeconds: 60,
         hasNextExercise: false,
         nextIndex: null as number | null,
+        currentIndex: 0,
+        totalExercises: 0,
         exerciseTitle: 'Exercice',
         exerciseImage: null as string | null,
         autoStart: false,
@@ -78,6 +97,8 @@ export default function SimpleTimer() {
         initialDurationSeconds: 60,
         hasNextExercise: false,
         nextIndex: null,
+        currentIndex: 0,
+        totalExercises: 0,
         exerciseTitle: 'Exercice',
         exerciseImage: null,
         autoStart: false,
@@ -100,6 +121,8 @@ export default function SimpleTimer() {
         initialDurationSeconds: 60,
         hasNextExercise: hasNext,
         nextIndex,
+        currentIndex: indexNum,
+        totalExercises: exercises.length,
         exerciseTitle: 'Exercice',
         exerciseImage: null,
         autoStart: false,
@@ -142,6 +165,8 @@ export default function SimpleTimer() {
       initialDurationSeconds: durationInSeconds,
       hasNextExercise: hasNext,
       nextIndex,
+      currentIndex: indexNum,
+      totalExercises: exercises.length,
       exerciseTitle: title,
       exerciseImage: image,
       autoStart,
@@ -191,7 +216,7 @@ export default function SimpleTimer() {
     }).start()
   }, [remainingSeconds, isRunning, isTransition, initialDurationSeconds, isReps])
 
-  const goToNextExercise = () => {
+  const goToNextExercise = (withTransition: boolean) => {
     if (nextIndex === null || !trainingId) {
       return
     }
@@ -201,6 +226,7 @@ export default function SimpleTimer() {
       params: {
         trainingId,
         exerciseIndex: String(nextIndex),
+        pendingTransitionSeconds: withTransition ? String(transitionSecondsBetweenTimers) : undefined,
       },
     })
   }
@@ -236,6 +262,7 @@ export default function SimpleTimer() {
         <View style={styles.bottomPanel} onLayout={(e) => setBottomPanelWidth(e.nativeEvent.layout.width)}>
           {!isTransition && !isReps ? <Animated.View style={[styles.panelFill, { width: progressWidth }]} /> : null}
           <View style={styles.bottomPanelContent}>
+            <TrainingProgressSegments totalSegments={totalExercises} completedSegments={currentIndex} />
             <Text style={styles.title}>{exerciseTitle}</Text>
 
             {isReps ? (
@@ -257,7 +284,8 @@ export default function SimpleTimer() {
                   setIsTransition(transition)
                   setRemainingSeconds(seconds)
                 }}
-                onNextExercise={hasNextExercise ? goToNextExercise : undefined}
+                initialTransitionSeconds={pendingTransitionSecondsValue}
+                onNextExercise={hasNextExercise ? () => goToNextExercise(true) : undefined}
               />
             )}
 
@@ -284,7 +312,7 @@ export default function SimpleTimer() {
                     return
                   }
 
-                  goToNextExercise()
+                  goToNextExercise(false)
                 }}
                 style={[
                   styles.button,

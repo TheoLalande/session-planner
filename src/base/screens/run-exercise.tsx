@@ -8,7 +8,11 @@ import { TrainingExercise } from '../types/trainingTypes'
 import LoadingIndicator from '../components/LoadingIndicator'
 
 export default function RunExercise() {
-  const { trainingId, exerciseIndex } = useLocalSearchParams<{ trainingId?: string; exerciseIndex?: string }>()
+  const { trainingId, exerciseIndex, pendingTransitionSeconds } = useLocalSearchParams<{
+    trainingId?: string
+    exerciseIndex?: string
+    pendingTransitionSeconds?: string
+  }>()
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
   const trainingIdValue = trainingId ?? ''
@@ -37,7 +41,11 @@ export default function RunExercise() {
     if (exercise.type === 'warmup' || exercise.type === 'cooldown' || exercise.type === 'stretching') {
       router.replace({
         pathname: '/simple-timer',
-        params: { trainingId, exerciseIndex: String(exerciseIndex ?? '0') },
+        params: {
+          trainingId,
+          exerciseIndex: String(exerciseIndex ?? '0'),
+          pendingTransitionSeconds: pendingTransitionSeconds ? String(pendingTransitionSeconds) : undefined,
+        },
       })
       return
     }
@@ -45,7 +53,11 @@ export default function RunExercise() {
     if (exercise.type === 'climbing') {
       router.replace({
         pathname: '/climb-steps',
-        params: { trainingId, exerciseIndex: String(exerciseIndex ?? '0') },
+        params: {
+          trainingId,
+          exerciseIndex: String(exerciseIndex ?? '0'),
+          pendingTransitionSeconds: pendingTransitionSeconds ? String(pendingTransitionSeconds) : undefined,
+        },
       })
       return
     }
@@ -53,11 +65,15 @@ export default function RunExercise() {
     if (exercise.type === 'hangboard') {
       router.replace({
         pathname: '/hangboard',
-        params: { trainingId, exerciseIndex: String(exerciseIndex ?? '0') },
+        params: {
+          trainingId,
+          exerciseIndex: String(exerciseIndex ?? '0'),
+          pendingTransitionSeconds: pendingTransitionSeconds ? String(pendingTransitionSeconds) : undefined,
+        },
       })
       return
     }
-  }, [exercise, exerciseIndex, isValid, router, trainingId])
+  }, [exercise, exerciseIndex, isValid, pendingTransitionSeconds, router, trainingId])
 
   if (!isValid) {
     return (

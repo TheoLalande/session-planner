@@ -10,6 +10,7 @@ type ExerciseTimerProps = {
   autoStart?: boolean
   hasNextExercise?: boolean
   transitionSecondsBetweenTimers?: number
+  initialTransitionSeconds?: number
   transparentBackground?: boolean
   onNextExercise?: () => void
   onStatusChange?: (status: { isRunning: boolean; isTransition: boolean; remainingSeconds: number }) => void
@@ -27,6 +28,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       autoStart = false,
       hasNextExercise = false,
       transitionSecondsBetweenTimers = 5,
+      initialTransitionSeconds = 0,
       transparentBackground = false,
       onNextExercise,
       onStatusChange,
@@ -34,15 +36,17 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     ref
   ) => {
     const [remainingSeconds, setRemainingSeconds] = useState(initialSeconds)
-    const [isRunning, setIsRunning] = useState(autoStart)
-    const [isTransition, setIsTransition] = useState(false)
-    const [transitionSeconds, setTransitionSeconds] = useState(transitionSecondsBetweenTimers)
+    const [isRunning, setIsRunning] = useState(autoStart && initialTransitionSeconds <= 0)
+    const [isTransition, setIsTransition] = useState(initialTransitionSeconds > 0)
+    const [transitionSeconds, setTransitionSeconds] = useState(initialTransitionSeconds > 0 ? initialTransitionSeconds : transitionSecondsBetweenTimers)
+    const [shouldGoToNext, setShouldGoToNext] = useState(false)
 
     const elapsedSecondsRef = useRef(0)
     const minutesBuzzedRef = useRef(0)
     const finishedBuzzRef = useRef(false)
     const hapticsSeqRef = useRef(0)
     const nextExerciseCalledRef = useRef(false)
+    const initialTransitionActiveRef = useRef(initialTransitionSeconds > 0)
     const bellSoundRef = useRef<Audio.Sound | null>(null)
 
     const playBellSound = async () => {
@@ -69,14 +73,17 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
     useEffect(() => {
       setRemainingSeconds(initialSeconds)
-      setIsTransition(false)
-      setTransitionSeconds(transitionSecondsBetweenTimers)
-      setIsRunning(autoStart)
+      const hasInitialTransition = initialTransitionSeconds > 0
+      setIsTransition(hasInitialTransition)
+      setTransitionSeconds(hasInitialTransition ? initialTransitionSeconds : transitionSecondsBetweenTimers)
+      setIsRunning(autoStart && !hasInitialTransition)
+      setShouldGoToNext(false)
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
       nextExerciseCalledRef.current = false
-    }, [initialSeconds, autoStart, transitionSecondsBetweenTimers])
+      initialTransitionActiveRef.current = hasInitialTransition
+    }, [initialSeconds, autoStart, transitionSecondsBetweenTimers, initialTransitionSeconds])
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -123,10 +130,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
             }
 
             if (hasNextExercise && onNextExercise) {
-              // Lance le timer de transition avant de passer au suivant
-              nextExerciseCalledRef.current = false
-              setIsTransition(true)
-              setTransitionSeconds(transitionSecondsBetweenTimers)
+              setShouldGoToNext(true)
             }
 
             return 0
@@ -148,7 +152,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       }, 1000)
 
       return () => clearInterval(interval)
-    }, [isRunning, isTransition, hasNextExercise, onNextExercise, transitionSecondsBetweenTimers])
+    }, [isRunning, isTransition, hasNextExercise, onNextExercise])
 
     // Timer de transition (5 secondes entre deux exercices)
     useEffect(() => {
@@ -170,18 +174,25 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       return () => clearInterval(interval)
     }, [isTransition, onNextExercise])
 
-    // L'appel `onNextExercise` doit se faire après le rendu (pas dans un setter),
-    // sinon React peut remonter l'erreur "Cannot update a component while rendering...".
+    useEffect(() => {
+      if (shouldGoToNext && onNextExercise && !nextExerciseCalledRef.current) {
+        nextExerciseCalledRef.current = true
+        setShouldGoToNext(false)
+        onNextExercise()
+      }
+    }, [shouldGoToNext, onNextExercise])
+
     useEffect(() => {
       if (!isTransition) return
       if (transitionSeconds !== 0) return
-      if (nextExerciseCalledRef.current) return
-      if (!onNextExercise) return
-
-      nextExerciseCalledRef.current = true
       setIsTransition(false)
-      onNextExercise()
-    }, [isTransition, transitionSeconds, onNextExercise])
+      if (initialTransitionActiveRef.current) {
+        initialTransitionActiveRef.current = false
+        if (autoStart) {
+          setIsRunning(true)
+        }
+      }
+    }, [isTransition, transitionSeconds, autoStart])
 
     const handleStartPause = () => {
       if (isTransition) {
@@ -203,10 +214,12 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       setIsTransition(false)
       setRemainingSeconds(initialSeconds)
       setTransitionSeconds(transitionSecondsBetweenTimers)
+      setShouldGoToNext(false)
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
       nextExerciseCalledRef.current = false
+      initialTransitionActiveRef.current = false
       // Stoppe toute séquence haptics en cours
       hapticsSeqRef.current += 1
       if (bellSoundRef.current) {
