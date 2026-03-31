@@ -15,6 +15,7 @@ type TimerConfig = {
   nextIndex: number | null
   currentIndex: number
   totalExercises: number
+  blocTitle: string
   exerciseTitle: string
   exerciseImage: string | null
   autoStart: boolean
@@ -65,6 +66,7 @@ export default function SimpleTimer() {
     currentIndex,
     totalExercises,
     exerciseTitle,
+    blocTitle,
     exerciseImage,
     autoStart,
     isReps,
@@ -82,6 +84,7 @@ export default function SimpleTimer() {
         nextIndex: null as number | null,
         currentIndex: 0,
         totalExercises: 0,
+        blocTitle: 'Bloc',
         exerciseTitle: 'Exercice',
         exerciseImage: null as string | null,
         autoStart: false,
@@ -100,6 +103,7 @@ export default function SimpleTimer() {
         nextIndex: null,
         currentIndex: 0,
         totalExercises: 0,
+        blocTitle: 'Bloc',
         exerciseTitle: 'Exercice',
         exerciseImage: null,
         autoStart: false,
@@ -111,6 +115,16 @@ export default function SimpleTimer() {
 
     const currentExercise = exercises[indexNum]
     const data: any = currentExercise.data
+    let blocTitle = 'Bloc'
+    let flattenedIndex = 0
+    for (const bloc of training.blocs) {
+      const blocExercisesCount = bloc.exercises.length
+      if (indexNum >= flattenedIndex && indexNum < flattenedIndex + blocExercisesCount) {
+        blocTitle = bloc.title || 'Bloc'
+        break
+      }
+      flattenedIndex += blocExercisesCount
+    }
 
     const hasNext = indexNum + 1 < exercises.length
     const nextIndex = hasNext ? indexNum + 1 : null
@@ -124,6 +138,7 @@ export default function SimpleTimer() {
         nextIndex,
         currentIndex: indexNum,
         totalExercises: exercises.length,
+        blocTitle,
         exerciseTitle: 'Exercice',
         exerciseImage: null,
         autoStart: false,
@@ -168,6 +183,7 @@ export default function SimpleTimer() {
       nextIndex,
       currentIndex: indexNum,
       totalExercises: exercises.length,
+      blocTitle,
       exerciseTitle: title,
       exerciseImage: image,
       autoStart,
@@ -244,10 +260,13 @@ export default function SimpleTimer() {
     })
   }
 
-  const progressWidth = bottomPanelWidth > 0 ? progressAnimRef.current.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, bottomPanelWidth],
-  }) : 0
+  const progressWidth =
+    bottomPanelWidth > 0
+      ? progressAnimRef.current.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, bottomPanelWidth],
+        })
+      : 0
 
   return (
     <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.white }]}>
@@ -260,14 +279,20 @@ export default function SimpleTimer() {
       </TouchableOpacity>
 
       <View style={styles.layout}>
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, !exerciseImage && styles.imageContainerHidden]}>
           {exerciseImage ? <Image source={{ uri: exerciseImage }} style={styles.image} resizeMode="cover" /> : null}
         </View>
 
-        <View style={[styles.bottomPanel, { backgroundColor: colors.white }]} onLayout={(e) => setBottomPanelWidth(e.nativeEvent.layout.width)}>
-          {!isTransition && !isReps ? <Animated.View style={[styles.panelFill, { width: progressWidth, backgroundColor: colors.secondary }]} /> : null}
-          <View style={styles.bottomPanelContent}>
+        <View
+          style={[styles.bottomPanel, !exerciseImage && styles.bottomPanelExpanded, { backgroundColor: colors.white }]}
+          onLayout={(e) => setBottomPanelWidth(e.nativeEvent.layout.width)}
+        >
+          {!isTransition && !isReps ? (
+            <Animated.View style={[styles.panelFill, { width: progressWidth, backgroundColor: colors.secondary }]} />
+          ) : null}
+          <View style={[styles.bottomPanelContent, !exerciseImage && styles.bottomPanelContentExpanded]}>
             <TrainingProgressSegments totalSegments={totalExercises} completedSegments={currentIndex} />
+            <Text style={[styles.blocTitle, { color: colors.grey }]}>{blocTitle}</Text>
             <Text style={[styles.title, { color: colors.primary }]}>{exerciseTitle}</Text>
 
             {isReps ? (
@@ -294,7 +319,7 @@ export default function SimpleTimer() {
               />
             )}
 
-            <View style={styles.buttonsRow}>
+            <View style={[styles.buttonsRow, !exerciseImage && styles.buttonsRowBottom]}>
               {!isReps && (
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -350,6 +375,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
+  blocTitle: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
   image: {
     width: '100%',
     flex: 1,
@@ -359,10 +390,19 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
   },
+  imageContainerHidden: {
+    flex: 0,
+    height: 0,
+    width: 0,
+  },
   bottomPanel: {
     position: 'relative',
     flexShrink: 0,
     overflow: 'hidden',
+  },
+  bottomPanelExpanded: {
+    flex: 1,
+    marginTop: 40,
   },
   bottomPanelContent: {
     zIndex: 1,
@@ -370,6 +410,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 12,
     paddingBottom: 30,
+  },
+  bottomPanelContentExpanded: {
+    flex: 1,
   },
   panelFill: {
     position: 'absolute',
@@ -394,6 +437,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 16,
+  },
+  buttonsRowBottom: {
+    marginTop: 'auto',
   },
   backButton: {
     position: 'absolute',
