@@ -44,6 +44,7 @@ type TrainingState = {
   removeExerciseFromTraining: (trainingId: string, blocId: number, exerciseIndex: number) => Promise<void>
   moveExerciseInBloc: (blocId: number, fromIndex: number, toIndex: number) => void
   reorderExercisesInBloc: (blocId: number, exercises: TrainingExercise[]) => void
+  reorderBlocs: (blocs: ITrainingBloc[]) => void
   duplicateExerciseInBloc: (blocId: number, exerciseIndex: number) => void
   updateExerciseInBloc: (blocId: number, exerciseIndex: number, exercise: TrainingExercise) => void
   updateExerciseInTraining: (
@@ -307,6 +308,19 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
       return {
         ...state,
         blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
+  reorderBlocs: (blocs) =>
+    set((state) => {
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs } : training))
+
+      return {
+        ...state,
+        blocs,
         trainings: nextTrainings,
       }
     }),

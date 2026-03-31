@@ -40,6 +40,7 @@ export interface IWarmUp extends ICommonWorkout {
   duration: number
   durationUnit: TimeUnit
   repetitions: number
+  leftRight: boolean
 }
 
 export interface ICooldown extends IWarmUp {}

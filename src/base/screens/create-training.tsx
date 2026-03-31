@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PrimaryButton, TextField } from '../components'
-import { Alert, ScrollView, View, StyleSheet } from 'react-native'
+import { Alert, View, StyleSheet } from 'react-native'
 import { TrainingBloc } from '../components/TrainingBloc'
 import { useTrainingStore } from '../store/trainingStore'
 import { useRouter } from 'expo-router'
@@ -10,6 +10,8 @@ import { ExerciseType } from '../types/trainingTypes'
 import { FormSlider } from '../components/FormSlider'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
+import { NestableDraggableFlatList, NestableScrollContainer, RenderItemParams } from 'react-native-draggable-flatlist'
+import { ITrainingBloc } from '../types/trainingTypes'
 
 export default function index() {
   const { colors } = useAppTheme()
@@ -30,6 +32,7 @@ export default function index() {
   const addBlocWithMeta = useTrainingStore((state) => state.addBlocWithMeta)
   const setEditingBlocId = useTrainingStore((state) => state.setEditingBlocId)
   const removeBloc = useTrainingStore((state) => state.removeBloc)
+  const reorderBlocs = useTrainingStore((state) => state.reorderBlocs)
   const saveTraining = useTrainingStore((state) => state.saveTraining)
   const updateTraining = useTrainingStore((state) => state.updateTraining)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
@@ -56,13 +59,25 @@ export default function index() {
     setTransitionSecondsBetweenTimers(training.transitionSecondsBetweenTimers ?? 5)
   }, [editingTrainingId, trainings])
 
+  const renderBlocItem = ({ item, drag }: RenderItemParams<ITrainingBloc>) => {
+    return (
+      <TrainingBloc
+        blocId={item.id}
+        title={item.title}
+        onPressAddExercise={() => setEditingBlocId(item.id)}
+        onDeleteBloc={() => removeBloc(item.id)}
+        onDragBloc={drag}
+      />
+    )
+  }
+
   return isLoadingTrainings ? (
     <SafeAreaView style={styles.loadingScreen}>
       <LoadingIndicator />
     </SafeAreaView>
   ) : (
     <SafeAreaView style={styles.screen}>
-      <ScrollView
+      <NestableScrollContainer
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardDismissMode="on-drag"
@@ -85,15 +100,15 @@ export default function index() {
           </View>
 
           <View style={styles.blocsSection}>
-            {blocs.map((bloc) => (
-              <TrainingBloc
-                key={bloc.id}
-                blocId={bloc.id}
-                title={bloc.title}
-                onPressAddExercise={() => setEditingBlocId(bloc.id)}
-                onDeleteBloc={() => removeBloc(bloc.id)}
-              />
-            ))}
+            <NestableDraggableFlatList
+              data={blocs}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderBlocItem}
+              onDragEnd={({ data }) => reorderBlocs(data)}
+              scrollEnabled={false}
+              activationDistance={0}
+              containerStyle={{ width: '100%' }}
+            />
           </View>
         </View>
 
@@ -134,7 +149,7 @@ export default function index() {
             isClickable={!isSaving}
           />
         </View>
-      </ScrollView>
+      </NestableScrollContainer>
 
       {isSaving ? (
         <View pointerEvents="none" style={styles.loadingOverlay}>

@@ -5,6 +5,7 @@ import { TextField } from './TextField'
 import { FormSlider } from './FormSlider'
 import { IStretching } from '../types/trainingTypes'
 import { useAppTheme } from '../providers/themeProvider'
+import { CustomCheckbox } from './CustomCheckbox'
 
 type StretchingFormProps = {
   value: IStretching
@@ -56,6 +57,15 @@ export function StretchingForm({ value, onChange }: StretchingFormProps) {
         <Image source={{ uri: value.picture }} style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 10 }} resizeMode="cover" />
       ) : null}
       <View style={{ marginBottom: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <CustomCheckbox
+            checked={value.leftRight}
+            onPress={() => onChange({ ...value, leftRight: !value.leftRight })}
+            borderColor={colors.neutralBorder}
+            checkedColor={colors.primary}
+          />
+          <Text style={{ color: colors.black }}>Gauche / droite</Text>
+        </View>
         <View
           style={{
             flexDirection: 'row',

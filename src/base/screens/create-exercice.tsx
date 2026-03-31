@@ -112,6 +112,7 @@ export default function index() {
     durationUnit: 'seconds',
     mode: 'time',
     repetitions: 0,
+    leftRight: false,
   })
 
   const [cooldownData, setCooldownData] = useState<ICooldown>({
@@ -125,6 +126,7 @@ export default function index() {
     durationUnit: 'seconds',
     mode: 'time',
     repetitions: 0,
+    leftRight: false,
   })
 
   const [stretchingData, setStretchingData] = useState<IStretching>({
@@ -138,6 +140,7 @@ export default function index() {
     durationUnit: 'seconds',
     mode: 'time',
     repetitions: 0,
+    leftRight: false,
   })
 
   useEffect(() => {
@@ -289,7 +292,29 @@ export default function index() {
         }
       }
 
-      if (isEditTrainingMode && trainingId !== null && exerciseIndex !== null) {
+      const isCreateMode = !isEditTrainingMode && !isEditBlocMode
+      const isLeftRightExercise =
+        (selectedType === 'warmup' || selectedType === 'cooldown' || selectedType === 'stretching') &&
+        Boolean((exercise.data as IWarmUp).leftRight)
+
+      if (isCreateMode && isLeftRightExercise) {
+        const baseData = exercise.data as IWarmUp
+        const baseLabel = (baseData.exerciceType || baseData.title || '').trim()
+        const leftLabel = baseLabel ? `${baseLabel} gauche` : 'gauche'
+        const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
+
+        const leftExercise: TrainingExercise = {
+          type: selectedType as 'warmup' | 'cooldown' | 'stretching',
+          data: { ...baseData, exerciceType: leftLabel, title: leftLabel, leftRight: false },
+        }
+        const rightExercise: TrainingExercise = {
+          type: selectedType as 'warmup' | 'cooldown' | 'stretching',
+          data: { ...baseData, exerciceType: rightLabel, title: rightLabel, leftRight: false },
+        }
+
+        addExerciseToBloc(blocId, leftExercise)
+        addExerciseToBloc(blocId, rightExercise)
+      } else if (isEditTrainingMode && trainingId !== null && exerciseIndex !== null) {
         setIsSaving(true)
         try {
           await updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise)

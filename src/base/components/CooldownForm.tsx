@@ -5,6 +5,7 @@ import { TextField } from './TextField'
 import { FormSlider } from './FormSlider'
 import { ICooldown } from '../types/trainingTypes'
 import { useAppTheme } from '../providers/themeProvider'
+import { CustomCheckbox } from './CustomCheckbox'
 
 type CooldownFormProps = {
   value: ICooldown
@@ -71,6 +72,15 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
         />
       ) : null}
       <View style={{ marginBottom: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <CustomCheckbox
+            checked={value.leftRight}
+            onPress={() => onChange({ ...value, leftRight: !value.leftRight })}
+            borderColor={colors.neutralBorder}
+            checkedColor={colors.primary}
+          />
+          <Text style={{ color: colors.black }}>Gauche / droite</Text>
+        </View>
         <View
           style={{
             flexDirection: 'row',

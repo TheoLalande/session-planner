@@ -6,7 +6,7 @@ import { TrainingBlocItem } from './TrainingBlocItem'
 import { useTrainingStore } from '../store/trainingStore'
 import { useRouter } from 'expo-router'
 import { haptic } from '../utils/haptics'
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
+import { NestableDraggableFlatList, RenderItemParams } from 'react-native-draggable-flatlist'
 import { TrainingExercise } from '../types/trainingTypes'
 import { useAppTheme } from '../providers/themeProvider'
 
@@ -15,9 +15,10 @@ type TrainingBlocProps = {
   title: string
   onPressAddExercise: () => void
   onDeleteBloc: () => void
+  onDragBloc?: () => void
 }
 
-export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }: TrainingBlocProps) => {
+export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc, onDragBloc }: TrainingBlocProps) => {
   const { colors } = useAppTheme()
   const styles = createStyles(colors)
   const exercises = useTrainingStore((state) => state.blocs.find((b) => b.id === blocId)?.exercises || [])
@@ -133,6 +134,19 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
           <View style={styles.countBadge}>
             <Text style={styles.countBadgeText}>{exercises.length}</Text>
           </View>
+          {onDragBloc ? (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onLongPress={() => {
+                onDragBloc()
+                haptic('tap')
+              }}
+              delayLongPress={120}
+              style={styles.headerDragButton}
+            >
+              <MaterialCommunityIcons name="drag-vertical" size={18} color={colors.grey} />
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={async () => {
@@ -148,7 +162,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc }
       <View style={{ width: '100%' }}>
         <View style={styles.square}>
           <View style={styles.exercisesContainer}>
-            <DraggableFlatList
+            <NestableDraggableFlatList
               data={exercises}
               keyExtractor={(item, index) => {
                 const exerciseId = Number(item.data?.id ?? 0)
@@ -239,6 +253,16 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => Style
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  headerDragButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.headerButtonBackground,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   deleteButton: {
     width: 30,
