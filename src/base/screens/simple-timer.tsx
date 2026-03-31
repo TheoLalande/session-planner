@@ -6,8 +6,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useTrainingStore } from '../store/trainingStore'
 import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
 import TrainingProgressSegments from '../components/TrainingProgressSegments'
-import { LightColors } from '../constants/theme'
 import { haptic } from '../utils/haptics'
+import { useAppTheme } from '../providers/themeProvider'
 
 type TimerConfig = {
   initialDurationSeconds: number
@@ -32,6 +32,7 @@ export default function SimpleTimer() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const trainings = useTrainingStore((state) => state.trainings)
+  const { colors } = useAppTheme()
   const timerRef = useRef<ExerciseTimerHandle | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [isTransition, setIsTransition] = useState(false)
@@ -249,9 +250,13 @@ export default function SimpleTimer() {
   }) : 0
 
   return (
-    <SafeAreaView edges={['bottom']} style={styles.container}>
-      <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={[styles.backButton, { top: insets.top + 8 }]}>
-        <MaterialCommunityIcons name="arrow-left" size={26} color={LightColors.primary} />
+    <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.white }]}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => router.back()}
+        style={[styles.backButton, { top: insets.top + 8, backgroundColor: colors.overlayLightStrong }]}
+      >
+        <MaterialCommunityIcons name="arrow-left" size={26} color={colors.primary} />
       </TouchableOpacity>
 
       <View style={styles.layout}>
@@ -259,16 +264,16 @@ export default function SimpleTimer() {
           {exerciseImage ? <Image source={{ uri: exerciseImage }} style={styles.image} resizeMode="cover" /> : null}
         </View>
 
-        <View style={styles.bottomPanel} onLayout={(e) => setBottomPanelWidth(e.nativeEvent.layout.width)}>
-          {!isTransition && !isReps ? <Animated.View style={[styles.panelFill, { width: progressWidth }]} /> : null}
+        <View style={[styles.bottomPanel, { backgroundColor: colors.white }]} onLayout={(e) => setBottomPanelWidth(e.nativeEvent.layout.width)}>
+          {!isTransition && !isReps ? <Animated.View style={[styles.panelFill, { width: progressWidth, backgroundColor: colors.secondary }]} /> : null}
           <View style={styles.bottomPanelContent}>
             <TrainingProgressSegments totalSegments={totalExercises} completedSegments={currentIndex} />
-            <Text style={styles.title}>{exerciseTitle}</Text>
+            <Text style={[styles.title, { color: colors.primary }]}>{exerciseTitle}</Text>
 
             {isReps ? (
               <View style={styles.repsBlock}>
-                <Text style={styles.repsNumber}>{repetitions}</Text>
-                <Text style={styles.repsLabel}>répétition(s)</Text>
+                <Text style={[styles.repsNumber, { color: colors.primary }]}>{repetitions}</Text>
+                <Text style={[styles.repsLabel, { color: colors.grey }]}>répétition(s)</Text>
               </View>
             ) : (
               <ExerciseTimer
@@ -297,9 +302,9 @@ export default function SimpleTimer() {
                     await haptic('tap')
                     timerRef.current?.reset()
                   }}
-                  style={[styles.button, styles.secondaryButton]}
+                  style={[styles.button, styles.secondaryButton, { backgroundColor: colors.white, borderColor: colors.primary }]}
                 >
-                  <Text style={[styles.buttonText, styles.secondaryButtonText]}>Réinitialiser</Text>
+                  <Text style={[styles.buttonText, styles.secondaryButtonText, { color: colors.primary }]}>Réinitialiser</Text>
                 </TouchableOpacity>
               )}
 
@@ -317,11 +322,11 @@ export default function SimpleTimer() {
                 style={[
                   styles.button,
                   {
-                    backgroundColor: LightColors.primary,
+                    backgroundColor: colors.primary,
                   },
                 ]}
               >
-                <Text style={styles.buttonText}>{nextIndex === null ? 'Terminer' : 'Suivant'}</Text>
+                <Text style={[styles.buttonText, { color: colors.white }]}>{nextIndex === null ? 'Terminer' : 'Suivant'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -334,7 +339,6 @@ export default function SimpleTimer() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: LightColors.white,
   },
   layout: {
     flex: 1,
@@ -343,7 +347,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: LightColors.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -355,11 +358,9 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: '100%',
     flex: 1,
-    backgroundColor: LightColors.white,
   },
   bottomPanel: {
     position: 'relative',
-    backgroundColor: LightColors.white,
     flexShrink: 0,
     overflow: 'hidden',
   },
@@ -376,7 +377,6 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: LightColors.secondary,
   },
   repsBlock: {
     alignItems: 'center',
@@ -385,12 +385,10 @@ const styles = StyleSheet.create({
   repsNumber: {
     fontSize: 50,
     fontWeight: '700',
-    color: LightColors.primary,
   },
   repsLabel: {
     marginTop: 4,
     fontSize: 16,
-    color: LightColors.grey,
   },
   buttonsRow: {
     flexDirection: 'row',
@@ -405,7 +403,6 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: LightColors.overlayLightStrong,
     borderRadius: 22,
     elevation: 4,
   },
@@ -419,14 +416,10 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: LightColors.white,
   },
   secondaryButton: {
-    backgroundColor: LightColors.white,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: LightColors.primary,
   },
-  secondaryButtonText: {
-    color: LightColors.primary,
-  },
+  secondaryButtonText: {},
 })
