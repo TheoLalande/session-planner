@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -99,6 +99,44 @@ export default function TrainingDetail() {
     })
   }, [navigation, router, startEditingTraining, training, trainingId])
 
+  const allExercises = useMemo(() => (training ? training.blocs.flatMap((bloc) => bloc.exercises) : []), [training])
+
+  const totalExercises = allExercises.length
+
+  const { totalDurationSeconds, hasOnlyTimeBasedExercises } = useMemo(() => {
+    return allExercises.reduce(
+      (acc, exercise) => {
+        const data: any = exercise.data ?? {}
+
+        if (exercise.type === 'warmup' || exercise.type === 'cooldown' || exercise.type === 'stretching') {
+          if (data.mode === 'reps') {
+            acc.hasOnlyTimeBasedExercises = false
+          } else {
+            const rawDuration = typeof data.duration === 'number' ? data.duration : 0
+            const unit = data.durationUnit === 'minutes' ? 'minutes' : 'seconds'
+            const seconds = unit === 'minutes' ? rawDuration * 60 : rawDuration
+            acc.totalDurationSeconds += Math.max(0, seconds)
+          }
+          return acc
+        }
+
+        acc.hasOnlyTimeBasedExercises = false
+
+        return acc
+      },
+      { totalDurationSeconds: 0, hasOnlyTimeBasedExercises: allExercises.length > 0 },
+    )
+  }, [allExercises])
+
+  const totalDurationLabel = useMemo(() => {
+    if (totalDurationSeconds <= 0) {
+      return '0 min'
+    }
+    const roundedMinutes = Math.max(1, Math.round(totalDurationSeconds / 60))
+    return `${roundedMinutes} min`
+  }, [totalDurationSeconds])
+  const hasDuration = hasOnlyTimeBasedExercises && totalDurationSeconds > 0
+
   if (isLoadingTrainings) {
     return (
       <SafeAreaView style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
@@ -115,8 +153,6 @@ export default function TrainingDetail() {
     )
   }
 
-  const totalExercises = training.blocs.reduce((acc, bloc) => acc + bloc.exercises.length, 0)
-
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView
@@ -128,15 +164,28 @@ export default function TrainingDetail() {
         <Text style={[styles.pageTitle, { color: colors.primary }]}>{training.title}</Text>
         {training.description ? <Text style={[styles.pageDescription, { color: colors.grey }]}>{training.description}</Text> : null}
         <View style={[styles.statsCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: colors.grey }]}>Blocs</Text>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{training.blocs.length}</Text>
+          <View style={styles.statRow}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: colors.grey }]}>Blocs</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{training.blocs.length}</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: colors.grey }]}>Exercices</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{totalExercises}</Text>
+            </View>
           </View>
-          <View style={[styles.statDivider, { backgroundColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, { color: colors.grey }]}>Exercices</Text>
-            <Text style={[styles.statValue, { color: colors.primary }]}>{totalExercises}</Text>
-          </View>
+          {hasDuration ? (
+            <>
+              <View style={[styles.statRowDivider, { backgroundColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]} />
+              <View style={styles.statRow}>
+                <View style={styles.statItem}>
+                  <Text style={[styles.statLabel, { color: colors.grey }]}>Durée</Text>
+                  <Text style={[styles.statValue, { color: colors.primary }]}>{totalDurationLabel}</Text>
+                </View>
+              </View>
+            </>
+          ) : null}
         </View>
 
         {training.blocs.map((bloc) => {
@@ -237,9 +286,13 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => Style
     borderColor: colors.cardBorder,
     paddingVertical: 12,
     paddingHorizontal: 14,
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    marginBottom: 14,
+  },
+  statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
   },
   statItem: {
     flex: 1,
@@ -259,6 +312,12 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => Style
   statDivider: {
     width: 1,
     height: 34,
+    backgroundColor: colors.cardBorder,
+  },
+  statRowDivider: {
+    width: '100%',
+    height: 1,
+    marginVertical: 10,
     backgroundColor: colors.cardBorder,
   },
   blocCard: {
