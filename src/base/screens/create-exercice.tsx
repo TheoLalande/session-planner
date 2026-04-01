@@ -294,8 +294,7 @@ export default function index() {
 
       const isCreateMode = !isEditTrainingMode && !isEditBlocMode
       const isLeftRightExercise =
-        (selectedType === 'warmup' || selectedType === 'cooldown' || selectedType === 'stretching') &&
-        Boolean((exercise.data as IWarmUp).leftRight)
+        (selectedType === 'warmup' || selectedType === 'cooldown' || selectedType === 'stretching') && Boolean((exercise.data as IWarmUp).leftRight)
 
       if (isCreateMode && isLeftRightExercise) {
         const baseData = exercise.data as IWarmUp
