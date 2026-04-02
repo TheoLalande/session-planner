@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { TextField } from '../components'
@@ -8,7 +8,7 @@ import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
 import { getSession } from '../api/authService'
 import { getSupabaseClient } from '../api/supabaseClient'
-import DateTimePicker from '@react-native-community/datetimepicker'
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
 
 type ClimbingType = 'bloc' | 'voie' | 'grande voie'
 type RouteProfile = 'dalle' | 'verticale' | 'devers' | 'toit'
@@ -32,7 +32,8 @@ export default function AddCustomExercise() {
   const [attemptCount, setAttemptCount] = useState('1')
   const [attemptCountTouched, setAttemptCountTouched] = useState(false)
   const [climbedAt, setClimbedAt] = useState<Date>(new Date())
-  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false)
+  const [isIosDateModalVisible, setIsIosDateModalVisible] = useState(false)
+  const [pendingIosDate, setPendingIosDate] = useState<Date>(new Date())
   const [notes, setNotes] = useState('')
   const [notesTouched, setNotesTouched] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -62,6 +63,26 @@ export default function AddCustomExercise() {
     const hasRouteName = locationType === 'salle' ? true : routeName.trim().length > 0
     return hasRouteName && grade.trim().length > 0 && Number.isFinite(count) && count >= 1
   }, [attemptCount, grade, locationType, routeName])
+
+  const openDatePicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: climbedAt,
+        mode: 'date',
+        is24Hour: true,
+        maximumDate: new Date(),
+        onChange: (_, selectedDate) => {
+          if (selectedDate) {
+            setClimbedAt(selectedDate)
+          }
+        },
+      })
+      return
+    }
+
+    setPendingIosDate(climbedAt)
+    setIsIosDateModalVisible(true)
+  }
 
   const saveAttempt = async () => {
     if (!isValid || isSubmitting) return
@@ -163,24 +184,11 @@ export default function AddCustomExercise() {
           <Text style={[styles.sectionTitle, { color: colors.grey }]}>Date</Text>
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => setIsDatePickerVisible(true)}
+            onPress={openDatePicker}
             style={[styles.dateButton, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}
           >
             <Text style={[styles.dateText, { color: colors.black }]}>{formattedClimbedAt}</Text>
           </TouchableOpacity>
-          {isDatePickerVisible ? (
-            <DateTimePicker
-              value={climbedAt}
-              mode="date"
-              maximumDate={new Date()}
-              onChange={(_, selectedDate) => {
-                setIsDatePickerVisible(false)
-                if (selectedDate) {
-                  setClimbedAt(selectedDate)
-                }
-              }}
-            />
-          ) : null}
 
           <TextField
             placeholder="Notes (optionnel)"
@@ -262,6 +270,53 @@ export default function AddCustomExercise() {
           <LoadingIndicator />
         </View>
       ) : null}
+
+      <Modal
+        visible={isIosDateModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsIosDateModalVisible(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setIsIosDateModalVisible(false)}
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlayDark }]}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.modalCard, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}>
+            <Text style={[styles.modalTitle, { color: colors.black }]}>Choisir une date</Text>
+            <DateTimePicker
+              value={pendingIosDate}
+              mode="date"
+              display="inline"
+              maximumDate={new Date()}
+              onChange={(_, selectedDate) => {
+                if (selectedDate) {
+                  setPendingIosDate(selectedDate)
+                }
+              }}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setIsIosDateModalVisible(false)}
+                style={[styles.modalButton, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.black }]}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setClimbedAt(pendingIosDate)
+                  setIsIosDateModalVisible(false)
+                }}
+                style={[styles.modalButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.white }]}>Valider</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -339,6 +394,38 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  modalCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  modalButton: {
+    flex: 1,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: '800',
   },
   actions: {
     marginTop: 14,
