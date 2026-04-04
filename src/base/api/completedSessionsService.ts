@@ -47,6 +47,15 @@ function getCompletedBlockTypes(blocs: ITrainingBloc[]): ExerciseType[] {
   return foundTypes
 }
 
+function normalizeStoredCompletedBlockType(item: unknown): ExerciseType | null {
+  const raw = String(item)
+  const t = raw === 'cooldown' ? 'renforcement' : raw
+  if (t === 'warmup' || t === 'stretching' || t === 'climbing' || t === 'hangboard' || t === 'renforcement') {
+    return t
+  }
+  return null
+}
+
 export async function createCompletedSession(payload: { trainingId: string; blocs: ITrainingBloc[]; completedAt?: string }) {
   const supabase = getSupabaseClient()
   const userId = await getCurrentUserId()
@@ -89,9 +98,7 @@ export async function fetchCompletedSessions(payload: { startAt?: number; endAt?
 
   return ((data ?? []) as CompletedSessionRow[]).map((row) => {
     const rawTypes = Array.isArray(row.completed_block_types) ? row.completed_block_types : []
-    const blockTypes = rawTypes.filter((item): item is ExerciseType => {
-      return item === 'warmup' || item === 'cooldown' || item === 'stretching' || item === 'climbing' || item === 'hangboard'
-    })
+    const blockTypes = rawTypes.map(normalizeStoredCompletedBlockType).filter((item): item is ExerciseType => item !== null)
     return {
       id: row.id,
       trainingId: row.training_plan_id,

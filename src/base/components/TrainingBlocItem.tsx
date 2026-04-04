@@ -28,14 +28,14 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
       label = `${data.title || 'Échauffement'} · ${data.duration} ${unit}`
     }
     typeLabel = data.exerciceType || 'Échauffement'
-  } else if (type === 'cooldown') {
+  } else if (type === 'renforcement') {
     if (data.mode === 'reps') {
-      label = `${data.title || 'Retour au calme'} · ${data.repetitions} reps`
+      label = `${data.title || 'Renforcement'} · ${data.repetitions} reps`
     } else {
       const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
-      label = `${data.title || 'Retour au calme'} · ${data.duration} ${unit}`
+      label = `${data.title || 'Renforcement'} · ${data.duration} ${unit}`
     }
-    typeLabel = data.exerciceType || 'Retour au calme'
+    typeLabel = data.exerciceType || 'Renforcement'
   } else if (type === 'stretching') {
     if (data.mode === 'reps') {
       label = `${data.title || 'Étirement'} · ${data.repetitions} reps`

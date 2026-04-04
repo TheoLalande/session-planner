@@ -8,6 +8,7 @@ import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
 import { getSession } from '../api/authService'
 import { getSupabaseClient } from '../api/supabaseClient'
+import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
 
 type ClimbingType = 'bloc' | 'voie' | 'grande voie'
@@ -22,6 +23,7 @@ const LOCATION_TYPES: LocationType[] = ['salle', 'exterieur']
 
 export default function AddCustomExercise() {
   const { colors } = useAppTheme()
+  const loadAttempts = useClimbingAttemptsStore((s) => s.loadAttempts)
   const [routeName, setRouteName] = useState('')
   const [grade, setGrade] = useState('6a')
   const [gradeTouched, setGradeTouched] = useState(false)
@@ -96,22 +98,24 @@ export default function AddCustomExercise() {
       const supabase = getSupabaseClient()
       const count = Math.max(1, Math.floor(Number(attemptCount)))
       const routeNameToSave = locationType === 'salle' ? 'SAE' : routeName.trim()
+      const statusForDb = status === 'Réussi' ? 'success' : 'fail'
       const { error } = await supabase.from('climbing_attempts').insert({
         user_id: userId,
         source: 'ad_hoc',
-        status,
+        status: statusForDb,
         route_name: routeNameToSave,
         grade: grade.trim(),
         climbing_type: climbingType,
         route_profile: routeProfile,
         location_type: locationType,
         attempt_count: count,
-        completed_at: climbedAt.toISOString(),
+        performed_at: climbedAt.toISOString(),
         notes: notesTouched ? notes.trim() : null,
       })
       if (error) {
         throw new Error(error.message)
       }
+      void loadAttempts()
       Alert.alert('Ajout réussi', 'Ta voie a bien été enregistrée.', [
         {
           text: 'OK',

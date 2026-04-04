@@ -108,7 +108,7 @@ export default function TrainingDetail() {
       (acc, exercise) => {
         const data: any = exercise.data ?? {}
 
-        if (exercise.type === 'warmup' || exercise.type === 'cooldown' || exercise.type === 'stretching') {
+        if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching') {
           if (data.mode === 'reps') {
             acc.hasOnlyTimeBasedExercises = false
           } else {
@@ -194,8 +194,8 @@ export default function TrainingDetail() {
           const blocTitleColor =
             blocType === 'warmup'
               ? colors.warmup
-              : blocType === 'cooldown'
-                ? colors.cooldown
+              : blocType === 'renforcement'
+                ? colors.renforcement
                 : blocType === 'stretching'
                   ? colors.stretching
                   : blocType === 'climbing'

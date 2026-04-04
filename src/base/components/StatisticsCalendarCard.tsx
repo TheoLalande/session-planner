@@ -103,7 +103,7 @@ export default function StatisticsCalendarCard({
       )}
 
       <View style={styles.typesLegend}>
-        {(['warmup', 'climbing', 'stretching', 'cooldown', 'hangboard'] as ExerciseType[]).map((type) => (
+        {(['warmup', 'climbing', 'stretching', 'renforcement', 'hangboard'] as ExerciseType[]).map((type) => (
           <View key={type} style={styles.typeLegendItem}>
             <View style={[styles.typeLegendDot, { backgroundColor: getTypeColor(type) }]} />
             <Text style={[styles.typeLegendText, { color: colors.grey }]}>{type}</Text>

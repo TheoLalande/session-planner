@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { createClimbingAttempt, fetchClimbingAttempts } from '../api/climbingAttemptsService'
+import { createClimbingAttempt, fetchClimbingAttempts, type ClimbingAttemptSource } from '../api/climbingAttemptsService'
 
 export type ClimbingAttemptStatus = 'success' | 'fail'
 
@@ -10,6 +10,7 @@ export type ClimbingAttempt = {
   grade: string
   routeLabel: string
   status: ClimbingAttemptStatus
+  source: ClimbingAttemptSource
 }
 
 type ClimbingAttemptsState = {

@@ -105,9 +105,13 @@ function AppNavigator() {
                 />
                 <Stack.Screen name="climb-steps" options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="hangboard" options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }} />
-                <Stack.Screen name="climbing-routes" options={{ headerShown: true, title: 'Voies en falaise', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="session-complete" options={{ headerShown: true, title: 'Fin de session', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="tools" options={{ headerShown: true, title: 'Outils', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="media-library" options={{ headerShown: true, title: 'Galerie de photos', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="tool2" options={{ headerShown: true, title: 'Tool 2', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="tool3" options={{ headerShown: true, title: 'Tool 3', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="settings" options={{ headerShown: true, title: 'Paramètres', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="add-cust" options={{ headerShown: true, title: 'Ajouter un client', headerBackTitle: 'Retour' }} />
               </Stack>
             </View>
           </SafeAreaProvider>

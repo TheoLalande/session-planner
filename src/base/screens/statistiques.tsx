@@ -284,8 +284,18 @@ export default function Statistiques() {
       session.blockTypes.forEach((type) => current.add(type))
       map.set(key, current)
     })
+    const rangeStart = toStartOfDay(startDate)
+    const rangeEnd = toEndOfDay(endDate)
+    attempts.forEach((attempt) => {
+      if (attempt.source !== 'ad_hoc') return
+      if (attempt.createdAt < rangeStart || attempt.createdAt > rangeEnd) return
+      const key = toDayKey(attempt.createdAt)
+      const current = map.get(key) ?? new Set<ExerciseType>()
+      current.add('climbing')
+      map.set(key, current)
+    })
     return map
-  }, [completedSessions])
+  }, [attempts, completedSessions, endDate, startDate])
 
   const calendarCells = useMemo(() => {
     const totalDays = monthEnd.getDate()
@@ -304,7 +314,7 @@ export default function Statistiques() {
 
   const getTypeColor = (type: ExerciseType) => {
     if (type === 'warmup') return colors.warmup
-    if (type === 'cooldown') return colors.cooldown
+    if (type === 'renforcement') return colors.renforcement
     if (type === 'stretching') return colors.stretching
     if (type === 'hangboard') return colors.hangboard
     return colors.climbing

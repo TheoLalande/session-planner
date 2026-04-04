@@ -3,18 +3,18 @@ import { View, Image, TouchableOpacity, Text } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { TextField } from './TextField'
 import { FormSlider } from './FormSlider'
-import { ICooldown } from '../types/trainingTypes'
+import { IRenforcement } from '../types/trainingTypes'
 import { useAppTheme } from '../providers/themeProvider'
 import { CustomCheckbox } from './CustomCheckbox'
 
-type CooldownFormProps = {
-  value: ICooldown
-  onChange: (value: ICooldown) => void
+type RenforcementFormProps = {
+  value: IRenforcement
+  onChange: (value: IRenforcement) => void
 }
 
-export function CooldownForm({ value, onChange }: CooldownFormProps) {
+export function RenforcementForm({ value, onChange }: RenforcementFormProps) {
   const { colors } = useAppTheme()
-  const handleChange = (field: keyof ICooldown, newValue: string) => {
+  const handleChange = (field: keyof IRenforcement, newValue: string) => {
     if (['duration', 'id'].includes(field as string)) {
       const num = Number(newValue)
       onChange({ ...value, [field]: isNaN(num) ? 0 : num })
@@ -26,7 +26,7 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
       <TextField
-        placeholder="Nom du retour au calme"
+        placeholder="Nom du renforcement"
         value={value.title}
         onChangeText={(text) => handleChange('title', text)}
       />
@@ -148,4 +148,3 @@ export function CooldownForm({ value, onChange }: CooldownFormProps) {
     </View>
   )
 }
-

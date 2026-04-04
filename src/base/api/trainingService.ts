@@ -1,5 +1,4 @@
-import { IPlannedTraining } from '../types/trainingTypes'
-import { TrainingExercise } from '../types/trainingTypes'
+import { ExerciseType, IPlannedTraining, TrainingExercise } from '../types/trainingTypes'
 import { getSession } from './authService'
 import { getSupabaseClient } from './supabaseClient'
 
@@ -11,6 +10,7 @@ type TrainingRow = {
   title: string
   description: string | null
   transition_seconds_between_timers: number | null
+  transition_seconds_between_blocs: number | null
 }
 
 type BlockRow = {
@@ -71,6 +71,17 @@ async function toSignedPictureUrl(pictureUrl: string, supabase: ReturnType<typeo
   return data.signedUrl
 }
 
+function normalizeStoredExerciseType(raw: string): TrainingExercise['type'] {
+  if (raw === 'cooldown') return 'renforcement'
+  return raw as TrainingExercise['type']
+}
+
+function normalizeStoredBlocType(raw: string | null | undefined): ExerciseType | undefined {
+  if (raw == null || raw === '') return undefined
+  if (raw === 'cooldown') return 'renforcement'
+  return raw as ExerciseType
+}
+
 function normalizeExerciseFromRow(row: ExerciseRow): TrainingExercise {
   const payload = row.payload_json && typeof row.payload_json === 'object' ? (row.payload_json as Record<string, unknown>) : {}
   const data = {
@@ -82,7 +93,7 @@ function normalizeExerciseFromRow(row: ExerciseRow): TrainingExercise {
     id: typeof payload.id === 'number' ? payload.id : row.position + 1,
   } as TrainingExercise['data']
   return {
-    type: row.exercise_type,
+    type: normalizeStoredExerciseType(String(row.exercise_type)),
     data,
   } as TrainingExercise
 }
@@ -112,7 +123,7 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
 
   const { data: plansData, error: plansError } = await supabase
     .from('training_plans')
-    .select('id,title,description,transition_seconds_between_timers')
+    .select('id,title,description,transition_seconds_between_timers,transition_seconds_between_blocs')
     .eq('user_id', userId)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
@@ -181,23 +192,29 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
       id: block.position + 1,
       title: block.title,
       description: block.description ?? undefined,
-      blocType: (block.bloc_type as any) ?? undefined,
+      blocType: normalizeStoredBlocType(block.bloc_type),
       exercises: blockExercises,
     })
     blocksByPlanId.set(block.plan_id, current)
   })
 
-  return plans.map((plan) => ({
-    id: plan.id,
-    title: plan.title ?? '',
-    description: plan.description ?? '',
-    blocs: blocksByPlanId.get(plan.id) ?? [],
-    transitionSecondsBetweenTimers: typeof plan.transition_seconds_between_timers === 'number' ? plan.transition_seconds_between_timers : 5,
-  }))
+  return plans.map((plan) => {
+    const betweenTimers = typeof plan.transition_seconds_between_timers === 'number' ? plan.transition_seconds_between_timers : 5
+    const betweenBlocs =
+      typeof plan.transition_seconds_between_blocs === 'number' ? plan.transition_seconds_between_blocs : betweenTimers
+    return {
+      id: plan.id,
+      title: plan.title ?? '',
+      description: plan.description ?? '',
+      blocs: blocksByPlanId.get(plan.id) ?? [],
+      transitionSecondsBetweenTimers: betweenTimers,
+      transitionSecondsBetweenBlocs: betweenBlocs,
+    }
+  })
 }
 
 export async function createTraining(
-  payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers'>,
+  payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers' | 'transitionSecondsBetweenBlocs'>,
 ): Promise<IPlannedTraining> {
   const supabase = getSupabaseClient()
   const userId = await getCurrentUserId()
@@ -209,8 +226,9 @@ export async function createTraining(
       title: payload.title,
       description: payload.description,
       transition_seconds_between_timers: payload.transitionSecondsBetweenTimers,
+      transition_seconds_between_blocs: payload.transitionSecondsBetweenBlocs,
     })
-    .select('id,title,description,transition_seconds_between_timers')
+    .select('id,title,description,transition_seconds_between_timers,transition_seconds_between_blocs')
     .single()
 
   if (planError || !planData) {
@@ -258,18 +276,21 @@ export async function createTraining(
     }
   }
 
+  const betweenTimers = typeof plan.transition_seconds_between_timers === 'number' ? plan.transition_seconds_between_timers : payload.transitionSecondsBetweenTimers ?? 5
+  const betweenBlocs = typeof plan.transition_seconds_between_blocs === 'number' ? plan.transition_seconds_between_blocs : payload.transitionSecondsBetweenBlocs ?? betweenTimers
   return {
     id: plan.id,
     title: plan.title ?? '',
     description: plan.description ?? '',
     blocs: payload.blocs,
-    transitionSecondsBetweenTimers: typeof plan.transition_seconds_between_timers === 'number' ? plan.transition_seconds_between_timers : payload.transitionSecondsBetweenTimers ?? 5,
+    transitionSecondsBetweenTimers: betweenTimers,
+    transitionSecondsBetweenBlocs: betweenBlocs,
   }
 }
 
 export async function updateTrainingById(
   trainingId: string,
-  payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers'>,
+  payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers' | 'transitionSecondsBetweenBlocs'>,
 ): Promise<void> {
   const supabase = getSupabaseClient()
   const userId = await getCurrentUserId()
@@ -280,6 +301,7 @@ export async function updateTrainingById(
       title: payload.title,
       description: payload.description,
       transition_seconds_between_timers: payload.transitionSecondsBetweenTimers,
+      transition_seconds_between_blocs: payload.transitionSecondsBetweenBlocs,
     })
     .eq('id', trainingId)
     .eq('user_id', userId)

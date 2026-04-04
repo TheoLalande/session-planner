@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Keyboard, Alert, StyleSheet } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, ICooldown, IStretching, TrainingExercise } from '../types/trainingTypes'
+import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, IRenforcement, IStretching, TrainingExercise } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { ExercicePicker } from '../components/ExercicePicker'
 import { HangboardForm } from '../components/HangboardForm'
 import { ClimbingForm } from '../components/ClimbingForm'
 import { WarmupForm } from '../components/WarmupForm'
-import { CooldownForm } from '../components/CooldownForm'
+import { RenforcementForm } from '../components/RenforcementForm'
 import { StretchingForm } from '../components/StretchingForm'
 import { useTrainingStore } from '../store/trainingStore'
 import { getSession } from '../api/authService'
@@ -115,7 +115,7 @@ export default function index() {
     leftRight: false,
   })
 
-  const [cooldownData, setCooldownData] = useState<ICooldown>({
+  const [renforcementData, setRenforcementData] = useState<IRenforcement>({
     id: 0,
     title: '',
     description: '',
@@ -156,14 +156,14 @@ export default function index() {
       setClimbingData(currentExercise.data)
     } else if (currentExercise.type === 'warmup') {
       setWarmupData(currentExercise.data)
-    } else if (currentExercise.type === 'cooldown') {
-      setCooldownData(currentExercise.data)
+    } else if (currentExercise.type === 'renforcement') {
+      setRenforcementData(currentExercise.data)
     } else if (currentExercise.type === 'stretching') {
       setStretchingData(currentExercise.data)
     }
   }, [currentExercise, isEditTrainingMode, isEditBlocMode])
 
-  // Si le bloc impose un type (warmup/cooldown/stretching/climbing/hangboard),
+  // Si le bloc impose un type (warmup/renforcement/stretching/climbing/hangboard),
   // on le sélectionne automatiquement et on ne montre plus le picker.
   useEffect(() => {
     if (!forcedType) {
@@ -175,6 +175,14 @@ export default function index() {
   const STORAGE_BUCKET = 'exercice-images'
   const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7
   const isLocalUri = (uri: string) => !/^https?:\/\//i.test(uri)
+
+  const toSafeFileBase = (value: string) => {
+    const trimmed = (value ?? '').trim()
+    const base = trimmed.length > 0 ? trimmed : 'image'
+    const normalized = base.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    const safe = normalized.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_')
+    return safe.slice(0, 60) || 'image'
+  }
 
   const extractStoragePathFromUrl = (storageUrl: string): string | null => {
     const publicMarker = `/storage/v1/object/public/${STORAGE_BUCKET}/`
@@ -205,7 +213,7 @@ export default function index() {
     }
   }
 
-  const uploadExercisePictureToStorage = async (localUri: string, userId: string): Promise<string> => {
+  const uploadExercisePictureToStorage = async (localUri: string, userId: string, desiredBaseName: string): Promise<string> => {
     const supabase = getSupabaseClient()
     const manipulated = await ImageManipulator.manipulateAsync(localUri, [{ resize: { width: 1280 } }], {
       compress: 0.7,
@@ -216,15 +224,8 @@ export default function index() {
     const arrayBuffer = await response.arrayBuffer()
     const contentType = 'image/jpeg'
 
-    const fileNameRaw = localUri.split('/').pop() ?? 'image'
-    const fileNameBase = fileNameRaw.split('?')[0] || 'image'
-    const safeBase = fileNameBase.replace(/[^a-zA-Z0-9._-]/g, '_')
-    const lastDotIdx = safeBase.lastIndexOf('.')
-    const hasExt = lastDotIdx !== -1 && lastDotIdx < safeBase.length - 1
-    const ext = hasExt ? safeBase.slice(lastDotIdx + 1).toLowerCase() : 'jpg'
-    const baseNoExt = hasExt ? safeBase.slice(0, lastDotIdx) : safeBase
-    const safeBaseNoExt = baseNoExt || 'image'
-    const objectPath = `users/${userId}/exercises/${Date.now()}-${safeBaseNoExt}.${ext}`
+    const safeBaseNoExt = toSafeFileBase(desiredBaseName)
+    const objectPath = `users/${userId}/exercises/${Date.now()}-${safeBaseNoExt}.jpg`
 
     const fileBytes = new Uint8Array(arrayBuffer)
 
@@ -252,8 +253,8 @@ export default function index() {
       exercise = { type: 'climbing', data: climbingData }
     } else if (selectedType === 'warmup') {
       exercise = { type: 'warmup', data: warmupData }
-    } else if (selectedType === 'cooldown') {
-      exercise = { type: 'cooldown', data: cooldownData }
+    } else if (selectedType === 'renforcement') {
+      exercise = { type: 'renforcement', data: renforcementData }
     } else if (selectedType === 'stretching') {
       exercise = { type: 'stretching', data: stretchingData }
     }
@@ -275,7 +276,12 @@ export default function index() {
               return
             }
 
-            const uploadedUrl = await uploadExercisePictureToStorage(pictureValue, userId)
+            const desiredBaseName =
+              selectedType === 'hangboard' || selectedType === 'climbing'
+                ? String((dataAny?.title ?? '').trim() || 'exercice')
+                : String((dataAny?.exerciceType ?? dataAny?.title ?? '').trim() || 'exercice')
+
+            const uploadedUrl = await uploadExercisePictureToStorage(pictureValue, userId, desiredBaseName)
             dataAny.picture = uploadedUrl
 
             if (existingPicture) {
@@ -294,7 +300,7 @@ export default function index() {
 
       const isCreateMode = !isEditTrainingMode && !isEditBlocMode
       const isLeftRightExercise =
-        (selectedType === 'warmup' || selectedType === 'cooldown' || selectedType === 'stretching') && Boolean((exercise.data as IWarmUp).leftRight)
+        (selectedType === 'warmup' || selectedType === 'renforcement' || selectedType === 'stretching') && Boolean((exercise.data as IWarmUp).leftRight)
 
       if (isCreateMode && isLeftRightExercise) {
         const baseData = exercise.data as IWarmUp
@@ -303,11 +309,11 @@ export default function index() {
         const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
 
         const leftExercise: TrainingExercise = {
-          type: selectedType as 'warmup' | 'cooldown' | 'stretching',
+          type: selectedType as 'warmup' | 'renforcement' | 'stretching',
           data: { ...baseData, exerciceType: leftLabel, title: leftLabel, leftRight: false },
         }
         const rightExercise: TrainingExercise = {
-          type: selectedType as 'warmup' | 'cooldown' | 'stretching',
+          type: selectedType as 'warmup' | 'renforcement' | 'stretching',
           data: { ...baseData, exerciceType: rightLabel, title: rightLabel, leftRight: false },
         }
 
@@ -377,8 +383,8 @@ export default function index() {
     if (selectedType === 'warmup') {
       return <WarmupForm value={warmupData} onChange={setWarmupData} />
     }
-    if (selectedType === 'cooldown') {
-      return <CooldownForm value={cooldownData} onChange={setCooldownData} />
+    if (selectedType === 'renforcement') {
+      return <RenforcementForm value={renforcementData} onChange={setRenforcementData} />
     }
     if (selectedType === 'stretching') {
       return <StretchingForm value={stretchingData} onChange={setStretchingData} />

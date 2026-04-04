@@ -6,7 +6,7 @@ import { TrainingBlocItem } from './TrainingBlocItem'
 import { useTrainingStore } from '../store/trainingStore'
 import { useRouter } from 'expo-router'
 import { haptic } from '../utils/haptics'
-import { NestableDraggableFlatList, RenderItemParams } from 'react-native-draggable-flatlist'
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
 import { TrainingExercise } from '../types/trainingTypes'
 import { useAppTheme } from '../providers/themeProvider'
 
@@ -25,6 +25,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc, 
   const ensureExerciseIds = useTrainingStore((state) => state.ensureExerciseIds)
   const renameBloc = useTrainingStore((state) => state.renameBloc)
   const duplicateExerciseInBloc = useTrainingStore((state) => state.duplicateExerciseInBloc)
+  const duplicateBloc = useTrainingStore((state) => state.duplicateBloc)
   const reorderExercisesInBloc = useTrainingStore((state) => state.reorderExercisesInBloc)
   const router = useRouter()
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -151,6 +152,16 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc, 
             activeOpacity={0.7}
             onPress={async () => {
               await haptic('tap')
+              duplicateBloc(blocId)
+            }}
+            style={styles.duplicateBlocButton}
+          >
+            <MaterialCommunityIcons name="content-duplicate" size={18} color={colors.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={async () => {
+              await haptic('tap')
               onDeleteBloc()
             }}
             style={styles.deleteButton}
@@ -162,7 +173,7 @@ export const TrainingBloc = ({ blocId, title, onPressAddExercise, onDeleteBloc, 
       <View style={{ width: '100%' }}>
         <View style={styles.square}>
           <View style={styles.exercisesContainer}>
-            <NestableDraggableFlatList
+            <DraggableFlatList
               data={exercises}
               keyExtractor={(item, index) => {
                 const exerciseId = Number(item.data?.id ?? 0)
@@ -255,6 +266,16 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => Style
     gap: 8,
   },
   headerDragButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.headerButtonBackground,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  duplicateBlocButton: {
     width: 30,
     height: 30,
     borderRadius: 999,

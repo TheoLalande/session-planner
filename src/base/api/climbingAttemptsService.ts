@@ -2,6 +2,8 @@ import { getSession } from './authService'
 import { getSupabaseClient } from './supabaseClient'
 
 export type ClimbingAttemptStatus = 'success' | 'fail'
+export type ClimbingAttemptSource = 'planned' | 'ad_hoc'
+
 export type ClimbingAttempt = {
   id: string
   createdAt: number
@@ -9,6 +11,7 @@ export type ClimbingAttempt = {
   grade: string
   routeLabel: string
   status: ClimbingAttemptStatus
+  source: ClimbingAttemptSource
 }
 
 type ClimbingAttemptRow = {
@@ -16,6 +19,7 @@ type ClimbingAttemptRow = {
   route_name: string
   grade: string
   status: ClimbingAttemptStatus
+  source: ClimbingAttemptSource | null
   performed_at: string | null
   created_at: string
 }
@@ -46,7 +50,7 @@ export async function fetchClimbingAttempts(): Promise<ClimbingAttempt[]> {
 
   const { data, error } = await supabase
     .from('climbing_attempts')
-    .select('id,route_name,grade,status,performed_at,created_at')
+    .select('id,route_name,grade,status,source,performed_at,created_at')
     .eq('user_id', userId)
     .order('performed_at', { ascending: true })
 
@@ -60,6 +64,7 @@ export async function fetchClimbingAttempts(): Promise<ClimbingAttempt[]> {
     grade: row.grade,
     routeLabel: `${row.route_name} · ${row.grade}`,
     status: row.status,
+    source: row.source === 'planned' ? 'planned' : 'ad_hoc',
     createdAt: new Date(row.performed_at ?? row.created_at).getTime(),
   }))
 }
@@ -85,7 +90,7 @@ export async function createClimbingAttempt(payload: { routeLabel: string; statu
       status: payload.status,
       performed_at: new Date(createdAt).toISOString(),
     })
-    .select('id,route_name,grade,status,performed_at,created_at')
+    .select('id,route_name,grade,status,source,performed_at,created_at')
     .single()
 
   if (error) {
@@ -99,6 +104,7 @@ export async function createClimbingAttempt(payload: { routeLabel: string; statu
     grade: row.grade,
     routeLabel: `${row.route_name} · ${row.grade}`,
     status: row.status,
+    source: row.source === 'planned' ? 'planned' : 'ad_hoc',
     createdAt: new Date(row.performed_at ?? row.created_at).getTime(),
   }
 }

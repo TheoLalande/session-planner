@@ -1,2 +1,2 @@
 # session-planner
-Plan your warmups, training, cooldown and streching sessions
+Plan your warmups, training, renforcement and streching sessions

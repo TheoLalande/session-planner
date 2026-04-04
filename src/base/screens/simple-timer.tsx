@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native'
@@ -8,6 +8,7 @@ import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
 import TrainingProgressSegments from '../components/TrainingProgressSegments'
 import { haptic } from '../utils/haptics'
 import { useAppTheme } from '../providers/themeProvider'
+import { getTransitionSecondsBeforeNextExercise } from '../utils/trainingTransitions'
 
 type TimerConfig = {
   initialDurationSeconds: number
@@ -21,7 +22,7 @@ type TimerConfig = {
   autoStart: boolean
   isReps: boolean
   repetitions: number
-  transitionSecondsBetweenTimers: number
+  transitionSecondsForNextStep: number
 }
 
 export default function SimpleTimer() {
@@ -71,7 +72,7 @@ export default function SimpleTimer() {
     autoStart,
     isReps,
     repetitions,
-    transitionSecondsBetweenTimers,
+    transitionSecondsForNextStep,
   } = useMemo((): TimerConfig => {
     const trainingIdValue = trainingId ?? ''
     const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
@@ -90,7 +91,7 @@ export default function SimpleTimer() {
         autoStart: false,
         isReps: false,
         repetitions: 0,
-        transitionSecondsBetweenTimers: 5,
+        transitionSecondsForNextStep: 5,
       }
     }
 
@@ -109,11 +110,12 @@ export default function SimpleTimer() {
         autoStart: false,
         isReps: false,
         repetitions: 0,
-        transitionSecondsBetweenTimers: 5,
+        transitionSecondsForNextStep: 5,
       }
     }
 
     const currentExercise = exercises[indexNum]
+    const transitionSecondsForNextStep = getTransitionSecondsBeforeNextExercise(training, indexNum)
     const data: any = currentExercise.data
     let blocTitle = 'Bloc'
     let flattenedIndex = 0
@@ -144,7 +146,7 @@ export default function SimpleTimer() {
         autoStart: false,
         isReps: false,
         repetitions: 0,
-        transitionSecondsBetweenTimers: training.transitionSecondsBetweenTimers ?? 5,
+        transitionSecondsForNextStep,
       }
     }
 
@@ -168,7 +170,7 @@ export default function SimpleTimer() {
       title = data.title
     } else {
       if (currentExercise.type === 'warmup') title = 'Échauffement'
-      else if (currentExercise.type === 'cooldown') title = 'Retour au calme'
+      else if (currentExercise.type === 'renforcement') title = 'Renforcement'
       else if (currentExercise.type === 'stretching') title = 'Étirement'
       else title = 'Exercice'
     }
@@ -189,7 +191,7 @@ export default function SimpleTimer() {
       autoStart,
       isReps,
       repetitions,
-      transitionSecondsBetweenTimers: training.transitionSecondsBetweenTimers ?? 5,
+      transitionSecondsForNextStep,
     }
   }, [trainingId, exerciseIndex, trainings])
 
@@ -233,20 +235,27 @@ export default function SimpleTimer() {
     }).start()
   }, [remainingSeconds, isRunning, isTransition, initialDurationSeconds, isReps])
 
-  const goToNextExercise = (withTransition: boolean) => {
-    if (nextIndex === null || !trainingId) {
-      return
-    }
+  const goToNextExercise = useCallback(
+    (withTransition: boolean) => {
+      if (nextIndex === null || !trainingId) {
+        return
+      }
+      const trainingIdValue = trainingId ?? ''
+      const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
+      const training = trainings.find((t) => t.id === trainingIdValue)
+      const secs = training && withTransition ? getTransitionSecondsBeforeNextExercise(training, indexNum) : 0
 
-    router.replace({
-      pathname: '/run-exercise',
-      params: {
-        trainingId,
-        exerciseIndex: String(nextIndex),
-        pendingTransitionSeconds: withTransition ? String(transitionSecondsBetweenTimers) : undefined,
-      },
-    })
-  }
+      router.replace({
+        pathname: '/run-exercise',
+        params: {
+          trainingId,
+          exerciseIndex: String(nextIndex),
+          pendingTransitionSeconds: withTransition && secs > 0 ? String(secs) : undefined,
+        },
+      })
+    },
+    [nextIndex, trainingId, exerciseIndex, trainings, router],
+  )
 
   const finishTraining = () => {
     if (!trainingId) {
@@ -306,7 +315,7 @@ export default function SimpleTimer() {
                 initialSeconds={initialDurationSeconds}
                 autoStart={autoStart}
                 hasNextExercise={hasNextExercise}
-                transitionSecondsBetweenTimers={transitionSecondsBetweenTimers}
+                transitionSecondsBetweenTimers={transitionSecondsForNextStep}
                 transparentBackground
                 onStatusChange={({ isRunning: running, isTransition: transition, remainingSeconds: seconds }) => {
                   hasTimerStatusRef.current = true

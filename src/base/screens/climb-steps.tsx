@@ -10,6 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { haptic } from '../utils/haptics'
 import { buildClimbingRouteLabel } from '../api/climbingRoutesService'
 import { useAppTheme } from '../providers/themeProvider'
+import { getTransitionSecondsBeforeNextExercise } from '../utils/trainingTransitions'
 
 export default function ClimbSteps() {
   const { colors } = useAppTheme()
@@ -18,19 +19,31 @@ export default function ClimbSteps() {
   const router = useRouter()
   const trainings = useTrainingStore((state) => state.trainings)
 
-  const { exercise, hasNext, nextIndex } = useMemo((): { exercise: TrainingExercise | null; hasNext: boolean; nextIndex: number | null } => {
+  const { exercise, hasNext, nextIndex, training, flatIndex } = useMemo((): {
+    exercise: TrainingExercise | null
+    hasNext: boolean
+    nextIndex: number | null
+    training: (typeof trainings)[0] | null
+    flatIndex: number
+  } => {
     const trainingIdValue = trainingId ?? ''
     const indexNum = exerciseIndex ? Number(exerciseIndex) : 0
-    const training = trainings.find((t) => t.id === trainingIdValue)
-    if (!training || !trainingIdValue || Number.isNaN(indexNum)) {
-      return { exercise: null, hasNext: false, nextIndex: null }
+    const trainingFound = trainings.find((t) => t.id === trainingIdValue)
+    if (!trainingFound || !trainingIdValue || Number.isNaN(indexNum)) {
+      return { exercise: null, hasNext: false, nextIndex: null, training: null, flatIndex: 0 }
     }
-    const exercises = training.blocs.flatMap((b) => b.exercises)
+    const exercises = trainingFound.blocs.flatMap((b) => b.exercises)
     if (indexNum < 0 || indexNum >= exercises.length) {
-      return { exercise: null, hasNext: false, nextIndex: null }
+      return { exercise: null, hasNext: false, nextIndex: null, training: null, flatIndex: 0 }
     }
-    const hasNext = indexNum + 1 < exercises.length
-    return { exercise: exercises[indexNum], hasNext, nextIndex: hasNext ? indexNum + 1 : null }
+    const hasNextEx = indexNum + 1 < exercises.length
+    return {
+      exercise: exercises[indexNum],
+      hasNext: hasNextEx,
+      nextIndex: hasNextEx ? indexNum + 1 : null,
+      training: trainingFound,
+      flatIndex: indexNum,
+    }
   }, [exerciseIndex, trainingId, trainings])
 
   const timerRef = useRef<ExerciseTimerHandle | null>(null)
@@ -144,10 +157,15 @@ export default function ClimbSteps() {
           onPress={async () => {
             await haptic('tap')
 
-            if (hasNext && nextIndex !== null) {
+            if (hasNext && nextIndex !== null && training) {
+              const secs = getTransitionSecondsBeforeNextExercise(training, flatIndex)
               router.replace({
                 pathname: '/run-exercise',
-                params: { trainingId: String(trainingId), exerciseIndex: String(nextIndex) },
+                params: {
+                  trainingId: String(trainingId),
+                  exerciseIndex: String(nextIndex),
+                  ...(secs > 0 ? { pendingTransitionSeconds: String(secs) } : {}),
+                },
               })
               return
             }

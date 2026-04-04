@@ -10,7 +10,8 @@ import { ExerciseType } from '../types/trainingTypes'
 import { FormSlider } from '../components/FormSlider'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
-import { NestableDraggableFlatList, NestableScrollContainer, RenderItemParams } from 'react-native-draggable-flatlist'
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist'
+import { ScrollView } from 'react-native-gesture-handler'
 import { ITrainingBloc } from '../types/trainingTypes'
 
 export default function index() {
@@ -19,6 +20,7 @@ export default function index() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [transitionSecondsBetweenTimers, setTransitionSecondsBetweenTimers] = useState(5)
+  const [transitionSecondsBetweenBlocs, setTransitionSecondsBetweenBlocs] = useState(5)
   const router = useRouter()
   const [isBlocModalVisible, setIsBlocModalVisible] = useState(false)
   const [blocTitle, setBlocTitle] = useState('')
@@ -57,17 +59,20 @@ export default function index() {
     setTitle(training.title)
     setDescription(training.description)
     setTransitionSecondsBetweenTimers(training.transitionSecondsBetweenTimers ?? 5)
+    setTransitionSecondsBetweenBlocs(training.transitionSecondsBetweenBlocs ?? training.transitionSecondsBetweenTimers ?? 5)
   }, [editingTrainingId, trainings])
 
   const renderBlocItem = ({ item, drag }: RenderItemParams<ITrainingBloc>) => {
     return (
-      <TrainingBloc
-        blocId={item.id}
-        title={item.title}
-        onPressAddExercise={() => setEditingBlocId(item.id)}
-        onDeleteBloc={() => removeBloc(item.id)}
-        onDragBloc={drag}
-      />
+      <View style={{ width: '100%' }}>
+        <TrainingBloc
+          blocId={item.id}
+          title={item.title}
+          onPressAddExercise={() => setEditingBlocId(item.id)}
+          onDeleteBloc={() => removeBloc(item.id)}
+          onDragBloc={drag}
+        />
+      </View>
     )
   }
 
@@ -77,11 +82,12 @@ export default function index() {
     </SafeAreaView>
   ) : (
     <SafeAreaView style={styles.screen}>
-      <NestableScrollContainer
+      <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
       >
         <View style={styles.headerSection}>
           <View style={styles.formCard}>
@@ -97,10 +103,20 @@ export default function index() {
               unit="secondes"
               valueUnit="seconds"
             />
+            <FormSlider
+              label="Temps entre deux blocs"
+              value={transitionSecondsBetweenBlocs}
+              minimumValue={0}
+              maximumValue={120}
+              step={1}
+              onChange={setTransitionSecondsBetweenBlocs}
+              unit="secondes"
+              valueUnit="seconds"
+            />
           </View>
 
           <View style={styles.blocsSection}>
-            <NestableDraggableFlatList
+            <DraggableFlatList
               data={blocs}
               keyExtractor={(item) => String(item.id)}
               renderItem={renderBlocItem}
@@ -132,9 +148,9 @@ export default function index() {
               setIsSaving(true)
               try {
                 if (editingTrainingId) {
-                  await updateTraining(title.trim(), description.trim(), transitionSecondsBetweenTimers)
+                  await updateTraining(title.trim(), description.trim(), transitionSecondsBetweenTimers, transitionSecondsBetweenBlocs)
                 } else {
-                  await saveTraining(title.trim(), description.trim(), transitionSecondsBetweenTimers)
+                  await saveTraining(title.trim(), description.trim(), transitionSecondsBetweenTimers, transitionSecondsBetweenBlocs)
                 }
                 setTitle('')
                 setDescription('')
@@ -149,7 +165,7 @@ export default function index() {
             isClickable={!isSaving}
           />
         </View>
-      </NestableScrollContainer>
+      </ScrollView>
 
       {isSaving ? (
         <View pointerEvents="none" style={styles.loadingOverlay}>
@@ -168,7 +184,7 @@ export default function index() {
               <Text style={{ marginBottom: 6 }}>Type de bloc</Text>
               <RadioButton.Group onValueChange={(value) => setBlocType(value as ExerciseType)} value={blocType}>
                 <RadioButton.Item label="Warmup" value="warmup" />
-                <RadioButton.Item label="Cooldown" value="cooldown" />
+                <RadioButton.Item label="Renforcement" value="renforcement" />
                 <RadioButton.Item label="Stretching" value="stretching" />
                 <RadioButton.Item label="Climbing" value="climbing" />
                 <RadioButton.Item label="Hangboard" value="hangboard" />

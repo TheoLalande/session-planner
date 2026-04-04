@@ -39,7 +39,7 @@ export default function RunExercise() {
       return
     }
 
-    if (exercise.type === 'warmup' || exercise.type === 'cooldown' || exercise.type === 'stretching') {
+    if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching') {
       router.replace({
         pathname: '/simple-timer',
         params: {

@@ -66,7 +66,7 @@ export function BottomNavBar() {
       <TouchableOpacity
         onPress={async () => {
           await haptic('tap')
-          router.push('/climbing-routes')
+          router.push('/tools')
         }}
         style={[
           styles.iconWrapper,
@@ -77,7 +77,7 @@ export function BottomNavBar() {
         ]}
         activeOpacity={0.7}
       >
-        <MaterialIcons name="terrain" size={28} color={colors.primary} />
+        <MaterialIcons name="handyman" size={28} color={colors.primary} />
       </TouchableOpacity>
       <TouchableOpacity
         onPress={async () => {
