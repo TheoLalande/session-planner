@@ -111,7 +111,15 @@ function AppNavigator() {
                 <Stack.Screen name="tool2" options={{ headerShown: true, title: 'Tool 2', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="tool3" options={{ headerShown: true, title: 'Tool 3', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="settings" options={{ headerShown: true, title: 'Paramètres', headerBackTitle: 'Retour' }} />
-                <Stack.Screen name="add-cust" options={{ headerShown: true, title: 'Ajouter un client', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="add-cust" options={{ headerShown: true, title: 'Ajouter une voie', headerBackTitle: 'Retour' }} />
+                <Stack.Screen
+                  name="edit-ad-hoc-list"
+                  options={{ headerShown: true, title: 'Modifier une voie', headerBackTitle: 'Retour' }}
+                />
+                <Stack.Screen
+                  name="edit-ad-hoc-detail"
+                  options={{ headerShown: true, title: 'Détail', headerBackTitle: 'Retour' }}
+                />
               </Stack>
             </View>
           </SafeAreaProvider>

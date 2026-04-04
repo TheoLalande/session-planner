@@ -1,14 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native'
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Animated,
+  Easing,
+  Dimensions,
+  Platform,
+  Alert,
+  ScrollView,
+} from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { Surface, IconButton, Button, Text as PaperText } from 'react-native-paper'
 import { useTrainingStore } from '../store/trainingStore'
 import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
 import TrainingProgressSegments from '../components/TrainingProgressSegments'
 import { haptic } from '../utils/haptics'
 import { useAppTheme } from '../providers/themeProvider'
 import { getTransitionSecondsBeforeNextExercise } from '../utils/trainingTransitions'
+import { Fonts } from '../constants/theme'
+import type { IPlannedTraining } from '../types/trainingTypes'
 
 type TimerConfig = {
   initialDurationSeconds: number
@@ -16,6 +31,8 @@ type TimerConfig = {
   nextIndex: number | null
   currentIndex: number
   totalExercises: number
+  totalBlocs: number
+  blocIndex: number
   blocTitle: string
   exerciseTitle: string
   exerciseImage: string | null
@@ -24,6 +41,26 @@ type TimerConfig = {
   repetitions: number
   transitionSecondsForNextStep: number
 }
+
+function getBlocProgressContext(training: IPlannedTraining, exerciseFlatIndex: number) {
+  const totalBlocs = training.blocs.length
+  let blocTitle = 'Bloc'
+  let blocIndex = 0
+  let flat = 0
+  for (let b = 0; b < training.blocs.length; b++) {
+    const bloc = training.blocs[b]
+    const count = bloc.exercises.length
+    if (exerciseFlatIndex >= flat && exerciseFlatIndex < flat + count) {
+      blocIndex = b
+      blocTitle = bloc.title || 'Bloc'
+      break
+    }
+    flat += count
+  }
+  return { blocTitle, blocIndex, totalBlocs }
+}
+
+const { height: WINDOW_H } = Dimensions.get('window')
 
 export default function SimpleTimer() {
   const { trainingId, exerciseIndex, pendingTransitionSeconds } = useLocalSearchParams<{
@@ -34,14 +71,14 @@ export default function SimpleTimer() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const trainings = useTrainingStore((state) => state.trainings)
-  const { colors } = useAppTheme()
+  const { colors, mode } = useAppTheme()
   const timerRef = useRef<ExerciseTimerHandle | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [isTransition, setIsTransition] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(0)
   const progressAnimRef = useRef(new Animated.Value(0))
   const hasTimerStatusRef = useRef(false)
-  const [bottomPanelWidth, setBottomPanelWidth] = useState(0)
+  const [contentWidth, setContentWidth] = useState(0)
   const isFirstProgressUpdateRef = useRef<boolean>(true)
   const pendingTransitionSecondsValue = useMemo(() => {
     const rawValue = Array.isArray(pendingTransitionSeconds) ? pendingTransitionSeconds[0] : pendingTransitionSeconds
@@ -53,7 +90,6 @@ export default function SimpleTimer() {
   }, [pendingTransitionSeconds])
 
   useEffect(() => {
-    // Reset quand on change d'exercice (avant même le premier onStatusChange).
     progressAnimRef.current.stopAnimation()
     progressAnimRef.current.setValue(0)
     hasTimerStatusRef.current = false
@@ -66,6 +102,8 @@ export default function SimpleTimer() {
     nextIndex,
     currentIndex,
     totalExercises,
+    totalBlocs,
+    blocIndex,
     exerciseTitle,
     blocTitle,
     exerciseImage,
@@ -85,6 +123,8 @@ export default function SimpleTimer() {
         nextIndex: null as number | null,
         currentIndex: 0,
         totalExercises: 0,
+        totalBlocs: 0,
+        blocIndex: 0,
         blocTitle: 'Bloc',
         exerciseTitle: 'Exercice',
         exerciseImage: null as string | null,
@@ -104,6 +144,8 @@ export default function SimpleTimer() {
         nextIndex: null,
         currentIndex: 0,
         totalExercises: 0,
+        totalBlocs: training.blocs.length,
+        blocIndex: 0,
         blocTitle: 'Bloc',
         exerciseTitle: 'Exercice',
         exerciseImage: null,
@@ -117,22 +159,11 @@ export default function SimpleTimer() {
     const currentExercise = exercises[indexNum]
     const transitionSecondsForNextStep = getTransitionSecondsBeforeNextExercise(training, indexNum)
     const data: any = currentExercise.data
-    let blocTitle = 'Bloc'
-    let flattenedIndex = 0
-    for (const bloc of training.blocs) {
-      const blocExercisesCount = bloc.exercises.length
-      if (indexNum >= flattenedIndex && indexNum < flattenedIndex + blocExercisesCount) {
-        blocTitle = bloc.title || 'Bloc'
-        break
-      }
-      flattenedIndex += blocExercisesCount
-    }
+    const { blocTitle, blocIndex, totalBlocs } = getBlocProgressContext(training, indexNum)
 
     const hasNext = indexNum + 1 < exercises.length
     const nextIndex = hasNext ? indexNum + 1 : null
 
-    // Si on arrive ici avec un type non géré par cet écran, on garde quand même
-    // l'enchaînement global (index+1) pour pouvoir passer au suivant.
     if (currentExercise.type === 'hangboard' || currentExercise.type === 'climbing') {
       return {
         initialDurationSeconds: 60,
@@ -140,6 +171,8 @@ export default function SimpleTimer() {
         nextIndex,
         currentIndex: indexNum,
         totalExercises: exercises.length,
+        totalBlocs,
+        blocIndex,
         blocTitle,
         exerciseTitle: 'Exercice',
         exerciseImage: null,
@@ -153,7 +186,6 @@ export default function SimpleTimer() {
     const isReps = 'mode' in data && data.mode === 'reps'
     const repetitions = isReps && typeof data.repetitions === 'number' ? data.repetitions : 0
 
-    // Gestion de la durée selon l'unité choisie (minutes ou secondes)
     let durationValue = 'duration' in data ? data.duration : 1
     let durationUnit = 'durationUnit' in data && data.durationUnit ? data.durationUnit : 'seconds'
 
@@ -185,6 +217,8 @@ export default function SimpleTimer() {
       nextIndex,
       currentIndex: indexNum,
       totalExercises: exercises.length,
+      totalBlocs,
+      blocIndex,
       blocTitle,
       exerciseTitle: title,
       exerciseImage: image,
@@ -196,7 +230,6 @@ export default function SimpleTimer() {
   }, [trainingId, exerciseIndex, trainings])
 
   useEffect(() => {
-    // Sécurité : quand la durée initiale change (nouvel exercice), on remet le fill à 0.
     progressAnimRef.current.stopAnimation()
     progressAnimRef.current.setValue(0)
     hasTimerStatusRef.current = false
@@ -257,6 +290,19 @@ export default function SimpleTimer() {
     [nextIndex, trainingId, exerciseIndex, trainings, router],
   )
 
+  const goToPreviousExercise = useCallback(() => {
+    if (currentIndex <= 0 || !trainingId) {
+      return
+    }
+    router.replace({
+      pathname: '/run-exercise',
+      params: {
+        trainingId,
+        exerciseIndex: String(currentIndex - 1),
+      },
+    })
+  }, [currentIndex, trainingId, router])
+
   const finishTraining = () => {
     if (!trainingId) {
       router.replace('/home')
@@ -269,212 +315,466 @@ export default function SimpleTimer() {
     })
   }
 
-  const progressWidth =
-    bottomPanelWidth > 0
+  const quitTrainingWithConfirm = useCallback(() => {
+    Alert.alert(
+      "Quitter l'entraînement ?",
+      'Tu pourras relancer cette séance depuis l’accueil.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Quitter',
+          style: 'destructive',
+          onPress: () => {
+            void haptic('tap')
+            router.replace('/home')
+          },
+        },
+      ],
+    )
+  }, [router])
+
+  const progressFillWidth =
+    contentWidth > 0
       ? progressAnimRef.current.interpolate({
           inputRange: [0, 1],
-          outputRange: [0, bottomPanelWidth],
+          outputRange: [0, contentWidth],
         })
       : 0
 
+  const heroImageHeight = Math.min(WINDOW_H * 0.4, 300)
+  const sheetBg = colors.white
+  const timerWellBg = mode === 'dark' ? colors.lightGrey : colors.background
+  const backFabBg = mode === 'dark' ? colors.darkBadgeBackground : colors.white
+  const backFabBorder = mode === 'dark' ? colors.darkBorder : colors.cardBorder
+
+  const exercisePositionLabel =
+    totalExercises > 0 ? `${currentIndex + 1} / ${totalExercises}` : '—'
+
+  const hasPreviousExercise = currentIndex > 0
+  const sheetPaddingTop = exerciseImage ? 20 : Math.max(insets.top + 52, 24)
+
   return (
-    <SafeAreaView edges={['bottom']} style={[styles.container, { backgroundColor: colors.white }]}>
-      <TouchableOpacity
-        activeOpacity={0.8}
+    <SafeAreaView edges={['bottom']} style={[styles.root, { backgroundColor: colors.background }]}>
+      <IconButton
+        icon="arrow-left"
+        iconColor={colors.primary}
         onPress={() => router.back()}
-        style={[styles.backButton, { top: insets.top + 8, backgroundColor: colors.overlayLightStrong }]}
-      >
-        <MaterialCommunityIcons name="arrow-left" size={26} color={colors.primary} />
-      </TouchableOpacity>
+        style={[
+          styles.backFab,
+          {
+            top: insets.top + 6,
+            backgroundColor: backFabBg,
+            borderColor: backFabBorder,
+          },
+        ]}
+        accessibilityLabel="Retour"
+      />
 
-      <View style={styles.layout}>
-        <View style={[styles.imageContainer, !exerciseImage && styles.imageContainerHidden]}>
-          {exerciseImage ? <Image source={{ uri: exerciseImage }} style={styles.image} resizeMode="cover" /> : null}
-        </View>
-
+      {exerciseImage ? (
         <View
-          style={[styles.bottomPanel, !exerciseImage && styles.bottomPanelExpanded, { backgroundColor: colors.white }]}
-          onLayout={(e) => setBottomPanelWidth(e.nativeEvent.layout.width)}
+          style={[
+            styles.heroImageWrap,
+            {
+              height: heroImageHeight,
+              borderBottomColor: colors.cardBorderMuted,
+            },
+          ]}
         >
-          {!isTransition && !isReps ? (
-            <Animated.View style={[styles.panelFill, { width: progressWidth, backgroundColor: colors.secondary }]} />
-          ) : null}
-          <View style={[styles.bottomPanelContent, !exerciseImage && styles.bottomPanelContentExpanded]}>
-            <TrainingProgressSegments totalSegments={totalExercises} completedSegments={currentIndex} />
-            <Text style={[styles.blocTitle, { color: colors.grey }]}>{blocTitle}</Text>
-            <Text style={[styles.title, { color: colors.primary }]}>{exerciseTitle}</Text>
+          <Image source={{ uri: exerciseImage }} style={styles.heroImage} resizeMode="cover" />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.12)', colors.background]}
+            locations={[0.2, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
+      ) : null}
+
+      <Surface
+        style={[
+          styles.sheet,
+          {
+            backgroundColor: sheetBg,
+            marginTop: exerciseImage ? -26 : 0,
+            borderColor: colors.cardBorderMuted,
+            ...Platform.select({
+              ios: {
+                shadowColor: colors.shadow,
+                shadowOffset: { width: 0, height: -4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 16,
+              },
+              android: { elevation: 6 },
+            }),
+          },
+        ]}
+        elevation={0}
+      >
+        <View style={styles.sheetInner}>
+          <ScrollView
+            style={styles.sheetScroll}
+            contentContainerStyle={[styles.sheetScrollContent, { paddingTop: sheetPaddingTop }]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator
+            onLayout={(e) => setContentWidth(e.nativeEvent.layout.width)}
+          >
+            <View style={[styles.progressTrack, { backgroundColor: colors.lightGrey }]}>
+              {!isTransition && !isReps ? (
+                <Animated.View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: progressFillWidth,
+                      backgroundColor: colors.primary,
+                    },
+                  ]}
+                />
+              ) : null}
+            </View>
+
+            <PaperText variant="labelSmall" style={[styles.segmentsLabel, { color: colors.mutedText }]}>
+              Exercices
+            </PaperText>
+            <TrainingProgressSegments
+              totalSegments={totalExercises}
+              completedSegments={currentIndex}
+              style={{ marginBottom: 6 }}
+            />
+
+            {totalBlocs > 0 ? (
+              <>
+                <PaperText variant="labelSmall" style={[styles.segmentsLabel, { color: colors.mutedText }]}>
+                  Blocs
+                </PaperText>
+                <TrainingProgressSegments
+                  totalSegments={totalBlocs}
+                  completedSegments={blocIndex}
+                  style={{ marginBottom: 16 }}
+                />
+              </>
+            ) : null}
+
+            <View
+              style={[
+                styles.blocHighlight,
+                {
+                  backgroundColor: colors.badgeBackground,
+                  borderLeftColor: colors.primary,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons name="view-dashboard-outline" size={22} color={colors.primary} />
+              <Text style={[styles.blocTitleText, { color: colors.black }]} numberOfLines={2}>
+                {blocTitle}
+              </Text>
+            </View>
+
+            <View style={styles.metaRow}>
+              <View style={[styles.badge, { backgroundColor: colors.lightGrey, borderColor: colors.cardBorder }]}>
+                <PaperText variant="labelMedium" style={{ color: colors.primary, fontFamily: Fonts.poppins.medium }}>
+                  {exercisePositionLabel}
+                </PaperText>
+              </View>
+            </View>
+
+            <Text style={[styles.exerciseTitle, { color: colors.black }]} numberOfLines={3}>
+              {exerciseTitle}
+            </Text>
 
             {isReps ? (
-              <View style={styles.repsBlock}>
+              <Surface
+                style={[styles.repsCard, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]}
+                elevation={0}
+              >
+                <PaperText variant="headlineMedium" style={{ color: colors.mutedText, textAlign: 'center' }}>
+                  Répétitions
+                </PaperText>
                 <Text style={[styles.repsNumber, { color: colors.primary }]}>{repetitions}</Text>
-                <Text style={[styles.repsLabel, { color: colors.grey }]}>répétition(s)</Text>
-              </View>
+              </Surface>
             ) : (
-              <ExerciseTimer
-                ref={timerRef}
-                initialSeconds={initialDurationSeconds}
-                autoStart={autoStart}
-                hasNextExercise={hasNextExercise}
-                transitionSecondsBetweenTimers={transitionSecondsForNextStep}
-                transparentBackground
-                onStatusChange={({ isRunning: running, isTransition: transition, remainingSeconds: seconds }) => {
-                  hasTimerStatusRef.current = true
-                  setIsRunning(running)
-                  setIsTransition(transition)
-                  setRemainingSeconds(seconds)
-                }}
-                initialTransitionSeconds={pendingTransitionSecondsValue}
-                onNextExercise={hasNextExercise ? () => goToNextExercise(true) : undefined}
-              />
+              <View style={[styles.timerWell, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]}>
+                <ExerciseTimer
+                  ref={timerRef}
+                  initialSeconds={initialDurationSeconds}
+                  autoStart={autoStart}
+                  hasNextExercise={hasNextExercise}
+                  transitionSecondsBetweenTimers={transitionSecondsForNextStep}
+                  transparentBackground
+                  onStatusChange={({ isRunning: running, isTransition: transition, remainingSeconds: seconds }) => {
+                    hasTimerStatusRef.current = true
+                    setIsRunning(running)
+                    setIsTransition(transition)
+                    setRemainingSeconds(seconds)
+                  }}
+                  initialTransitionSeconds={pendingTransitionSecondsValue}
+                  onNextExercise={hasNextExercise ? () => goToNextExercise(true) : undefined}
+                />
+                <PaperText variant="bodySmall" style={[styles.timerHint, { color: colors.mutedText }]}>
+                  Appuie sur le chrono pour lancer ou mettre en pause
+                </PaperText>
+              </View>
             )}
+          </ScrollView>
 
-            <View style={[styles.buttonsRow, !exerciseImage && styles.buttonsRowBottom]}>
-              {!isReps && (
-                <TouchableOpacity
-                  activeOpacity={0.7}
+          <View style={[styles.bottomActions, { borderTopColor: colors.cardBorderMuted }]}>
+            <View style={styles.actionsBlock}>
+              <View style={styles.navRow}>
+                {hasPreviousExercise ? (
+                  <Button
+                    mode="outlined"
+                    compact
+                    icon="chevron-left"
+                    onPress={async () => {
+                      await haptic('tap')
+                      goToPreviousExercise()
+                    }}
+                    style={[styles.navBtn, styles.navBtnHalf, { borderColor: colors.primary }]}
+                    contentStyle={styles.navBtnContent}
+                    labelStyle={styles.navBtnLabel}
+                    textColor={colors.primary}
+                  >
+                    Précédent
+                  </Button>
+                ) : null}
+                <Button
+                  mode="contained"
+                  compact
+                  icon={nextIndex === null ? 'check' : 'chevron-right'}
+                  onPress={async () => {
+                    await haptic('tap')
+                    if (nextIndex === null) {
+                      finishTraining()
+                      return
+                    }
+                    goToNextExercise(false)
+                  }}
+                  style={[
+                    styles.navBtn,
+                    hasPreviousExercise ? styles.navBtnHalf : styles.navBtnFull,
+                  ]}
+                  contentStyle={styles.navBtnContent}
+                  labelStyle={styles.navBtnLabel}
+                  buttonColor={colors.primary}
+                  textColor={colors.white}
+                >
+                  {nextIndex === null ? 'Terminer' : 'Suivant'}
+                </Button>
+              </View>
+
+              {!isReps ? (
+                <Button
+                  mode="text"
+                  icon="backup-restore"
                   onPress={async () => {
                     await haptic('tap')
                     timerRef.current?.reset()
                   }}
-                  style={[styles.button, styles.secondaryButton, { backgroundColor: colors.white, borderColor: colors.primary }]}
+                  textColor={colors.primary}
+                  style={styles.resetBtn}
+                  labelStyle={styles.resetBtnLabel}
+                  compact
                 >
-                  <Text style={[styles.buttonText, styles.secondaryButtonText, { color: colors.primary }]}>Réinitialiser</Text>
-                </TouchableOpacity>
-              )}
+                  Réinitialiser le chrono
+                </Button>
+              ) : null}
 
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={async () => {
-                  await haptic('tap')
-                  if (nextIndex === null) {
-                    finishTraining()
-                    return
-                  }
-
-                  goToNextExercise(false)
+              <Button
+                mode="text"
+                onPress={() => {
+                  void haptic('tap')
+                  quitTrainingWithConfirm()
                 }}
-                style={[
-                  styles.button,
-                  {
-                    backgroundColor: colors.primary,
-                  },
-                ]}
+                textColor={colors.mutedText}
+                style={styles.quitBtn}
+                labelStyle={styles.quitBtnLabel}
+                compact
               >
-                <Text style={[styles.buttonText, { color: colors.white }]}>{nextIndex === null ? 'Terminer' : 'Suivant'}</Text>
-              </TouchableOpacity>
+                {"Quitter l'entraînement"}
+              </Button>
             </View>
           </View>
         </View>
-      </View>
+      </Surface>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
   },
-  layout: {
-    flex: 1,
-    flexDirection: 'column',
+  backFab: {
+    position: 'absolute',
+    left: 16,
+    zIndex: 20,
+    margin: 0,
+    borderWidth: 1,
+    borderRadius: 22,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  blocTitle: {
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  image: {
+  heroImageWrap: {
     width: '100%',
-    flex: 1,
-    borderRadius: 0,
+    overflow: 'hidden',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  imageContainer: {
+  heroImage: {
     width: '100%',
+    height: '100%',
+  },
+  sheet: {
     flex: 1,
-  },
-  imageContainerHidden: {
-    flex: 0,
-    height: 0,
-    width: 0,
-  },
-  bottomPanel: {
-    position: 'relative',
-    flexShrink: 0,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
-  bottomPanelExpanded: {
+  sheetInner: {
     flex: 1,
-    marginTop: 40,
+    paddingHorizontal: 22,
+    paddingBottom: 20,
   },
-  bottomPanelContent: {
-    zIndex: 1,
-    position: 'relative',
-    paddingHorizontal: 30,
-    paddingTop: 12,
-    paddingBottom: 30,
-  },
-  bottomPanelContentExpanded: {
+  sheetScroll: {
     flex: 1,
+    minHeight: 0,
   },
-  panelFill: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
+  sheetScrollContent: {
+    paddingBottom: 12,
+    flexGrow: 1,
   },
-  repsBlock: {
+  segmentsLabel: {
+    marginBottom: 6,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+  blocHighlight: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    marginBottom: 14,
+  },
+  blocTitleText: {
+    flex: 1,
+    fontFamily: Fonts.poppins.bold,
+    fontSize: 17,
+    lineHeight: 22,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 18,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  exerciseTitle: {
+    fontFamily: Fonts.poppins.bold,
+    fontSize: 26,
+    lineHeight: 32,
+    marginBottom: 20,
+  },
+  repsCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    marginBottom: 4,
   },
   repsNumber: {
-    fontSize: 50,
-    fontWeight: '700',
+    fontFamily: Fonts.poppins.bold,
+    fontSize: 48,
+    lineHeight: 54,
+    textAlign: 'center',
+    marginTop: 8,
   },
-  repsLabel: {
-    marginTop: 4,
-    fontSize: 16,
-  },
-  buttonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  buttonsRowBottom: {
-    marginTop: 'auto',
-  },
-  backButton: {
-    position: 'absolute',
-    left: 10,
-    zIndex: 50,
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 22,
-    elevation: 4,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
+  timerWell: {
+    borderRadius: 20,
     borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 8,
   },
-  secondaryButtonText: {},
+  timerHint: {
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    paddingTop: 0,
+  },
+  bottomActions: {
+    flexShrink: 0,
+    gap: 0,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  actionsBlock: {
+    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
+    gap: 2,
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    width: '100%',
+    gap: 8,
+  },
+  navBtn: {
+    borderRadius: 12,
+    justifyContent: 'center',
+  },
+  navBtnHalf: {
+    flex: 1,
+    minWidth: 0,
+  },
+  navBtnFull: {
+    flex: 1,
+    width: '100%',
+  },
+  navBtnContent: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    minHeight: 40,
+  },
+  navBtnLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.15,
+    marginVertical: 0,
+  },
+  resetBtn: {
+    alignSelf: 'center',
+    marginTop: 0,
+    minHeight: 36,
+  },
+  resetBtnLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginVertical: 0,
+  },
+  quitBtn: {
+    alignSelf: 'center',
+    marginTop: 0,
+    minHeight: 34,
+  },
+  quitBtnLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginVertical: 0,
+  },
 })

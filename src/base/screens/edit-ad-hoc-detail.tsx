@@ -1,14 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { TextField } from '../components'
 import { PrimaryButton } from '../components/PrimaryButton'
 import LoadingIndicator from '../components/LoadingIndicator'
+import { ActivityIndicator } from 'react-native-paper'
 import { useAppTheme } from '../providers/themeProvider'
-import { getSession } from '../api/authService'
-import { getSupabaseClient } from '../api/supabaseClient'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
+import {
+  fetchAdHocClimbingAttemptById,
+  updateAdHocClimbingAttempt,
+} from '../api/climbingAttemptsService'
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
 
 type ClimbingType = 'bloc' | 'voie' | 'grande voie'
@@ -21,9 +24,27 @@ const ROUTE_PROFILES: RouteProfile[] = ['dalle', 'verticale', 'devers', 'toit']
 const ATTEMPT_STATUSES: AttemptStatus[] = ['Réussi', 'Echoué']
 const LOCATION_TYPES: LocationType[] = ['salle', 'exterieur']
 
-export default function AddCustomExercise() {
+function parseClimbingType(v: string): ClimbingType {
+  if (v === 'voie' || v === 'grande voie' || v === 'bloc') return v
+  return 'bloc'
+}
+
+function parseRouteProfile(v: string): RouteProfile {
+  if (v === 'dalle' || v === 'verticale' || v === 'devers' || v === 'toit') return v
+  return 'verticale'
+}
+
+function parseLocationType(v: string): LocationType {
+  return v === 'exterieur' ? 'exterieur' : 'salle'
+}
+
+export default function EditAdHocDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>()
+  const attemptId = typeof id === 'string' ? id : Array.isArray(id) ? id[0] : ''
   const { colors } = useAppTheme()
   const loadAttempts = useClimbingAttemptsStore((s) => s.loadAttempts)
+
+  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [routeName, setRouteName] = useState('')
   const [grade, setGrade] = useState('6a')
   const [gradeTouched, setGradeTouched] = useState(false)
@@ -37,7 +58,6 @@ export default function AddCustomExercise() {
   const [isIosDateModalVisible, setIsIosDateModalVisible] = useState(false)
   const [pendingIosDate, setPendingIosDate] = useState<Date>(new Date())
   const [notes, setNotes] = useState('')
-  const [notesTouched, setNotesTouched] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const availableClimbingTypes = useMemo(() => {
@@ -55,6 +75,43 @@ export default function AddCustomExercise() {
       setClimbingType('bloc')
     }
   }, [climbingType, locationType])
+
+  const loadRow = useCallback(async () => {
+    if (!attemptId) {
+      setLoadState('error')
+      return
+    }
+    setLoadState('loading')
+    try {
+      const row = await fetchAdHocClimbingAttemptById(attemptId)
+      if (!row) {
+        setLoadState('error')
+        Alert.alert('Introuvable', 'Cette voie n’existe plus ou n’est pas modifiable.', [
+          { text: 'OK', onPress: () => router.back() },
+        ])
+        return
+      }
+      setRouteName(row.locationType === 'salle' && row.routeName === 'SAE' ? '' : row.routeName)
+      setGrade(row.grade)
+      setGradeTouched(true)
+      setClimbingType(parseClimbingType(row.climbingType))
+      setRouteProfile(parseRouteProfile(row.routeProfile))
+      setStatus(row.status === 'success' ? 'Réussi' : 'Echoué')
+      setLocationType(parseLocationType(row.locationType))
+      setAttemptCount(String(Math.max(1, row.attemptCount)))
+      setAttemptCountTouched(true)
+      setClimbedAt(new Date(row.performedAt))
+      setNotes(row.notes ?? '')
+      setLoadState('ready')
+    } catch (e) {
+      setLoadState('error')
+      Alert.alert('Erreur', e instanceof Error ? e.message : 'Chargement impossible')
+    }
+  }, [attemptId])
+
+  useEffect(() => {
+    void loadRow()
+  }, [loadRow])
 
   const formattedClimbedAt = useMemo(() => {
     return climbedAt.toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' })
@@ -87,64 +144,73 @@ export default function AddCustomExercise() {
   }
 
   const saveAttempt = async () => {
-    if (!isValid || isSubmitting) return
+    if (!attemptId || !isValid || isSubmitting || loadState !== 'ready') return
     setIsSubmitting(true)
     try {
-      const session = await getSession()
-      const userId = session.user?.id
-      if (!userId) {
-        throw new Error('Utilisateur non connecté')
-      }
-      const supabase = getSupabaseClient()
       const count = Math.max(1, Math.floor(Number(attemptCount)))
       const routeNameToSave = locationType === 'salle' ? 'SAE' : routeName.trim()
       const statusForDb = status === 'Réussi' ? 'success' : 'fail'
-      const { error } = await supabase.from('climbing_attempts').insert({
-        user_id: userId,
-        source: 'ad_hoc',
-        status: statusForDb,
-        route_name: routeNameToSave,
+      const notesValue = notes.trim() === '' ? null : notes.trim()
+      await updateAdHocClimbingAttempt(attemptId, {
+        routeName: routeNameToSave,
         grade: grade.trim(),
-        climbing_type: climbingType,
-        route_profile: routeProfile,
-        location_type: locationType,
-        attempt_count: count,
-        performed_at: climbedAt.toISOString(),
-        notes: notesTouched ? notes.trim() : null,
+        climbingType,
+        routeProfile,
+        locationType,
+        attemptCount: count,
+        performedAt: climbedAt,
+        notes: notesValue,
+        status: statusForDb,
       })
-      if (error) {
-        throw new Error(error.message)
-      }
       void loadAttempts()
-      Alert.alert('Ajout réussi', 'Ta voie a bien été enregistrée.', [
+      Alert.alert('Enregistré', 'La voie a bien été mise à jour.', [
         {
           text: 'OK',
           onPress: () => router.back(),
         },
       ])
     } catch (e) {
-      Alert.alert('Erreur', e instanceof Error ? e.message : 'Impossible d’enregistrer la voie')
+      Alert.alert('Erreur', e instanceof Error ? e.message : 'Impossible d’enregistrer')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  if (!attemptId) {
+    return (
+      <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.black }}>Paramètre manquant.</Text>
+      </SafeAreaView>
+    )
+  }
+
+  if (loadState === 'loading' || loadState === 'idle') {
+    return (
+      <SafeAreaView style={[styles.screen, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator animating size="large" color={colors.primary} />
+      </SafeAreaView>
+    )
+  }
+
+  if (loadState === 'error') {
+    return (
+      <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => void loadRow()}
+          style={[styles.retryBtn, { borderColor: colors.primary, alignSelf: 'flex-start' }]}
+        >
+          <Text style={[styles.retryText, { color: colors.primary }]}>Recharger</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.title, { color: colors.primary }]}>Ajouter une voie réalisée</Text>
-        <Text style={[styles.subtitle, { color: colors.grey }]}>Ajoute une voie faite en dehors d’un entraînement.</Text>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.push('/edit-ad-hoc-list')}
-          style={[styles.linkCard, { backgroundColor: colors.white, borderColor: colors.primary }]}
-        >
-          <Text style={[styles.linkCardTitle, { color: colors.primary }]}>Modifier une voie existante</Text>
-          <Text style={[styles.linkCardText, { color: colors.grey }]}>
-            Liste de toutes les voies saisies à la volée (date, cotation, etc.).
-          </Text>
-        </TouchableOpacity>
+        <Text style={[styles.title, { color: colors.primary }]}>Modifier la voie</Text>
+        <Text style={[styles.subtitle, { color: colors.grey }]}>Ajuste les infos puis enregistre.</Text>
 
         <View style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}>
           <Text style={[styles.sectionTitle, { color: colors.grey }]}>Lieu</Text>
@@ -205,17 +271,9 @@ export default function AddCustomExercise() {
             <Text style={[styles.dateText, { color: colors.black }]}>{formattedClimbedAt}</Text>
           </TouchableOpacity>
 
-          <TextField
-            placeholder="Notes (optionnel)"
-            type="text"
-            value={notes}
-            onChangeText={(value) => {
-              setNotesTouched(true)
-              setNotes(value)
-            }}
-          />
+          <TextField placeholder="Notes (optionnel)" type="text" value={notes} onChangeText={setNotes} />
 
-          <Text style={[styles.sectionTitle, { color: colors.grey }]}>Type d'escalade</Text>
+          <Text style={[styles.sectionTitle, { color: colors.grey }]}>{'Type d’escalade'}</Text>
           <View style={styles.segmentedRow}>
             {availableClimbingTypes.map((value) => {
               const isActive = climbingType === value
@@ -277,7 +335,7 @@ export default function AddCustomExercise() {
         </View>
 
         <View style={styles.actions}>
-          <PrimaryButton title="Enregistrer la voie" onPress={saveAttempt} isClickable={isValid && !isSubmitting} />
+          <PrimaryButton title="Enregistrer les modifications" onPress={saveAttempt} isClickable={isValid && !isSubmitting} />
         </View>
       </ScrollView>
       {isSubmitting ? (
@@ -340,6 +398,10 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -352,21 +414,6 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 4,
     marginBottom: 12,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  linkCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 12,
-  },
-  linkCardTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  linkCardText: {
-    marginTop: 6,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -471,5 +518,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,
+  },
+  retryBtn: {
+    margin: 20,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: '800',
   },
 })

@@ -1,13 +1,14 @@
 import React, { useMemo } from 'react'
-import { View, StyleSheet } from 'react-native'
+import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
 import { useAppTheme } from '../providers/themeProvider'
 
 type TrainingProgressSegmentsProps = {
   totalSegments: number
   completedSegments: number
+  style?: StyleProp<ViewStyle>
 }
 
-export default function TrainingProgressSegments({ totalSegments, completedSegments }: TrainingProgressSegmentsProps) {
+export default function TrainingProgressSegments({ totalSegments, completedSegments, style }: TrainingProgressSegmentsProps) {
   const { colors } = useAppTheme()
   const safeTotal = Math.max(0, Math.floor(totalSegments))
   const safeCompleted = Math.max(0, Math.min(Math.floor(completedSegments), safeTotal))
@@ -22,7 +23,7 @@ export default function TrainingProgressSegments({ totalSegments, completedSegme
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       {segments.map((segment) => (
         <View
           key={segment.key}
@@ -42,8 +43,8 @@ const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
-    height: 6,
+    height: 8,
     borderRadius: 999,
-    marginHorizontal: 2,
+    marginHorizontal: 3,
   },
 })
