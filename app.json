@@ -20,7 +20,7 @@
     "androidNavigationBar": {
       "visible": "immersive",
       "barStyle": "dark-content",
-      "backgroundColor": "transparent"
+      "backgroundColor": "#00000000"
     },
     "plugins": [
       "expo-router",

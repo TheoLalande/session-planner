@@ -13,7 +13,7 @@ export default ({ config }) => ({
   android: {
     package: 'com.gaston.sessionplanner',
     adaptiveIcon: {
-      backgroundColor: 'aliceblue',
+      backgroundColor: '#F0F8FF',
     },
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
@@ -21,9 +21,19 @@ export default ({ config }) => ({
   androidNavigationBar: {
     visible: 'immersive',
     barStyle: 'dark-content',
-    backgroundColor: 'transparent',
+    backgroundColor: '#00000000',
   },
   plugins: [
+    [
+      'expo-build-properties',
+      {
+        android: {
+          compileSdkVersion: 35,
+          targetSdkVersion: 35,
+          buildToolsVersion: '35.0.0',
+        },
+      },
+    ],
     [
       'expo-router',
       {
@@ -36,9 +46,9 @@ export default ({ config }) => ({
         image: './src/base/assets/png/logo-full.png',
         imageWidth: 200,
         resizeMode: 'contain',
-        backgroundColor: 'white',
+        backgroundColor: '#FFFFFF',
         dark: {
-          backgroundColor: 'black',
+          backgroundColor: '#000000',
         },
       },
     ],
