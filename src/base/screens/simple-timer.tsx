@@ -517,79 +517,89 @@ export default function SimpleTimer() {
 
           <View style={[styles.bottomActions, { borderTopColor: colors.cardBorderMuted }]}>
             <View style={styles.actionsBlock}>
-              <View style={styles.navRow}>
-                {hasPreviousExercise ? (
+              <View style={styles.navSection}>
+                <View style={styles.navRow}>
+                  {hasPreviousExercise ? (
+                    <Button
+                      mode="outlined"
+                      compact
+                      icon="chevron-left"
+                      onPress={async () => {
+                        await haptic('tap')
+                        goToPreviousExercise()
+                      }}
+                      style={[styles.navBtn, styles.navBtnHalf, { borderColor: colors.primary }]}
+                      contentStyle={styles.navBtnContent}
+                      labelStyle={styles.navBtnLabel}
+                      textColor={colors.primary}
+                    >
+                      Précédent
+                    </Button>
+                  ) : null}
                   <Button
-                    mode="outlined"
+                    mode="contained"
                     compact
-                    icon="chevron-left"
                     onPress={async () => {
                       await haptic('tap')
-                      goToPreviousExercise()
+                      if (nextIndex === null) {
+                        finishTraining()
+                        return
+                      }
+                      goToNextExercise(false)
                     }}
-                    style={[styles.navBtn, styles.navBtnHalf, { borderColor: colors.primary }]}
-                    contentStyle={styles.navBtnContent}
-                    labelStyle={styles.navBtnLabel}
-                    textColor={colors.primary}
+                    style={[
+                      styles.navBtn,
+                      hasPreviousExercise ? styles.navBtnHalf : styles.navBtnFull,
+                    ]}
+                    contentStyle={[styles.navBtnContent, styles.navBtnPrimaryContent]}
+                    buttonColor={colors.primary}
                   >
-                    Précédent
+                    <View style={styles.navPrimaryInner}>
+                      <Text style={[styles.navBtnLabelContained, { color: colors.white }]}>
+                        {nextIndex === null ? 'Terminer' : 'Suivant'}
+                      </Text>
+                      <MaterialCommunityIcons
+                        name={nextIndex === null ? 'check' : 'chevron-right'}
+                        size={18}
+                        color={colors.white}
+                      />
+                    </View>
                   </Button>
-                ) : null}
-                <Button
-                  mode="contained"
-                  compact
-                  icon={nextIndex === null ? 'check' : 'chevron-right'}
-                  onPress={async () => {
-                    await haptic('tap')
-                    if (nextIndex === null) {
-                      finishTraining()
-                      return
-                    }
-                    goToNextExercise(false)
-                  }}
-                  style={[
-                    styles.navBtn,
-                    hasPreviousExercise ? styles.navBtnHalf : styles.navBtnFull,
-                  ]}
-                  contentStyle={styles.navBtnContent}
-                  labelStyle={styles.navBtnLabel}
-                  buttonColor={colors.primary}
-                  textColor={colors.white}
-                >
-                  {nextIndex === null ? 'Terminer' : 'Suivant'}
-                </Button>
+                </View>
               </View>
 
-              {!isReps ? (
+              <View style={styles.secondaryActions}>
+                {!isReps ? (
+                  <Button
+                    mode="text"
+                    icon="backup-restore"
+                    onPress={async () => {
+                      await haptic('tap')
+                      timerRef.current?.reset()
+                    }}
+                    textColor={colors.primary}
+                    style={styles.resetBtn}
+                    labelStyle={styles.resetBtnLabel}
+                    compact
+                  >
+                    Réinitialiser le chrono
+                  </Button>
+                ) : null}
+
                 <Button
                   mode="text"
-                  icon="backup-restore"
-                  onPress={async () => {
-                    await haptic('tap')
-                    timerRef.current?.reset()
+                  onPress={() => {
+                    void haptic('tap')
+                    quitTrainingWithConfirm()
                   }}
-                  textColor={colors.primary}
-                  style={styles.resetBtn}
-                  labelStyle={styles.resetBtnLabel}
+                  textColor={colors.mutedText}
+                  style={styles.quitBtn}
+                  labelStyle={styles.quitBtnLabel}
                   compact
                 >
-                  Réinitialiser le chrono
+                  {"Quitter l'entraînement"}
                 </Button>
-              ) : null}
-
-              <Button
-                mode="text"
-                onPress={() => {
-                  void haptic('tap')
-                  quitTrainingWithConfirm()
-                }}
-                textColor={colors.mutedText}
-                style={styles.quitBtn}
-                labelStyle={styles.quitBtnLabel}
-                compact
-              >
-                {"Quitter l'entraînement"}
-              </Button>
+              </View>
             </View>
           </View>
         </View>
@@ -726,13 +736,35 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: '100%',
     alignSelf: 'stretch',
-    gap: 2,
+  },
+  navSection: {
+    marginBottom: 16,
+  },
+  secondaryActions: {
+    alignItems: 'center',
+    gap: 4,
   },
   navRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
     width: '100%',
-    gap: 8,
+    gap: 12,
+  },
+  navBtnPrimaryContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navPrimaryInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  navBtnLabelContained: {
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.15,
   },
   navBtn: {
     borderRadius: 12,

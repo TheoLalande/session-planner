@@ -141,9 +141,7 @@ export default function AddCustomExercise() {
           style={[styles.linkCard, { backgroundColor: colors.white, borderColor: colors.primary }]}
         >
           <Text style={[styles.linkCardTitle, { color: colors.primary }]}>Modifier une voie existante</Text>
-          <Text style={[styles.linkCardText, { color: colors.grey }]}>
-            Liste de toutes les voies saisies à la volée (date, cotation, etc.).
-          </Text>
+          <Text style={[styles.linkCardText, { color: colors.grey }]}>Liste de toutes les voies saisies à la volée (date, cotation, etc.).</Text>
         </TouchableOpacity>
 
         <View style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}>
@@ -286,18 +284,17 @@ export default function AddCustomExercise() {
         </View>
       ) : null}
 
-      <Modal
-        visible={isIosDateModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsIosDateModalVisible(false)}
-      >
+      <Modal visible={isIosDateModalVisible} transparent animationType="fade" onRequestClose={() => setIsIosDateModalVisible(false)}>
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => setIsIosDateModalVisible(false)}
           style={[styles.modalBackdrop, { backgroundColor: colors.overlayDark }]}
         >
-          <TouchableOpacity activeOpacity={1} onPress={() => {}} style={[styles.modalCard, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {}}
+            style={[styles.modalCard, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}
+          >
             <Text style={[styles.modalTitle, { color: colors.black }]}>Choisir une date</Text>
             <DateTimePicker
               value={pendingIosDate}
