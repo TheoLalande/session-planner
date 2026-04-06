@@ -82,3 +82,10 @@ export interface IExerciseLibraryItem {
   payloadJson: TrainingExercise['data']
   createdAt: string
 }
+
+export interface IExerciseCategory {
+  id: string
+  userId: string
+  name: string
+  createdAt: string
+}

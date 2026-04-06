@@ -51,6 +51,16 @@ export function toTrainingExerciseFromLibrary(item: IExerciseLibraryItem): Train
   } as TrainingExercise
 }
 
+export function getExerciseCategoryIdFromLibraryItem(item: IExerciseLibraryItem): string {
+  const payload = item.payloadJson as any
+  return String(payload?.exerciseCategoryId ?? '').trim()
+}
+
+export function getExerciseCategoryNameFromLibraryItem(item: IExerciseLibraryItem): string {
+  const payload = item.payloadJson as any
+  return String(payload?.exerciseCategoryName ?? '').trim()
+}
+
 export async function fetchExerciseLibrary(): Promise<IExerciseLibraryItem[]> {
   const supabase = getSupabaseClient()
   const userId = await getCurrentUserId()
@@ -110,6 +120,35 @@ export async function createExerciseLibraryItem(exercise: TrainingExercise): Pro
 
   if (error || !data) {
     throw new Error(error?.message ?? "Impossible d'enregistrer l'exercice")
+  }
+
+  return normalizeRow(data as ExerciseLibraryRow)
+}
+
+export async function updateExerciseLibraryItem(id: string, exercise: TrainingExercise): Promise<IExerciseLibraryItem> {
+  const supabase = getSupabaseClient()
+  const userId = await getCurrentUserId()
+  const payload = exercise.data as any
+
+  const { data, error } = await supabase
+    .from('exercise_library')
+    .update({
+      exercise_type: exercise.type,
+      title: payload?.title ?? payload?.exerciceType ?? '',
+      description: payload?.description ?? '',
+      notes: payload?.notes ?? '',
+      picture_url: payload?.picture ?? '',
+      payload_json: payload,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .select('id,user_id,exercise_type,title,description,notes,picture_url,payload_json,created_at')
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Impossible de mettre à jour l'exercice")
   }
 
   return normalizeRow(data as ExerciseLibraryRow)

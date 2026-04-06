@@ -14,6 +14,7 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
 
   let label = ''
   let typeLabel = ''
+  const categoryName = String((data as any).exerciseCategoryName ?? '').trim()
   if (type === 'hangboard') {
     label = `${data.title || 'Hangboard'} · ${data.sets} séries`
     typeLabel = 'Hangboard'
@@ -48,7 +49,7 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.type}>{typeLabel}</Text>
+      <Text style={styles.type}>{categoryName || typeLabel}</Text>
       <Text style={styles.label} numberOfLines={1}>
         {label}
       </Text>

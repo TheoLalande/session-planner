@@ -66,6 +66,28 @@ export default function CreateOptionsScreen() {
             Créer un exercice
           </Button>
         </Surface>
+
+        <Surface style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]} elevation={0}>
+          <View style={styles.cardHeader}>
+            <MaterialCommunityIcons name="shape-outline" size={22} color={colors.primary} />
+            <Text style={[styles.cardTitle, { color: colors.black }]}>Créer un type d'exercice</Text>
+          </View>
+          <Text style={[styles.cardDescription, { color: colors.mutedText }]}>
+            Crée des familles d'exercices (ex: Pectoraux, Dos, Jambes) pour filtrer ta librairie.
+          </Text>
+          <Button
+            mode="outlined"
+            onPress={async () => {
+              await haptic('tap')
+              router.push('/exercise-categories')
+            }}
+            textColor={colors.primary}
+            style={[styles.outlinedButton, { borderColor: colors.primary }]}
+            contentStyle={styles.buttonContent}
+          >
+            Créer un type
+          </Button>
+        </Surface>
       </View>
     </SafeAreaView>
   )
