@@ -6,9 +6,17 @@ type TrainingProgressSegmentsProps = {
   totalSegments: number
   completedSegments: number
   style?: StyleProp<ViewStyle>
+  completedColor?: string
+  pendingColor?: string
 }
 
-export default function TrainingProgressSegments({ totalSegments, completedSegments, style }: TrainingProgressSegmentsProps) {
+export default function TrainingProgressSegments({
+  totalSegments,
+  completedSegments,
+  style,
+  completedColor,
+  pendingColor,
+}: TrainingProgressSegmentsProps) {
   const { colors } = useAppTheme()
   const safeTotal = Math.max(0, Math.floor(totalSegments))
   const safeCompleted = Math.max(0, Math.min(Math.floor(completedSegments), safeTotal))
@@ -22,12 +30,15 @@ export default function TrainingProgressSegments({ totalSegments, completedSegme
     return null
   }
 
+  const done = completedColor ?? colors.primary
+  const todo = pendingColor ?? colors.lightGrey
+
   return (
     <View style={[styles.container, style]}>
       {segments.map((segment) => (
         <View
           key={segment.key}
-          style={[styles.segment, { backgroundColor: segment.isCompleted ? colors.primary : colors.lightGrey }]}
+          style={[styles.segment, { backgroundColor: segment.isCompleted ? done : todo }]}
         />
       ))}
     </View>

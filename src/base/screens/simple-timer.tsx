@@ -1,18 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-  View,
-  Text,
-  Image,
-  StyleSheet,
-  Animated,
-  Easing,
-  Dimensions,
-  Platform,
-  Alert,
-  ScrollView,
-} from 'react-native'
+import { View, Text, Image, StyleSheet, Animated, Easing, Dimensions, Platform, Alert, ScrollView } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { Surface, IconButton, Button, Text as PaperText } from 'react-native-paper'
@@ -61,6 +50,8 @@ function getBlocProgressContext(training: IPlannedTraining, exerciseFlatIndex: n
 }
 
 const { height: WINDOW_H } = Dimensions.get('window')
+
+const NAV_ROW_BTN_HEIGHT = 46
 
 export default function SimpleTimer() {
   const { trainingId, exerciseIndex, pendingTransitionSeconds } = useLocalSearchParams<{
@@ -287,7 +278,7 @@ export default function SimpleTimer() {
         },
       })
     },
-    [nextIndex, trainingId, exerciseIndex, trainings, router],
+    [nextIndex, trainingId, exerciseIndex, trainings, router]
   )
 
   const goToPreviousExercise = useCallback(() => {
@@ -316,21 +307,17 @@ export default function SimpleTimer() {
   }
 
   const quitTrainingWithConfirm = useCallback(() => {
-    Alert.alert(
-      "Quitter l'entraînement ?",
-      'Tu pourras relancer cette séance depuis l’accueil.',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Quitter',
-          style: 'destructive',
-          onPress: () => {
-            void haptic('tap')
-            router.replace('/home')
-          },
+    Alert.alert("Quitter l'entraînement ?", 'Tu pourras relancer cette séance depuis l’accueil.', [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Quitter',
+        style: 'destructive',
+        onPress: () => {
+          void haptic('tap')
+          router.replace('/home')
         },
-      ],
-    )
+      },
+    ])
   }, [router])
 
   const progressFillWidth =
@@ -347,11 +334,36 @@ export default function SimpleTimer() {
   const backFabBg = mode === 'dark' ? colors.darkBadgeBackground : colors.white
   const backFabBorder = mode === 'dark' ? colors.darkBorder : colors.cardBorder
 
-  const exercisePositionLabel =
-    totalExercises > 0 ? `${currentIndex + 1} / ${totalExercises}` : '—'
+  const exercisePositionLabel = totalExercises > 0 ? `${currentIndex + 1} / ${totalExercises}` : '—'
 
   const hasPreviousExercise = currentIndex > 0
-  const sheetPaddingTop = exerciseImage ? 20 : Math.max(insets.top + 52, 24)
+  const scrollPaddingTop = 16
+  const segmentLabelOnImage = 'rgba(255,255,255,0.92)'
+  const segmentDoneOnImage = colors.white
+  const segmentTodoOnImage = 'rgba(255,255,255,0.32)'
+
+  const progressSegmentsBlock = (
+    <>
+      {totalBlocs > 0 ? (
+        <>
+          <TrainingProgressSegments
+            totalSegments={totalBlocs}
+            completedSegments={blocIndex}
+            completedColor={exerciseImage ? segmentDoneOnImage : undefined}
+            pendingColor={exerciseImage ? segmentTodoOnImage : undefined}
+            style={styles.segmentsRowLast}
+          />
+        </>
+      ) : null}
+      <TrainingProgressSegments
+        totalSegments={totalExercises}
+        completedSegments={currentIndex}
+        completedColor={exerciseImage ? segmentDoneOnImage : undefined}
+        pendingColor={exerciseImage ? segmentTodoOnImage : undefined}
+        style={styles.segmentsRowTight}
+      />
+    </>
+  )
 
   return (
     <SafeAreaView edges={['bottom']} style={[styles.root, { backgroundColor: colors.background }]}>
@@ -381,13 +393,29 @@ export default function SimpleTimer() {
           ]}
         >
           <Image source={{ uri: exerciseImage }} style={styles.heroImage} resizeMode="cover" />
+          <LinearGradient colors={['rgba(0,0,0,0.12)', colors.background]} locations={[0.2, 1]} style={StyleSheet.absoluteFill} />
           <LinearGradient
-            colors={['rgba(0,0,0,0.12)', colors.background]}
-            locations={[0.2, 1]}
-            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+            colors={['rgba(0,0,0,0.72)', 'rgba(0,0,0,0.4)', 'transparent']}
+            locations={[0, 0.55, 1]}
+            style={styles.heroSegmentsBackdrop}
           />
+          <View style={[styles.heroSegmentsOverlay, { paddingTop: insets.top + 5, paddingHorizontal: 16 }]}>{progressSegmentsBlock}</View>
         </View>
-      ) : null}
+      ) : (
+        <View
+          style={[
+            styles.segmentsTopStrip,
+            {
+              paddingTop: insets.top + 50,
+              backgroundColor: colors.background,
+              borderBottomColor: colors.cardBorderMuted,
+            },
+          ]}
+        >
+          <View style={styles.segmentsTopStripInner}>{progressSegmentsBlock}</View>
+        </View>
+      )}
 
       <Surface
         style={[
@@ -412,7 +440,7 @@ export default function SimpleTimer() {
         <View style={styles.sheetInner}>
           <ScrollView
             style={styles.sheetScroll}
-            contentContainerStyle={[styles.sheetScrollContent, { paddingTop: sheetPaddingTop }]}
+            contentContainerStyle={[styles.sheetScrollContent, { paddingTop: scrollPaddingTop }]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator
             onLayout={(e) => setContentWidth(e.nativeEvent.layout.width)}
@@ -431,28 +459,6 @@ export default function SimpleTimer() {
               ) : null}
             </View>
 
-            <PaperText variant="labelSmall" style={[styles.segmentsLabel, { color: colors.mutedText }]}>
-              Exercices
-            </PaperText>
-            <TrainingProgressSegments
-              totalSegments={totalExercises}
-              completedSegments={currentIndex}
-              style={{ marginBottom: 6 }}
-            />
-
-            {totalBlocs > 0 ? (
-              <>
-                <PaperText variant="labelSmall" style={[styles.segmentsLabel, { color: colors.mutedText }]}>
-                  Blocs
-                </PaperText>
-                <TrainingProgressSegments
-                  totalSegments={totalBlocs}
-                  completedSegments={blocIndex}
-                  style={{ marginBottom: 16 }}
-                />
-              </>
-            ) : null}
-
             <View
               style={[
                 styles.blocHighlight,
@@ -468,23 +474,12 @@ export default function SimpleTimer() {
               </Text>
             </View>
 
-            <View style={styles.metaRow}>
-              <View style={[styles.badge, { backgroundColor: colors.lightGrey, borderColor: colors.cardBorder }]}>
-                <PaperText variant="labelMedium" style={{ color: colors.primary, fontFamily: Fonts.poppins.medium }}>
-                  {exercisePositionLabel}
-                </PaperText>
-              </View>
-            </View>
-
             <Text style={[styles.exerciseTitle, { color: colors.black }]} numberOfLines={3}>
               {exerciseTitle}
             </Text>
 
             {isReps ? (
-              <Surface
-                style={[styles.repsCard, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]}
-                elevation={0}
-              >
+              <Surface style={[styles.repsCard, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]} elevation={0}>
                 <PaperText variant="headlineMedium" style={{ color: colors.mutedText, textAlign: 'center' }}>
                   Répétitions
                 </PaperText>
@@ -513,6 +508,39 @@ export default function SimpleTimer() {
                 </PaperText>
               </View>
             )}
+
+            <View style={styles.secondaryActionsScrollable}>
+              {!isReps ? (
+                <Button
+                  mode="text"
+                  icon="backup-restore"
+                  onPress={async () => {
+                    await haptic('tap')
+                    timerRef.current?.reset()
+                  }}
+                  textColor={colors.primary}
+                  style={styles.resetBtn}
+                  labelStyle={styles.resetBtnLabel}
+                  compact
+                >
+                  Réinitialiser le chrono
+                </Button>
+              ) : null}
+
+              <Button
+                mode="text"
+                onPress={() => {
+                  void haptic('tap')
+                  quitTrainingWithConfirm()
+                }}
+                textColor={colors.mutedText}
+                style={styles.quitBtn}
+                labelStyle={styles.quitBtnLabel}
+                compact
+              >
+                {"Quitter l'entraînement"}
+              </Button>
+            </View>
           </ScrollView>
 
           <View style={[styles.bottomActions, { borderTopColor: colors.cardBorderMuted }]}>
@@ -528,7 +556,11 @@ export default function SimpleTimer() {
                         await haptic('tap')
                         goToPreviousExercise()
                       }}
-                      style={[styles.navBtn, styles.navBtnHalf, { borderColor: colors.primary }]}
+                      style={[
+                        styles.navBtn,
+                        styles.navBtnHalf,
+                        { borderColor: colors.primary, minHeight: NAV_ROW_BTN_HEIGHT, maxHeight: NAV_ROW_BTN_HEIGHT },
+                      ]}
                       contentStyle={styles.navBtnContent}
                       labelStyle={styles.navBtnLabel}
                       textColor={colors.primary}
@@ -550,55 +582,17 @@ export default function SimpleTimer() {
                     style={[
                       styles.navBtn,
                       hasPreviousExercise ? styles.navBtnHalf : styles.navBtnFull,
+                      { minHeight: NAV_ROW_BTN_HEIGHT, maxHeight: NAV_ROW_BTN_HEIGHT },
                     ]}
                     contentStyle={[styles.navBtnContent, styles.navBtnPrimaryContent]}
                     buttonColor={colors.primary}
                   >
                     <View style={styles.navPrimaryInner}>
-                      <Text style={[styles.navBtnLabelContained, { color: colors.white }]}>
-                        {nextIndex === null ? 'Terminer' : 'Suivant'}
-                      </Text>
-                      <MaterialCommunityIcons
-                        name={nextIndex === null ? 'check' : 'chevron-right'}
-                        size={18}
-                        color={colors.white}
-                      />
+                      <Text style={[styles.navBtnLabelContained, { color: colors.white }]}>{nextIndex === null ? 'Terminer' : 'Suivant'}</Text>
+                      <MaterialCommunityIcons name={nextIndex === null ? 'check' : 'chevron-right'} size={18} color={colors.white} />
                     </View>
                   </Button>
                 </View>
-              </View>
-
-              <View style={styles.secondaryActions}>
-                {!isReps ? (
-                  <Button
-                    mode="text"
-                    icon="backup-restore"
-                    onPress={async () => {
-                      await haptic('tap')
-                      timerRef.current?.reset()
-                    }}
-                    textColor={colors.primary}
-                    style={styles.resetBtn}
-                    labelStyle={styles.resetBtnLabel}
-                    compact
-                  >
-                    Réinitialiser le chrono
-                  </Button>
-                ) : null}
-
-                <Button
-                  mode="text"
-                  onPress={() => {
-                    void haptic('tap')
-                    quitTrainingWithConfirm()
-                  }}
-                  textColor={colors.mutedText}
-                  style={styles.quitBtn}
-                  labelStyle={styles.quitBtnLabel}
-                  compact
-                >
-                  {"Quitter l'entraînement"}
-                </Button>
               </View>
             </View>
           </View>
@@ -621,11 +615,42 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   heroImageWrap: {
+    position: 'relative',
     width: '100%',
     overflow: 'hidden',
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
     borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  heroSegmentsBackdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 124,
+    zIndex: 3,
+  },
+  heroSegmentsOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    zIndex: 4,
+    paddingBottom: 8,
+  },
+  segmentsTopStrip: {
+    width: '100%',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  segmentsTopStripInner: {
+    paddingHorizontal: 22,
+    paddingBottom: 10,
+  },
+  segmentsRowTight: {
+    marginBottom: 0,
+  },
+  segmentsRowLast: {
+    marginBottom: 4,
   },
   heroImage: {
     width: '100%',
@@ -652,7 +677,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   segmentsLabel: {
-    marginBottom: 6,
+    marginBottom: 4,
     fontWeight: '700',
     letterSpacing: 0.4,
   },
@@ -660,7 +685,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 14,
+    paddingVertical: 5,
     paddingHorizontal: 16,
     borderRadius: 16,
     borderLeftWidth: 4,
@@ -738,11 +763,13 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   navSection: {
-    marginBottom: 16,
+    marginBottom: 3,
   },
-  secondaryActions: {
+  secondaryActionsScrollable: {
     alignItems: 'center',
     gap: 4,
+    marginTop: 12,
+    marginBottom: 10,
   },
   navRow: {
     flexDirection: 'row',
@@ -779,9 +806,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   navBtnContent: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    minHeight: 40,
+    paddingVertical: 0,
+    paddingHorizontal: 10,
+    minHeight: NAV_ROW_BTN_HEIGHT - 2,
+    justifyContent: 'center',
   },
   navBtnLabel: {
     fontSize: 14,
