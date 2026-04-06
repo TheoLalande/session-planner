@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Platform, ScrollView, StyleSheet, useWindowDimensions } from 'react-native'
+import { Platform, ScrollView, StyleSheet, useWindowDimensions, View, Text, TouchableOpacity } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import { LineChart } from 'react-native-gifted-charts'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
+import { useTrainingStore } from '../store/trainingStore'
 import { useAppTheme } from '../providers/themeProvider'
 import { CompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
-import { ExerciseType } from '../types/trainingTypes'
+import { ExerciseType, TrainingExercise } from '../types/trainingTypes'
 import StatisticsHeader from '../components/StatisticsHeader'
 import StatisticsDateRangeCard from '../components/StatisticsDateRangeCard'
 import StatisticsCalendarCard from '../components/StatisticsCalendarCard'
@@ -89,13 +91,52 @@ const scoreToGrade = (score: number) => {
   return GRADE_SCALE[clamped]
 }
 
+const toShortDate = (timestamp: number) => {
+  const d = new Date(timestamp)
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+const getExerciseDisplayName = (exercise: TrainingExercise) => {
+  if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching') {
+    return (exercise.data.exerciceType || exercise.data.title || '').trim() || 'Exercice'
+  }
+  if (exercise.type === 'hangboard' || exercise.type === 'climbing') {
+    return (exercise.data.title || '').trim() || 'Exercice'
+  }
+  return 'Exercice'
+}
+
+const getExerciseTimingSeconds = (exercise: TrainingExercise) => {
+  if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching') {
+    if (exercise.data.mode !== 'time') {
+      return null
+    }
+    const rawDuration = typeof exercise.data.duration === 'number' ? exercise.data.duration : 0
+    const unit = exercise.data.durationUnit === 'minutes' ? 'minutes' : 'seconds'
+    return Math.max(0, unit === 'minutes' ? rawDuration * 60 : rawDuration)
+  }
+  if (exercise.type === 'hangboard') {
+    return Math.max(0, Number(exercise.data.holdTime ?? 0))
+  }
+  if (exercise.type === 'climbing') {
+    return Math.max(0, Number(exercise.data.restingTime ?? 0))
+  }
+  return null
+}
+
+type StatsTab = 'practice' | 'climbing' | 'calendar'
+
 export default function Statistiques() {
   const { mode, colors } = useAppTheme()
+  const trainings = useTrainingStore((state) => state.trainings)
+  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
+  const isLoadingTrainings = useTrainingStore((state) => state.isLoadingTrainings)
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
   const isLoadingAttempts = useClimbingAttemptsStore((state) => state.isLoadingAttempts)
   const loadAttempts = useClimbingAttemptsStore((state) => state.loadAttempts)
   const { width: windowWidth } = useWindowDimensions()
   const [hiddenGrades, setHiddenGrades] = useState<Record<string, boolean>>({ '5c': true })
+  const [activeTab, setActiveTab] = useState<StatsTab>('practice')
 
   const [startDate, setStartDate] = useState<Date>(() => {
     const next = new Date()
@@ -109,10 +150,15 @@ export default function Statistiques() {
   const [completedSessions, setCompletedSessions] = useState<CompletedSession[]>([])
   const [isLoadingCompletedSessions, setIsLoadingCompletedSessions] = useState(false)
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date())
+  const [selectedExerciseLibraryId, setSelectedExerciseLibraryId] = useState<string | null>(null)
 
   useEffect(() => {
     loadAttempts()
   }, [loadAttempts])
+
+  useEffect(() => {
+    loadTrainings()
+  }, [loadTrainings])
 
   useEffect(() => {
     let isMounted = true
@@ -350,6 +396,130 @@ export default function Statistiques() {
       })
   }, [attemptsInRange])
 
+  const exerciseTimingEvents = useMemo(() => {
+    const events: Array<{
+      libraryExerciseId: string
+      title: string
+      completedAt: number
+      valueSeconds: number
+    }> = []
+
+    const trainingById = new Map<string, (typeof trainings)[number]>()
+    trainings.forEach((training) => {
+      trainingById.set(training.id, training)
+    })
+
+    completedSessions.forEach((session) => {
+      const training = trainingById.get(session.trainingId)
+      if (!training) {
+        return
+      }
+      training.blocs.forEach((bloc) => {
+        bloc.exercises.forEach((exercise) => {
+          const libId = String((exercise.data as any).libraryExerciseId ?? '').trim()
+          if (!libId) {
+            return
+          }
+          const valueSeconds = getExerciseTimingSeconds(exercise)
+          if (valueSeconds == null) {
+            return
+          }
+          events.push({
+            libraryExerciseId: libId,
+            title: getExerciseDisplayName(exercise),
+            completedAt: session.completedAt,
+            valueSeconds,
+          })
+        })
+      })
+    })
+
+    return events.sort((a, b) => a.completedAt - b.completedAt)
+  }, [completedSessions, trainings])
+
+  const exerciseGroups = useMemo(() => {
+    const byExercise = new Map<
+      string,
+      {
+        libraryExerciseId: string
+        title: string
+        entries: Array<{ completedAt: number; valueSeconds: number }>
+      }
+    >()
+
+    exerciseTimingEvents.forEach((event) => {
+      const current = byExercise.get(event.libraryExerciseId) ?? {
+        libraryExerciseId: event.libraryExerciseId,
+        title: event.title,
+        entries: [],
+      }
+      current.entries.push({ completedAt: event.completedAt, valueSeconds: event.valueSeconds })
+      if (event.title.length > 0) {
+        current.title = event.title
+      }
+      byExercise.set(event.libraryExerciseId, current)
+    })
+
+    return Array.from(byExercise.values())
+      .map((group) => ({
+        ...group,
+        entries: group.entries.sort((a, b) => a.completedAt - b.completedAt),
+      }))
+      .sort((a, b) => b.entries.length - a.entries.length)
+  }, [exerciseTimingEvents])
+
+  useEffect(() => {
+    if (exerciseGroups.length === 0) {
+      setSelectedExerciseLibraryId(null)
+      return
+    }
+    if (!selectedExerciseLibraryId || !exerciseGroups.some((group) => group.libraryExerciseId === selectedExerciseLibraryId)) {
+      setSelectedExerciseLibraryId(exerciseGroups[0].libraryExerciseId)
+    }
+  }, [exerciseGroups, selectedExerciseLibraryId])
+
+  const selectedExerciseGroup = useMemo(() => {
+    if (!selectedExerciseLibraryId) {
+      return null
+    }
+    return exerciseGroups.find((group) => group.libraryExerciseId === selectedExerciseLibraryId) ?? null
+  }, [exerciseGroups, selectedExerciseLibraryId])
+
+  const selectedExerciseSeries = useMemo(() => {
+    if (!selectedExerciseGroup) {
+      return []
+    }
+    return selectedExerciseGroup.entries.map((entry) => ({
+      value: Math.round((entry.valueSeconds / 60) * 100) / 100,
+      label: toShortDate(entry.completedAt),
+      valueSeconds: entry.valueSeconds,
+    }))
+  }, [selectedExerciseGroup])
+
+  const selectedExerciseProgress = useMemo(() => {
+    if (!selectedExerciseGroup || selectedExerciseGroup.entries.length === 0) {
+      return null
+    }
+    const first = selectedExerciseGroup.entries[0].valueSeconds
+    const latest = selectedExerciseGroup.entries[selectedExerciseGroup.entries.length - 1].valueSeconds
+    const delta = latest - first
+    return { first, latest, delta }
+  }, [selectedExerciseGroup])
+
+  const sessionsCompletedInRange = completedSessions.length
+  const timedExerciseSessionsInRange = exerciseTimingEvents.length
+  const topExerciseCount = exerciseGroups[0]?.entries.length ?? 0
+  const topExerciseName = exerciseGroups[0]?.title ?? '—'
+
+  const isPracticeLoading = isLoadingCompletedSessions || isLoadingTrainings
+  const practiceChartWidth = Math.max(220, Math.floor(windowWidth - 86))
+
+  const tabItems: Array<{ key: StatsTab; label: string }> = [
+    { key: 'practice', label: 'Pratique' },
+    { key: 'climbing', label: 'Escalade' },
+    { key: 'calendar', label: 'Calendrier' },
+  ]
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
@@ -364,35 +534,186 @@ export default function Statistiques() {
           onPressEndDate={() => setShowEndPicker(true)}
         />
 
-        <StatisticsCalendarCard
-          mode={mode}
-          colors={colors}
-          monthTitle={formatMonthTitle(calendarMonth)}
-          isLoading={isLoadingCompletedSessions}
-          calendarCells={calendarCells}
-          onPrevMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-          onNextMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-          getTypeColor={getTypeColor}
-        />
+        <View style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsRow} keyboardShouldPersistTaps="handled">
+            {tabItems.map((tab) => {
+              const isActive = activeTab === tab.key
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  activeOpacity={0.7}
+                  onPress={() => setActiveTab(tab.key)}
+                  style={[
+                    styles.tabChip,
+                    {
+                      backgroundColor: isActive ? colors.primary : colors.white,
+                      borderColor: isActive ? colors.primary : colors.cardBorder,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.tabChipText, { color: isActive ? colors.white : colors.black }]}>{tab.label}</Text>
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+        </View>
 
-        <StatisticsClimbingChartsCard
-          mode={mode}
-          colors={colors}
-          isLoadingAttempts={isLoadingAttempts}
-          attemptsInRangeCount={attemptsInRange.length}
-          gradeCounts={gradeCounts}
-          hiddenGrades={hiddenGrades}
-          onToggleGrade={(grade) => setHiddenGrades((prev) => ({ ...prev, [grade]: !prev[grade] }))}
-          gradeData={gradeData}
-          availableChartWidth={availableChartWidth}
-          chartHeight={chartHeight}
-          stackData={stackData}
-          maxCount={maxCount}
-          noOfSections={noOfSections}
-          stepValue={stepValue}
-          dailySuccessRate={dailySuccessRate}
-          dailyAverageGrades={dailyAverageGrades}
-        />
+        {activeTab === 'practice' ? (
+          <>
+            <View style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+              <Text style={[styles.sectionTitle, { color: colors.black }]}>Synthèse pratique</Text>
+              <View style={styles.kpiRow}>
+                <View style={[styles.kpiItem, { backgroundColor: colors.badgeBackground }]}>
+                  <Text style={[styles.kpiValue, { color: colors.primary }]}>{sessionsCompletedInRange}</Text>
+                  <Text style={[styles.kpiLabel, { color: colors.mutedText }]}>Séances</Text>
+                </View>
+                <View style={[styles.kpiItem, { backgroundColor: colors.badgeBackground }]}>
+                  <Text style={[styles.kpiValue, { color: colors.primary }]}>{timedExerciseSessionsInRange}</Text>
+                  <Text style={[styles.kpiLabel, { color: colors.mutedText }]}>Points temps</Text>
+                </View>
+                <View style={[styles.kpiItem, { backgroundColor: colors.badgeBackground }]}>
+                  <Text style={[styles.kpiValue, { color: colors.primary }]}>{topExerciseCount}</Text>
+                  <Text style={[styles.kpiLabel, { color: colors.mutedText }]} numberOfLines={1}>
+                    {topExerciseName}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+              <Text style={[styles.sectionTitle, { color: colors.black }]}>Exercice suivi</Text>
+              {isPracticeLoading ? (
+                <View style={styles.emptyBox}>
+                  <Text style={[styles.emptyText, { color: colors.grey }]}>Chargement des données...</Text>
+                </View>
+              ) : exerciseGroups.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={[styles.emptyText, { color: colors.grey }]}>Aucun exercice de librairie trouvé sur cette période.</Text>
+                </View>
+              ) : (
+                <>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll} keyboardShouldPersistTaps="handled">
+                    {exerciseGroups.map((group) => {
+                      const isActive = group.libraryExerciseId === selectedExerciseLibraryId
+                      return (
+                        <TouchableOpacity
+                          key={group.libraryExerciseId}
+                          activeOpacity={0.7}
+                          onPress={() => setSelectedExerciseLibraryId(group.libraryExerciseId)}
+                          style={[
+                            styles.gradeChip,
+                            {
+                              backgroundColor: isActive ? colors.primary : colors.white,
+                              borderColor: isActive ? colors.primary : colors.cardBorder,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.gradeChipText, { color: isActive ? colors.white : colors.black }]}>
+                            {group.title} ({group.entries.length})
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </ScrollView>
+
+                  {selectedExerciseProgress ? (
+                    <View style={styles.progressRow}>
+                      <View style={[styles.progressItem, { backgroundColor: colors.badgeBackground }]}>
+                        <Text style={[styles.progressLabel, { color: colors.mutedText }]}>Départ</Text>
+                        <Text style={[styles.progressValue, { color: colors.black }]}>{Math.round(selectedExerciseProgress.first)} sec</Text>
+                      </View>
+                      <View style={[styles.progressItem, { backgroundColor: colors.badgeBackground }]}>
+                        <Text style={[styles.progressLabel, { color: colors.mutedText }]}>Dernier</Text>
+                        <Text style={[styles.progressValue, { color: colors.black }]}>{Math.round(selectedExerciseProgress.latest)} sec</Text>
+                      </View>
+                      <View style={[styles.progressItem, { backgroundColor: colors.badgeBackground }]}>
+                        <Text style={[styles.progressLabel, { color: colors.mutedText }]}>Évolution</Text>
+                        <Text
+                          style={[
+                            styles.progressValue,
+                            {
+                              color: selectedExerciseProgress.delta >= 0 ? colors.primary : colors.danger,
+                            },
+                          ]}
+                        >
+                          {selectedExerciseProgress.delta >= 0 ? '+' : ''}
+                          {Math.round(selectedExerciseProgress.delta)} sec
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {selectedExerciseSeries.length > 1 ? (
+                    <View style={styles.practiceLineChartWrap}>
+                      <LineChart
+                        height={220}
+                        data={selectedExerciseSeries.map((d) => ({ value: d.value }))}
+                        xAxisLabelTexts={selectedExerciseSeries.map((d, index) => {
+                          const step = Math.max(1, Math.ceil(selectedExerciseSeries.length / 6))
+                          return index % step === 0 || index === selectedExerciseSeries.length - 1 ? d.label : ''
+                        })}
+                        adjustToWidth
+                        parentWidth={practiceChartWidth}
+                        disableScroll
+                        rotateLabel={false}
+                        xAxisLabelsAtBottom
+                        initialSpacing={14}
+                        endSpacing={26}
+                        labelsExtraHeight={12}
+                        color={colors.primary}
+                        thickness={2}
+                        dataPointsRadius={4}
+                        dataPointsColor={colors.primary}
+                        lineGradient={false}
+                        xAxisTextNumberOfLines={1}
+                        xAxisLabelTextStyle={[styles.xAxisLabelText, { color: colors.grey }]}
+                        yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
+                      />
+                    </View>
+                  ) : (
+                    <View style={styles.emptyBox}>
+                      <Text style={[styles.emptyText, { color: colors.grey }]}>Il faut au moins 2 points pour afficher une évolution.</Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          </>
+        ) : null}
+
+        {activeTab === 'calendar' ? (
+          <StatisticsCalendarCard
+            mode={mode}
+            colors={colors}
+            monthTitle={formatMonthTitle(calendarMonth)}
+            isLoading={isLoadingCompletedSessions}
+            calendarCells={calendarCells}
+            onPrevMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+            onNextMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
+            getTypeColor={getTypeColor}
+          />
+        ) : null}
+
+        {activeTab === 'climbing' ? (
+          <StatisticsClimbingChartsCard
+            mode={mode}
+            colors={colors}
+            isLoadingAttempts={isLoadingAttempts}
+            attemptsInRangeCount={attemptsInRange.length}
+            gradeCounts={gradeCounts}
+            hiddenGrades={hiddenGrades}
+            onToggleGrade={(grade) => setHiddenGrades((prev) => ({ ...prev, [grade]: !prev[grade] }))}
+            gradeData={gradeData}
+            availableChartWidth={availableChartWidth}
+            chartHeight={chartHeight}
+            stackData={stackData}
+            maxCount={maxCount}
+            noOfSections={noOfSections}
+            stepValue={stepValue}
+            dailySuccessRate={dailySuccessRate}
+            dailyAverageGrades={dailyAverageGrades}
+          />
+        ) : null}
       </ScrollView>
 
       {showStartPicker ? (
@@ -439,5 +760,110 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 24,
+  },
+  modernCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 12,
+    marginBottom: 12,
+  },
+  tabsRow: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  tabChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  tabChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  kpiRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  kpiItem: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  kpiValue: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  kpiLabel: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filtersScroll: {
+    paddingHorizontal: 2,
+    alignItems: 'center',
+    gap: 8,
+  },
+  gradeChip: {
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 11,
+    borderWidth: 1,
+  },
+  gradeChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  progressRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  progressItem: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  progressLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  progressValue: {
+    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  practiceLineChartWrap: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  emptyBox: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 18,
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  yAxisTextStyle: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  xAxisLabelText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 })

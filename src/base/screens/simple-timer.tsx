@@ -334,17 +334,14 @@ export default function SimpleTimer() {
   const backFabBg = mode === 'dark' ? colors.darkBadgeBackground : colors.white
   const backFabBorder = mode === 'dark' ? colors.darkBorder : colors.cardBorder
 
-  const exercisePositionLabel = totalExercises > 0 ? `${currentIndex + 1} / ${totalExercises}` : '—'
-
   const hasPreviousExercise = currentIndex > 0
   const scrollPaddingTop = 16
-  const segmentLabelOnImage = 'rgba(255,255,255,0.92)'
   const segmentDoneOnImage = colors.white
   const segmentTodoOnImage = 'rgba(255,255,255,0.32)'
 
   const progressSegmentsBlock = (
     <>
-      {totalBlocs > 0 ? (
+      {totalBlocs > 1 ? (
         <>
           <TrainingProgressSegments
             totalSegments={totalBlocs}
