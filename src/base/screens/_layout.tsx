@@ -113,6 +113,7 @@ function AppNavigator() {
                 <Stack.Screen name="media-library" options={{ headerShown: true, title: 'Galerie de photos', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="tool2" options={{ headerShown: true, title: 'Tool 2', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="tool3" options={{ headerShown: true, title: 'Tool 3', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="confetti-tool" options={{ headerShown: true, title: 'Confettis', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="settings" options={{ headerShown: true, title: 'Paramètres', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="add-cust" options={{ headerShown: true, title: 'Ajouter une voie', headerBackTitle: 'Retour' }} />
                 <Stack.Screen

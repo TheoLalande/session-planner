@@ -35,11 +35,11 @@ export default function Tools() {
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.push('/tool3')}
+          onPress={() => router.push('/confetti-tool')}
           style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}
         >
-          <Text style={[styles.cardTitle, { color: colors.black }]}>Tool 3</Text>
-          <Text style={[styles.cardText, { color: colors.grey }]}>Simulation d’outil.</Text>
+          <Text style={[styles.cardTitle, { color: colors.black }]}>Confettis</Text>
+          <Text style={[styles.cardText, { color: colors.grey }]}>Lancer une animation de confettis à l’arrivée.</Text>
         </TouchableOpacity>
 
         <View style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}>
