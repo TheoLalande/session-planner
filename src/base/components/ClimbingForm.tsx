@@ -8,9 +8,10 @@ import { useAppTheme } from '../providers/themeProvider'
 type ClimbingFormProps = {
   value: IClimbing
   onChange: (value: IClimbing) => void
+  hideTimingControls?: boolean
 }
 
-export function ClimbingForm({ value, onChange }: ClimbingFormProps) {
+export function ClimbingForm({ value, onChange, hideTimingControls = false }: ClimbingFormProps) {
   const { colors } = useAppTheme()
   const climbingTypeOptions: Array<NonNullable<IClimbing['climbingType']>> = ['bloc', 'voie', 'grande voie']
   const routeProfileOptions: Array<NonNullable<IClimbing['routeProfile']>> = ['dalle', 'verticale', 'devers', 'toit']
@@ -73,15 +74,17 @@ export function ClimbingForm({ value, onChange }: ClimbingFormProps) {
       </View>
 
       <TextField placeholder="Cotation (grade)" value={value.grade} onChangeText={(text) => handleChange('grade', text)} />
-      <FormSlider
-        label="Temps de repos"
-        unit="seconds"
-        enableUnitToggle
-        value={value.restingTime}
-        minimumValue={0}
-        maximumValue={20 * 60}
-        onChange={(v) => onChange({ ...value, restingTime: v })}
-      />
+      {!hideTimingControls ? (
+        <FormSlider
+          label="Temps de repos"
+          unit="seconds"
+          enableUnitToggle
+          value={value.restingTime}
+          minimumValue={0}
+          maximumValue={20 * 60}
+          onChange={(v) => onChange({ ...value, restingTime: v })}
+        />
+      ) : null}
       <FormSlider
         label="Nombre de tentatives"
         value={value.attempts}

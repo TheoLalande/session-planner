@@ -11,6 +11,7 @@ export type ClimbingWallProfile = 'dalle' | 'verticale' | 'devers' | 'toit'
 
 export interface ICommonWorkout {
   id: number
+  libraryExerciseId?: string
   title: string
   description: string
   picture: string
@@ -68,4 +69,16 @@ export interface IPlannedTraining {
   blocs: ITrainingBloc[]
   transitionSecondsBetweenTimers: number
   transitionSecondsBetweenBlocs: number
+}
+
+export interface IExerciseLibraryItem {
+  id: string
+  userId: string
+  exerciseType: ExerciseType
+  title: string
+  description: string
+  notes: string
+  pictureUrl: string
+  payloadJson: TrainingExercise['data']
+  createdAt: string
 }

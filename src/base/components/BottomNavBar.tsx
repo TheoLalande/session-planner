@@ -17,7 +17,7 @@ export function BottomNavBar() {
         onPress={async () => {
           await haptic('tap')
           clearEditingTraining()
-          router.push('/create-training')
+          router.push('/create-options' as never)
         }}
         style={[
           styles.iconWrapper,

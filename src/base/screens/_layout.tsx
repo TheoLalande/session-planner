@@ -90,8 +90,11 @@ function AppNavigator() {
                     headerTitleStyle: { fontSize: 15, fontWeight: '600' },
                   }}
                 />
+                <Stack.Screen name="create-options" options={{ headerShown: true, title: 'Créer', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="create-training" options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="create-exercice" options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="add-exercise-choice" options={{ headerShown: true, title: 'Ajouter un exercice', headerBackTitle: 'Retour' }} />
+                <Stack.Screen name="exercise-library" options={{ headerShown: true, title: 'Mes exercices', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="simple-timer" options={{ headerShown: false }} />
                 <Stack.Screen name="run-exercise" options={{ headerShown: false }} />
                 <Stack.Screen

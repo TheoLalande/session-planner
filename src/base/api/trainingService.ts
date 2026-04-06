@@ -25,6 +25,7 @@ type BlockRow = {
 type ExerciseRow = {
   id: string
   block_id: string
+  exercise_library_id: string | null
   exercise_type: TrainingExercise['type']
   title: string | null
   description: string | null
@@ -86,6 +87,7 @@ function normalizeExerciseFromRow(row: ExerciseRow): TrainingExercise {
   const payload = row.payload_json && typeof row.payload_json === 'object' ? (row.payload_json as Record<string, unknown>) : {}
   const data = {
     ...payload,
+    libraryExerciseId: row.exercise_library_id ?? String(payload.libraryExerciseId ?? ''),
     title: row.title ?? String(payload.title ?? ''),
     description: row.description ?? String(payload.description ?? ''),
     picture: row.picture_url ?? String(payload.picture ?? ''),
@@ -107,6 +109,7 @@ function getExerciseInsertPayload(
   return {
     user_id: userId,
     block_id: blockId,
+    exercise_library_id: exercise.data.libraryExerciseId ?? null,
     exercise_type: exercise.type,
     title: exercise.data.title ?? '',
     description: exercise.data.description ?? '',
@@ -157,7 +160,7 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
   if (blockIds.length > 0) {
     const { data: exercisesData, error: exercisesError } = await supabase
       .from('training_plan_exercises')
-      .select('id,block_id,exercise_type,title,description,notes,picture_url,payload_json,position')
+      .select('id,block_id,exercise_library_id,exercise_type,title,description,notes,picture_url,payload_json,position')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .in('block_id', blockIds)

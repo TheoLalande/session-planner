@@ -10,9 +10,10 @@ import { CustomCheckbox } from './CustomCheckbox'
 type WarmupFormProps = {
   value: IWarmUp
   onChange: (value: IWarmUp) => void
+  hideTimingControls?: boolean
 }
 
-export function WarmupForm({ value, onChange }: WarmupFormProps) {
+export function WarmupForm({ value, onChange, hideTimingControls = false }: WarmupFormProps) {
   const { colors } = useAppTheme()
   const handleChange = (field: keyof IWarmUp, newValue: string) => {
     if (['duration', 'id'].includes(field as string)) {
@@ -66,64 +67,68 @@ export function WarmupForm({ value, onChange }: WarmupFormProps) {
           />
           <Text style={{ color: colors.black }}>Gauche / droite</Text>
         </View>
-        <View
-          style={{
-            flexDirection: 'row',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: colors.neutralBorder,
-            overflow: 'hidden',
-            marginBottom: 8,
-          }}
-        >
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => onChange({ ...value, mode: 'time' })}
-            style={{
-              flex: 1,
-              paddingVertical: 6,
-              alignItems: 'center',
-              backgroundColor: value.mode === 'time' ? colors.primary : colors.white,
-            }}
-          >
-            <Text style={{ color: value.mode === 'time' ? colors.white : colors.black, fontWeight: '600' }}>Temps</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => onChange({ ...value, mode: 'reps' })}
-            style={{
-              flex: 1,
-              paddingVertical: 6,
-              alignItems: 'center',
-              backgroundColor: value.mode === 'reps' ? colors.primary : colors.white,
-            }}
-          >
-            <Text style={{ color: value.mode === 'reps' ? colors.white : colors.black, fontWeight: '600' }}>Répétitions</Text>
-          </TouchableOpacity>
-        </View>
+        {!hideTimingControls ? (
+          <>
+            <View
+              style={{
+                flexDirection: 'row',
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: colors.neutralBorder,
+                overflow: 'hidden',
+                marginBottom: 8,
+              }}
+            >
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => onChange({ ...value, mode: 'time' })}
+                style={{
+                  flex: 1,
+                  paddingVertical: 6,
+                  alignItems: 'center',
+                  backgroundColor: value.mode === 'time' ? colors.primary : colors.white,
+                }}
+              >
+                <Text style={{ color: value.mode === 'time' ? colors.white : colors.black, fontWeight: '600' }}>Temps</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => onChange({ ...value, mode: 'reps' })}
+                style={{
+                  flex: 1,
+                  paddingVertical: 6,
+                  alignItems: 'center',
+                  backgroundColor: value.mode === 'reps' ? colors.primary : colors.white,
+                }}
+              >
+                <Text style={{ color: value.mode === 'reps' ? colors.white : colors.black, fontWeight: '600' }}>Répétitions</Text>
+              </TouchableOpacity>
+            </View>
 
-        {value.mode === 'time' ? (
-          <FormSlider
-            label="Durée"
-            unit="seconds"
-            enableUnitToggle
-            valueUnit={value.durationUnit}
-            onUnitChange={(unitMode) => onChange({ ...value, durationUnit: unitMode })}
-            value={value.duration}
-            minimumValue={0}
-            maximumValue={60}
-            onChange={(v) => onChange({ ...value, duration: v })}
-          />
-        ) : (
-          <FormSlider
-            label="Répétitions"
-            value={value.repetitions}
-            minimumValue={0}
-            maximumValue={50}
-            step={1}
-            onChange={(v) => onChange({ ...value, repetitions: v })}
-          />
-        )}
+            {value.mode === 'time' ? (
+              <FormSlider
+                label="Durée"
+                unit="seconds"
+                enableUnitToggle
+                valueUnit={value.durationUnit}
+                onUnitChange={(unitMode) => onChange({ ...value, durationUnit: unitMode })}
+                value={value.duration}
+                minimumValue={0}
+                maximumValue={60}
+                onChange={(v) => onChange({ ...value, duration: v })}
+              />
+            ) : (
+              <FormSlider
+                label="Répétitions"
+                value={value.repetitions}
+                minimumValue={0}
+                maximumValue={50}
+                step={1}
+                onChange={(v) => onChange({ ...value, repetitions: v })}
+              />
+            )}
+          </>
+        ) : null}
       </View>
       <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />
     </View>

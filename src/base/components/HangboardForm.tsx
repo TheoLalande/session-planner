@@ -7,9 +7,10 @@ import { Ihangboard } from '../types/trainingTypes'
 type HangboardFormProps = {
   value: Ihangboard
   onChange: (value: Ihangboard) => void
+  hideTimingControls?: boolean
 }
 
-export function HangboardForm({ value, onChange }: HangboardFormProps) {
+export function HangboardForm({ value, onChange, hideTimingControls = false }: HangboardFormProps) {
   const handleChange = (field: keyof Ihangboard, newValue: string) => {
     if (['id'].includes(field as string)) {
       const num = Number(newValue)
@@ -22,24 +23,28 @@ export function HangboardForm({ value, onChange }: HangboardFormProps) {
   return (
     <View style={{ width: '100%', paddingHorizontal: 30 }}>
       <TextField placeholder="Type de prise (holdType)" value={value.holdType} onChangeText={(text) => handleChange('holdType', text)} />
-      <FormSlider
-        label="Temps de repos"
-        unit="seconds"
-        enableUnitToggle
-        value={value.restingTime}
-        minimumValue={0}
-        maximumValue={10 * 60}
-        onChange={(v) => onChange({ ...value, restingTime: v })}
-      />
-      <FormSlider
-        label="Temps de suspension"
-        unit="seconds"
-        enableUnitToggle
-        value={value.holdTime}
-        minimumValue={0}
-        maximumValue={2 * 60}
-        onChange={(v) => onChange({ ...value, holdTime: v })}
-      />
+      {!hideTimingControls ? (
+        <>
+          <FormSlider
+            label="Temps de repos"
+            unit="seconds"
+            enableUnitToggle
+            value={value.restingTime}
+            minimumValue={0}
+            maximumValue={10 * 60}
+            onChange={(v) => onChange({ ...value, restingTime: v })}
+          />
+          <FormSlider
+            label="Temps de suspension"
+            unit="seconds"
+            enableUnitToggle
+            value={value.holdTime}
+            minimumValue={0}
+            maximumValue={2 * 60}
+            onChange={(v) => onChange({ ...value, holdTime: v })}
+          />
+        </>
+      ) : null}
       <FormSlider label="Nombre de séries" value={value.sets} minimumValue={0} maximumValue={20} onChange={(v) => onChange({ ...value, sets: v })} />
       <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />
     </View>

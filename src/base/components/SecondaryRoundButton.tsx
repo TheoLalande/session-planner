@@ -18,7 +18,7 @@ export const SecondaryRoundButton = ({ blocId, onPress, color }: SecondaryRoundB
     await haptic('tap')
     onPress?.()
     router.push({
-      pathname: '/create-exercice',
+      pathname: '/add-exercise-choice',
       params: { blocId: String(blocId) },
     })
   }

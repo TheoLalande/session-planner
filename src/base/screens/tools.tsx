@@ -26,11 +26,11 @@ export default function Tools() {
 
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => router.push('/tool2')}
+          onPress={() => router.push('/exercise-library')}
           style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]}
         >
-          <Text style={[styles.cardTitle, { color: colors.black }]}>Tool 2</Text>
-          <Text style={[styles.cardText, { color: colors.grey }]}>Simulation d’outil.</Text>
+          <Text style={[styles.cardTitle, { color: colors.black }]}>Mes exercices</Text>
+          <Text style={[styles.cardText, { color: colors.grey }]}>Visualiser les exercices enregistrés en librairie.</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

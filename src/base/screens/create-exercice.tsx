@@ -13,6 +13,7 @@ import { StretchingForm } from '../components/StretchingForm'
 import { useTrainingStore } from '../store/trainingStore'
 import { getSession } from '../api/authService'
 import { getSupabaseClient } from '../api/supabaseClient'
+import { createExerciseLibraryItem, fetchExerciseLibraryItemById, toTrainingExerciseFromLibrary } from '../api/exerciseLibraryService'
 import LoadingIndicator from '../components/LoadingIndicator'
 import * as ImageManipulator from 'expo-image-manipulator'
 import { useAppTheme } from '../providers/themeProvider'
@@ -25,12 +26,18 @@ export default function index() {
     trainingId?: string
     mode?: string
     exerciseIndex?: string
+    saveToLibrary?: string
+    libraryExerciseId?: string
   }>()
   const blocId = params.blocId ? Number(params.blocId) : null
+  const saveToLibrary = params.saveToLibrary === '1'
+  const libraryExerciseId = params.libraryExerciseId ?? null
   const trainingId = params.trainingId ?? null
   const exerciseIndex = params.exerciseIndex ? Number(params.exerciseIndex) : null
   const isEditTrainingMode = params.mode === 'edit' && trainingId !== null && exerciseIndex !== null && blocId !== null
   const isEditBlocMode = params.mode === 'edit-bloc' && blocId !== null && exerciseIndex !== null
+  const isLibraryCreationMode = blocId === null && !isEditTrainingMode && !isEditBlocMode
+  const isFromLibraryForBloc = params.mode === 'from-library' && blocId !== null && !!libraryExerciseId
 
   const addExerciseToBloc = useTrainingStore((state) => state.addExerciseToBloc)
   const removeExerciseFromBloc = useTrainingStore((state) => state.removeExerciseFromBloc)
@@ -75,6 +82,7 @@ export default function index() {
   const [selectedType, setSelectedType] = useState<ExerciceTypes | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
 
   const [hangboardData, setHangboardData] = useState<Ihangboard>({
     id: 0,
@@ -163,6 +171,53 @@ export default function index() {
     }
   }, [currentExercise, isEditTrainingMode, isEditBlocMode])
 
+  useEffect(() => {
+    if (!isFromLibraryForBloc || !libraryExerciseId) {
+      return
+    }
+    let isMounted = true
+    const loadTemplate = async () => {
+      setIsLoadingTemplate(true)
+      try {
+        const item = await fetchExerciseLibraryItemById(libraryExerciseId)
+        if (!isMounted || !item) {
+          return
+        }
+        const templated = toTrainingExerciseFromLibrary(item)
+        const templatedData: any = {
+          ...(templated.data as any),
+          libraryExerciseId: item.id,
+        }
+        if (templated.type === 'hangboard') {
+          setSelectedType('hangboard')
+          setHangboardData(templatedData as Ihangboard)
+        } else if (templated.type === 'climbing') {
+          setSelectedType('climbing')
+          setClimbingData(templatedData as IClimbing)
+        } else if (templated.type === 'warmup') {
+          setSelectedType('warmup')
+          setWarmupData(templatedData as IWarmUp)
+        } else if (templated.type === 'renforcement') {
+          setSelectedType('renforcement')
+          setRenforcementData(templatedData as IRenforcement)
+        } else if (templated.type === 'stretching') {
+          setSelectedType('stretching')
+          setStretchingData(templatedData as IStretching)
+        }
+      } catch (e: any) {
+        Alert.alert('Erreur', e?.message || 'Impossible de charger le template')
+      } finally {
+        if (isMounted) {
+          setIsLoadingTemplate(false)
+        }
+      }
+    }
+    loadTemplate()
+    return () => {
+      isMounted = false
+    }
+  }, [isFromLibraryForBloc, libraryExerciseId])
+
   // Si le bloc impose un type (warmup/renforcement/stretching/climbing/hangboard),
   // on le sélectionne automatiquement et on ne montre plus le picker.
   useEffect(() => {
@@ -240,7 +295,7 @@ export default function index() {
   }
 
   const handleNext = async () => {
-    if (!blocId || !selectedType) {
+    if (!selectedType) {
       router.back()
       return
     }
@@ -302,7 +357,30 @@ export default function index() {
       const isLeftRightExercise =
         (selectedType === 'warmup' || selectedType === 'renforcement' || selectedType === 'stretching') && Boolean((exercise.data as IWarmUp).leftRight)
 
-      if (isCreateMode && isLeftRightExercise) {
+      if (isLibraryCreationMode) {
+        const libraryExercise: TrainingExercise = {
+          ...exercise,
+          data: {
+            ...(exercise.data as any),
+            mode: 'time',
+            duration: 0,
+            durationUnit: 'seconds',
+            repetitions: 0,
+            restingTime: 0,
+            holdTime: 0,
+          },
+        } as TrainingExercise
+        setIsSaving(true)
+        try {
+          await createExerciseLibraryItem(libraryExercise)
+          Alert.alert('Succès', 'Exercice enregistré dans ta librairie')
+        } catch (e: any) {
+          Alert.alert('Erreur', e?.message || "Impossible d'enregistrer l'exercice")
+          return
+        } finally {
+          setIsSaving(false)
+        }
+      } else if (isCreateMode && isLeftRightExercise) {
         const baseData = exercise.data as IWarmUp
         const baseLabel = (baseData.exerciceType || baseData.title || '').trim()
         const leftLabel = baseLabel ? `${baseLabel} gauche` : 'gauche'
@@ -319,6 +397,18 @@ export default function index() {
 
         addExerciseToBloc(blocId, leftExercise)
         addExerciseToBloc(blocId, rightExercise)
+        if (saveToLibrary) {
+          setIsSaving(true)
+          try {
+            await createExerciseLibraryItem(leftExercise)
+            await createExerciseLibraryItem(rightExercise)
+          } catch (e: any) {
+            Alert.alert('Erreur', e?.message || "Impossible d'enregistrer dans la librairie")
+            return
+          } finally {
+            setIsSaving(false)
+          }
+        }
       } else if (isEditTrainingMode && trainingId !== null && exerciseIndex !== null) {
         setIsSaving(true)
         try {
@@ -333,9 +423,24 @@ export default function index() {
         updateExerciseInBloc(blocId, exerciseIndex, exercise)
       } else {
         addExerciseToBloc(blocId, exercise)
+        if (saveToLibrary) {
+          setIsSaving(true)
+          try {
+            await createExerciseLibraryItem(exercise)
+          } catch (e: any) {
+            Alert.alert('Erreur', e?.message || "Impossible d'enregistrer dans la librairie")
+            return
+          } finally {
+            setIsSaving(false)
+          }
+        }
       }
     }
 
+    if (blocId !== null && !isEditTrainingMode) {
+      router.replace('/create-training')
+      return
+    }
     router.back()
   }
 
@@ -375,19 +480,19 @@ export default function index() {
 
   const renderForm = () => {
     if (selectedType === 'hangboard') {
-      return <HangboardForm value={hangboardData} onChange={setHangboardData} />
+      return <HangboardForm value={hangboardData} onChange={setHangboardData} hideTimingControls={isLibraryCreationMode} />
     }
     if (selectedType === 'climbing') {
-      return <ClimbingForm value={climbingData} onChange={setClimbingData} />
+      return <ClimbingForm value={climbingData} onChange={setClimbingData} hideTimingControls={isLibraryCreationMode} />
     }
     if (selectedType === 'warmup') {
-      return <WarmupForm value={warmupData} onChange={setWarmupData} />
+      return <WarmupForm value={warmupData} onChange={setWarmupData} hideTimingControls={isLibraryCreationMode} />
     }
     if (selectedType === 'renforcement') {
-      return <RenforcementForm value={renforcementData} onChange={setRenforcementData} />
+      return <RenforcementForm value={renforcementData} onChange={setRenforcementData} hideTimingControls={isLibraryCreationMode} />
     }
     if (selectedType === 'stretching') {
-      return <StretchingForm value={stretchingData} onChange={setStretchingData} />
+      return <StretchingForm value={stretchingData} onChange={setStretchingData} hideTimingControls={isLibraryCreationMode} />
     }
 
     return null
@@ -407,10 +512,12 @@ export default function index() {
         keyboardShouldPersistTaps="handled"
         onScrollBeginDrag={() => Keyboard.dismiss()}
       >
-        {!forcedType && !isEditTrainingMode && !isEditBlocMode ? <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} /> : null}
+        {!forcedType && !isEditTrainingMode && !isEditBlocMode && !isFromLibraryForBloc ? (
+          <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} />
+        ) : null}
         {renderForm()}
         <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
-          <PrimaryButton title="Ajouter l'exercice" onPress={handleNext} isClickable={!isSaving && !isDeleting} />
+          <PrimaryButton title={blocId === null ? "Enregistrer l'exercice" : "Ajouter l'exercice"} onPress={handleNext} isClickable={!isSaving && !isDeleting && !isLoadingTemplate} />
           {isEditTrainingMode || isEditBlocMode ? (
             <PrimaryButton
               title="Supprimer l'exercice"
@@ -422,7 +529,7 @@ export default function index() {
           ) : null}
         </View>
       </ScrollView>
-      {isSaving || isDeleting ? (
+      {isSaving || isDeleting || isLoadingTemplate ? (
         <View pointerEvents="none" style={styles.loadingOverlay}>
           <LoadingIndicator />
         </View>
