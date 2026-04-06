@@ -1,5 +1,5 @@
 import { getSession } from './authService'
-import { getSupabaseClient } from './supabaseClient'
+import { getSupabaseDb } from './supabaseClient'
 
 export type ClimbingAttemptStatus = 'success' | 'fail'
 export type ClimbingAttemptSource = 'planned' | 'ad_hoc'
@@ -45,10 +45,10 @@ async function getCurrentUserId() {
 }
 
 export async function fetchClimbingAttempts(): Promise<ClimbingAttempt[]> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('climbing_attempts')
     .select('id,route_name,grade,status,source,performed_at,created_at')
     .eq('user_id', userId)
@@ -70,13 +70,13 @@ export async function fetchClimbingAttempts(): Promise<ClimbingAttempt[]> {
 }
 
 export async function createClimbingAttempt(payload: { routeLabel: string; status: ClimbingAttemptStatus; createdAt?: number }): Promise<ClimbingAttempt> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
   const createdAt = payload.createdAt ?? Date.now()
   const routeName = extractRouteNameFromRouteLabel(payload.routeLabel)
   const grade = extractGradeFromRouteLabel(payload.routeLabel)
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('climbing_attempts')
     .insert({
       user_id: userId,
@@ -153,10 +153,10 @@ function mapAdHocDetailRow(row: AdHocDetailRow): AdHocClimbingAttemptDetail {
 }
 
 export async function fetchAdHocClimbingAttemptsDetail(): Promise<AdHocClimbingAttemptDetail[]> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('climbing_attempts')
     .select(
       'id,route_name,grade,climbing_type,route_profile,location_type,attempt_count,performed_at,created_at,notes,status,source',
@@ -173,10 +173,10 @@ export async function fetchAdHocClimbingAttemptsDetail(): Promise<AdHocClimbingA
 }
 
 export async function fetchAdHocClimbingAttemptById(attemptId: string): Promise<AdHocClimbingAttemptDetail | null> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('climbing_attempts')
     .select(
       'id,route_name,grade,climbing_type,route_profile,location_type,attempt_count,performed_at,created_at,notes,status,source',
@@ -211,10 +211,10 @@ export async function updateAdHocClimbingAttempt(
     status: ClimbingAttemptStatus
   },
 ): Promise<void> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  const { error } = await supabase
+  const { error } = await db
     .from('climbing_attempts')
     .update({
       route_name: payload.routeName,

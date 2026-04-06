@@ -45,3 +45,16 @@ export function getSupabaseRedirectTo(): string | undefined {
   return redirectTo
 }
 
+export function getSupabaseSchemaName(): string {
+  const envValue = String(process.env.EXPO_PUBLIC_ENV ?? process.env.ENV ?? 'PROD').trim().toUpperCase()
+  if (envValue === 'DEV') {
+    return '__DEV__'
+  }
+  return 'public'
+}
+
+export function getSupabaseDb() {
+  const client = getSupabaseClient()
+  return client.schema(getSupabaseSchemaName())
+}
+

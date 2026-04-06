@@ -7,7 +7,7 @@ import { PrimaryButton } from '../components/PrimaryButton'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
 import { getSession } from '../api/authService'
-import { getSupabaseClient } from '../api/supabaseClient'
+import { getSupabaseDb } from '../api/supabaseClient'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
 
@@ -95,11 +95,11 @@ export default function AddCustomExercise() {
       if (!userId) {
         throw new Error('Utilisateur non connecté')
       }
-      const supabase = getSupabaseClient()
+      const db = getSupabaseDb()
       const count = Math.max(1, Math.floor(Number(attemptCount)))
       const routeNameToSave = locationType === 'salle' ? 'SAE' : routeName.trim()
       const statusForDb = status === 'Réussi' ? 'success' : 'fail'
-      const { error } = await supabase.from('climbing_attempts').insert({
+      const { error } = await db.from('climbing_attempts').insert({
         user_id: userId,
         source: 'ad_hoc',
         status: statusForDb,

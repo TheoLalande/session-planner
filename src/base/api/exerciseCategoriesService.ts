@@ -1,6 +1,6 @@
 import { IExerciseCategory } from '../types/trainingTypes'
 import { getSession } from './authService'
-import { getSupabaseClient } from './supabaseClient'
+import { getSupabaseDb } from './supabaseClient'
 
 type ExerciseCategoryRow = {
   id: string
@@ -28,9 +28,9 @@ function normalizeRow(row: ExerciseCategoryRow): IExerciseCategory {
 }
 
 export async function fetchExerciseCategories(): Promise<IExerciseCategory[]> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('exercise_categories')
     .select('id,user_id,name,created_at')
     .eq('user_id', userId)
@@ -45,13 +45,13 @@ export async function fetchExerciseCategories(): Promise<IExerciseCategory[]> {
 }
 
 export async function createExerciseCategory(name: string): Promise<IExerciseCategory> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
   const clean = name.trim()
   if (!clean) {
     throw new Error('Nom invalide')
   }
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('exercise_categories')
     .insert({
       user_id: userId,

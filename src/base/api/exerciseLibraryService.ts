@@ -1,6 +1,6 @@
 import { ExerciseType, IExerciseLibraryItem, TrainingExercise } from '../types/trainingTypes'
 import { getSession } from './authService'
-import { getSupabaseClient } from './supabaseClient'
+import { getSupabaseDb } from './supabaseClient'
 
 type ExerciseLibraryRow = {
   id: string
@@ -62,9 +62,9 @@ export function getExerciseCategoryNameFromLibraryItem(item: IExerciseLibraryIte
 }
 
 export async function fetchExerciseLibrary(): Promise<IExerciseLibraryItem[]> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('exercise_library')
     .select('id,user_id,exercise_type,title,description,notes,picture_url,payload_json,created_at')
     .eq('user_id', userId)
@@ -80,9 +80,9 @@ export async function fetchExerciseLibrary(): Promise<IExerciseLibraryItem[]> {
 }
 
 export async function fetchExerciseLibraryItemById(id: string): Promise<IExerciseLibraryItem | null> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('exercise_library')
     .select('id,user_id,exercise_type,title,description,notes,picture_url,payload_json,created_at')
     .eq('id', id)
@@ -100,11 +100,11 @@ export async function fetchExerciseLibraryItemById(id: string): Promise<IExercis
 }
 
 export async function createExerciseLibraryItem(exercise: TrainingExercise): Promise<IExerciseLibraryItem> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
   const payload = exercise.data as any
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('exercise_library')
     .insert({
       user_id: userId,
@@ -126,11 +126,11 @@ export async function createExerciseLibraryItem(exercise: TrainingExercise): Pro
 }
 
 export async function updateExerciseLibraryItem(id: string, exercise: TrainingExercise): Promise<IExerciseLibraryItem> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
   const payload = exercise.data as any
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('exercise_library')
     .update({
       exercise_type: exercise.type,

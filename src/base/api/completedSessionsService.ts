@@ -1,6 +1,6 @@
 import { ExerciseType, ITrainingBloc } from '../types/trainingTypes'
 import { getSession } from './authService'
-import { getSupabaseClient } from './supabaseClient'
+import { getSupabaseDb } from './supabaseClient'
 
 export type CompletedSession = {
   id: string
@@ -57,12 +57,12 @@ function normalizeStoredCompletedBlockType(item: unknown): ExerciseType | null {
 }
 
 export async function createCompletedSession(payload: { trainingId: string; blocs: ITrainingBloc[]; completedAt?: string }) {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
   const completedAt = payload.completedAt ?? new Date().toISOString()
   const blockTypes = getCompletedBlockTypes(payload.blocs)
 
-  const { error } = await supabase.from('completed_sessions').insert({
+  const { error } = await db.from('completed_sessions').insert({
     user_id: userId,
     training_plan_id: payload.trainingId,
     completed_at: completedAt,
@@ -75,10 +75,10 @@ export async function createCompletedSession(payload: { trainingId: string; bloc
 }
 
 export async function fetchCompletedSessions(payload: { startAt?: number; endAt?: number } = {}): Promise<CompletedSession[]> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  let query = supabase
+  let query = db
     .from('completed_sessions')
     .select('id,training_plan_id,completed_at,completed_block_types')
     .eq('user_id', userId)

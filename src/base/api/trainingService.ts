@@ -1,6 +1,6 @@
 import { ExerciseType, IPlannedTraining, TrainingExercise } from '../types/trainingTypes'
 import { getSession } from './authService'
-import { getSupabaseClient } from './supabaseClient'
+import { getSupabaseClient, getSupabaseDb } from './supabaseClient'
 
 const EXERCISE_IMAGES_BUCKET = 'exercice-images'
 const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 7
@@ -122,9 +122,10 @@ function getExerciseInsertPayload(
 
 export async function fetchTrainings(): Promise<IPlannedTraining[]> {
   const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  const { data: plansData, error: plansError } = await supabase
+  const { data: plansData, error: plansError } = await db
     .from('training_plans')
     .select('id,title,description,transition_seconds_between_timers,transition_seconds_between_blocs')
     .eq('user_id', userId)
@@ -141,7 +142,7 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
   }
 
   const planIds = plans.map((plan) => plan.id)
-  const { data: blocksData, error: blocksError } = await supabase
+  const { data: blocksData, error: blocksError } = await db
     .from('training_plan_blocks')
     .select('id,plan_id,title,description,bloc_type,position')
     .eq('user_id', userId)
@@ -158,7 +159,7 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
 
   let exercises: ExerciseRow[] = []
   if (blockIds.length > 0) {
-    const { data: exercisesData, error: exercisesError } = await supabase
+    const { data: exercisesData, error: exercisesError } = await db
       .from('training_plan_exercises')
       .select('id,block_id,exercise_library_id,exercise_type,title,description,notes,picture_url,payload_json,position')
       .eq('user_id', userId)
@@ -220,9 +221,10 @@ export async function createTraining(
   payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers' | 'transitionSecondsBetweenBlocs'>,
 ): Promise<IPlannedTraining> {
   const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  const { data: planData, error: planError } = await supabase
+  const { data: planData, error: planError } = await db
     .from('training_plans')
     .insert({
       user_id: userId,
@@ -249,7 +251,7 @@ export async function createTraining(
       position: index,
     }))
 
-    const { data: insertedBlocks, error: blocksError } = await supabase
+    const { data: insertedBlocks, error: blocksError } = await db
       .from('training_plan_blocks')
       .insert(blocksToInsert)
       .select('id,position')
@@ -272,7 +274,7 @@ export async function createTraining(
     })
 
     if (exercisesToInsert.length > 0) {
-      const { error: exercisesError } = await supabase.from('training_plan_exercises').insert(exercisesToInsert)
+      const { error: exercisesError } = await db.from('training_plan_exercises').insert(exercisesToInsert)
       if (exercisesError) {
         throw new Error(exercisesError.message)
       }
@@ -296,9 +298,10 @@ export async function updateTrainingById(
   payload: Pick<IPlannedTraining, 'title' | 'description' | 'blocs' | 'transitionSecondsBetweenTimers' | 'transitionSecondsBetweenBlocs'>,
 ): Promise<void> {
   const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
-  const { error: planError } = await supabase
+  const { error: planError } = await db
     .from('training_plans')
     .update({
       title: payload.title,
@@ -313,7 +316,7 @@ export async function updateTrainingById(
     throw new Error(planError.message)
   }
 
-  const { data: existingBlocks, error: existingBlocksError } = await supabase
+  const { data: existingBlocks, error: existingBlocksError } = await db
     .from('training_plan_blocks')
     .select('id')
     .eq('plan_id', trainingId)
@@ -327,7 +330,7 @@ export async function updateTrainingById(
   if (existingBlockIds.length > 0) {
     // IMPORTANT : on fait un hard delete
     // sinon la contrainte unique (plan_id, position) peut rester bloquée si elle ne dépend pas de deleted_at.
-    const { error: deleteExercisesError } = await supabase
+    const { error: deleteExercisesError } = await db
       .from('training_plan_exercises')
       .delete()
       .in('block_id', existingBlockIds)
@@ -338,7 +341,7 @@ export async function updateTrainingById(
     }
   }
 
-  const { error: deleteBlocksError } = await supabase
+  const { error: deleteBlocksError } = await db
     .from('training_plan_blocks')
     .delete()
     .eq('plan_id', trainingId)
@@ -361,7 +364,7 @@ export async function updateTrainingById(
     position: index,
   }))
 
-  const { data: insertedBlocks, error: blocksError } = await supabase.from('training_plan_blocks').insert(blocksToInsert).select('id,position')
+  const { data: insertedBlocks, error: blocksError } = await db.from('training_plan_blocks').insert(blocksToInsert).select('id,position')
   if (blocksError) {
     throw new Error(blocksError.message)
   }
@@ -383,18 +386,18 @@ export async function updateTrainingById(
     return
   }
 
-  const { error: exercisesError } = await supabase.from('training_plan_exercises').insert(exercisesToInsert)
+  const { error: exercisesError } = await db.from('training_plan_exercises').insert(exercisesToInsert)
   if (exercisesError) {
     throw new Error(exercisesError.message)
   }
 }
 
 export async function deleteTrainingById(trainingId: string): Promise<void> {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
   const deletedAt = new Date().toISOString()
 
-  const { data: existingBlocks, error: existingBlocksError } = await supabase
+  const { data: existingBlocks, error: existingBlocksError } = await db
     .from('training_plan_blocks')
     .select('id')
     .eq('plan_id', trainingId)
@@ -407,7 +410,7 @@ export async function deleteTrainingById(trainingId: string): Promise<void> {
 
   const existingBlockIds = (existingBlocks ?? []).map((block: any) => block.id)
   if (existingBlockIds.length > 0) {
-    const { error: deleteExercisesError } = await supabase
+    const { error: deleteExercisesError } = await db
       .from('training_plan_exercises')
       .update({ deleted_at: deletedAt })
       .in('block_id', existingBlockIds)
@@ -418,7 +421,7 @@ export async function deleteTrainingById(trainingId: string): Promise<void> {
     }
   }
 
-  const { error: deleteBlocksError } = await supabase
+  const { error: deleteBlocksError } = await db
     .from('training_plan_blocks')
     .update({ deleted_at: deletedAt })
     .eq('plan_id', trainingId)
@@ -428,7 +431,7 @@ export async function deleteTrainingById(trainingId: string): Promise<void> {
     throw new Error(deleteBlocksError.message)
   }
 
-  const { error: deletePlanError } = await supabase
+  const { error: deletePlanError } = await db
     .from('training_plans')
     .update({ deleted_at: deletedAt })
     .eq('id', trainingId)

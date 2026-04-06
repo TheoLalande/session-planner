@@ -4,7 +4,6 @@ import { Platform, ScrollView, StyleSheet, useWindowDimensions, View, Text, Touc
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { LineChart } from 'react-native-gifted-charts'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
-import { useTrainingStore } from '../store/trainingStore'
 import { useAppTheme } from '../providers/themeProvider'
 import { CompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
 import { ExerciseType, TrainingExercise } from '../types/trainingTypes'
@@ -12,6 +11,8 @@ import StatisticsHeader from '../components/StatisticsHeader'
 import StatisticsDateRangeCard from '../components/StatisticsDateRangeCard'
 import StatisticsCalendarCard from '../components/StatisticsCalendarCard'
 import StatisticsClimbingChartsCard from '../components/StatisticsClimbingChartsCard'
+import { getSupabaseDb } from '../api/supabaseClient'
+import { getSession } from '../api/authService'
 
 const extractGradeFromRouteLabel = (routeLabel: string) => {
   const parts = routeLabel.split(' · ')
@@ -126,11 +127,54 @@ const getExerciseTimingSeconds = (exercise: TrainingExercise) => {
 
 type StatsTab = 'practice' | 'climbing' | 'calendar'
 
+type StoredTrainingBlockRow = {
+  id: string
+  plan_id: string
+  position: number
+}
+
+type StoredTrainingExerciseRow = {
+  block_id: string
+  exercise_type: string
+  title: string | null
+  position: number
+  exercise_library_id: string | null
+  payload_json: unknown
+}
+
+const getStoredExerciseDisplayName = (exerciseType: string, title: string | null, payload: Record<string, unknown>) => {
+  const payloadTitle = String(payload.title ?? '')
+  const payloadExerciseType = String(payload.exerciceType ?? '')
+  if (exerciseType === 'warmup' || exerciseType === 'renforcement' || exerciseType === 'stretching') {
+    return (title || payloadExerciseType || payloadTitle || '').trim() || 'Exercice'
+  }
+  return (title || payloadTitle || '').trim() || 'Exercice'
+}
+
+const getStoredExerciseTimingSeconds = (exerciseType: string, payload: Record<string, unknown>) => {
+  if (exerciseType === 'warmup' || exerciseType === 'renforcement' || exerciseType === 'stretching') {
+    const mode = String(payload.mode ?? 'time')
+    if (mode !== 'time') {
+      return null
+    }
+    const rawDuration = typeof payload.duration === 'number' ? payload.duration : Number(payload.duration ?? 0)
+    const unit = String(payload.durationUnit ?? 'seconds') === 'minutes' ? 'minutes' : 'seconds'
+    const safeDuration = Number.isFinite(rawDuration) ? rawDuration : 0
+    return Math.max(0, unit === 'minutes' ? safeDuration * 60 : safeDuration)
+  }
+  if (exerciseType === 'hangboard') {
+    const value = Number(payload.holdTime ?? 0)
+    return Math.max(0, Number.isFinite(value) ? value : 0)
+  }
+  if (exerciseType === 'climbing') {
+    const value = Number(payload.restingTime ?? 0)
+    return Math.max(0, Number.isFinite(value) ? value : 0)
+  }
+  return null
+}
+
 export default function Statistiques() {
   const { mode, colors } = useAppTheme()
-  const trainings = useTrainingStore((state) => state.trainings)
-  const loadTrainings = useTrainingStore((state) => state.loadTrainings)
-  const isLoadingTrainings = useTrainingStore((state) => state.isLoadingTrainings)
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
   const isLoadingAttempts = useClimbingAttemptsStore((state) => state.isLoadingAttempts)
   const loadAttempts = useClimbingAttemptsStore((state) => state.loadAttempts)
@@ -149,16 +193,16 @@ export default function Statistiques() {
   const [showEndPicker, setShowEndPicker] = useState(false)
   const [completedSessions, setCompletedSessions] = useState<CompletedSession[]>([])
   const [isLoadingCompletedSessions, setIsLoadingCompletedSessions] = useState(false)
+  const [isLoadingPracticeData, setIsLoadingPracticeData] = useState(false)
+  const [exerciseTimingEventsFromDb, setExerciseTimingEventsFromDb] = useState<
+    Array<{ libraryExerciseId: string; title: string; completedAt: number; valueSeconds: number }>
+  >([])
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date())
   const [selectedExerciseLibraryId, setSelectedExerciseLibraryId] = useState<string | null>(null)
 
   useEffect(() => {
     loadAttempts()
   }, [loadAttempts])
-
-  useEffect(() => {
-    loadTrainings()
-  }, [loadTrainings])
 
   useEffect(() => {
     let isMounted = true
@@ -184,6 +228,116 @@ export default function Statistiques() {
       isMounted = false
     }
   }, [endDate, startDate])
+
+  useEffect(() => {
+    let isMounted = true
+    const loadPracticeData = async () => {
+      if (completedSessions.length === 0) {
+        setExerciseTimingEventsFromDb([])
+        return
+      }
+      try {
+        setIsLoadingPracticeData(true)
+        const session = await getSession()
+        const userId = session.user?.id
+        if (!userId) {
+          if (isMounted) {
+            setExerciseTimingEventsFromDb([])
+          }
+          return
+        }
+        const trainingIds = Array.from(new Set(completedSessions.map((item) => item.trainingId)))
+        const db = getSupabaseDb()
+        const { data: blocksData, error: blocksError } = await db
+          .from('training_plan_blocks')
+          .select('id,plan_id,position')
+          .eq('user_id', userId)
+          .in('plan_id', trainingIds)
+          .order('position', { ascending: true })
+        if (blocksError) {
+          throw new Error(blocksError.message)
+        }
+        const blocks = (blocksData ?? []) as StoredTrainingBlockRow[]
+        const blockIds = blocks.map((item) => item.id)
+        if (blockIds.length === 0) {
+          if (isMounted) {
+            setExerciseTimingEventsFromDb([])
+          }
+          return
+        }
+        const { data: exercisesData, error: exercisesError } = await db
+          .from('training_plan_exercises')
+          .select('block_id,exercise_type,title,position,exercise_library_id,payload_json')
+          .eq('user_id', userId)
+          .in('block_id', blockIds)
+          .order('position', { ascending: true })
+        if (exercisesError) {
+          throw new Error(exercisesError.message)
+        }
+        const exercises = (exercisesData ?? []) as StoredTrainingExerciseRow[]
+        const blockById = new Map<string, StoredTrainingBlockRow>()
+        blocks.forEach((item) => blockById.set(item.id, item))
+        const exercisesByTrainingId = new Map<
+          string,
+          Array<{ exercise_type: string; title: string | null; exercise_library_id: string | null; payload_json: unknown; blockPosition: number; exercisePosition: number }>
+        >()
+        exercises.forEach((exercise) => {
+          const block = blockById.get(exercise.block_id)
+          if (!block) {
+            return
+          }
+          const current = exercisesByTrainingId.get(block.plan_id) ?? []
+          current.push({
+            exercise_type: exercise.exercise_type,
+            title: exercise.title,
+            exercise_library_id: exercise.exercise_library_id,
+            payload_json: exercise.payload_json,
+            blockPosition: block.position,
+            exercisePosition: exercise.position,
+          })
+          exercisesByTrainingId.set(block.plan_id, current)
+        })
+        const events: Array<{ libraryExerciseId: string; title: string; completedAt: number; valueSeconds: number }> = []
+        completedSessions.forEach((completed) => {
+          const trainingExercises = exercisesByTrainingId.get(completed.trainingId) ?? []
+          trainingExercises
+            .sort((a, b) => (a.blockPosition === b.blockPosition ? a.exercisePosition - b.exercisePosition : a.blockPosition - b.blockPosition))
+            .forEach((exercise) => {
+              const libId = String(exercise.exercise_library_id ?? '').trim()
+              if (!libId) {
+                return
+              }
+              const payload = exercise.payload_json && typeof exercise.payload_json === 'object' ? (exercise.payload_json as Record<string, unknown>) : {}
+              const valueSeconds = getStoredExerciseTimingSeconds(exercise.exercise_type, payload)
+              if (valueSeconds == null) {
+                return
+              }
+              events.push({
+                libraryExerciseId: libId,
+                title: getStoredExerciseDisplayName(exercise.exercise_type, exercise.title, payload),
+                completedAt: completed.completedAt,
+                valueSeconds,
+              })
+            })
+        })
+        if (isMounted) {
+          setExerciseTimingEventsFromDb(events.sort((a, b) => a.completedAt - b.completedAt))
+        }
+      } catch {
+        if (isMounted) {
+          setExerciseTimingEventsFromDb([])
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingPracticeData(false)
+        }
+      }
+    }
+    void loadPracticeData()
+    return () => {
+      isMounted = false
+    }
+  }, [completedSessions])
 
   const attemptsInRange = useMemo(() => {
     const start = toStartOfDay(startDate)
@@ -396,46 +550,7 @@ export default function Statistiques() {
       })
   }, [attemptsInRange])
 
-  const exerciseTimingEvents = useMemo(() => {
-    const events: Array<{
-      libraryExerciseId: string
-      title: string
-      completedAt: number
-      valueSeconds: number
-    }> = []
-
-    const trainingById = new Map<string, (typeof trainings)[number]>()
-    trainings.forEach((training) => {
-      trainingById.set(training.id, training)
-    })
-
-    completedSessions.forEach((session) => {
-      const training = trainingById.get(session.trainingId)
-      if (!training) {
-        return
-      }
-      training.blocs.forEach((bloc) => {
-        bloc.exercises.forEach((exercise) => {
-          const libId = String((exercise.data as any).libraryExerciseId ?? '').trim()
-          if (!libId) {
-            return
-          }
-          const valueSeconds = getExerciseTimingSeconds(exercise)
-          if (valueSeconds == null) {
-            return
-          }
-          events.push({
-            libraryExerciseId: libId,
-            title: getExerciseDisplayName(exercise),
-            completedAt: session.completedAt,
-            valueSeconds,
-          })
-        })
-      })
-    })
-
-    return events.sort((a, b) => a.completedAt - b.completedAt)
-  }, [completedSessions, trainings])
+  const exerciseTimingEvents = useMemo(() => exerciseTimingEventsFromDb, [exerciseTimingEventsFromDb])
 
   const exerciseGroups = useMemo(() => {
     const byExercise = new Map<
@@ -489,11 +604,23 @@ export default function Statistiques() {
     if (!selectedExerciseGroup) {
       return []
     }
-    return selectedExerciseGroup.entries.map((entry) => ({
-      value: Math.round((entry.valueSeconds / 60) * 100) / 100,
-      label: toShortDate(entry.completedAt),
-      valueSeconds: entry.valueSeconds,
-    }))
+    const byDay = new Map<number, number[]>()
+    selectedExerciseGroup.entries.forEach((entry) => {
+      const dayKey = toStartOfDay(new Date(entry.completedAt))
+      const current = byDay.get(dayKey) ?? []
+      current.push(entry.valueSeconds)
+      byDay.set(dayKey, current)
+    })
+    return Array.from(byDay.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([dayKey, values]) => {
+        const avgSeconds = values.reduce((sum, value) => sum + value, 0) / values.length
+        return {
+          value: Math.round((avgSeconds / 60) * 100) / 100,
+          label: toShortDate(dayKey),
+          valueSeconds: avgSeconds,
+        }
+      })
   }, [selectedExerciseGroup])
 
   const selectedExerciseProgress = useMemo(() => {
@@ -511,7 +638,7 @@ export default function Statistiques() {
   const topExerciseCount = exerciseGroups[0]?.entries.length ?? 0
   const topExerciseName = exerciseGroups[0]?.title ?? '—'
 
-  const isPracticeLoading = isLoadingCompletedSessions || isLoadingTrainings
+  const isPracticeLoading = isLoadingCompletedSessions || isLoadingPracticeData
   const practiceChartWidth = Math.max(220, Math.floor(windowWidth - 86))
 
   const tabItems: Array<{ key: StatsTab; label: string }> = [

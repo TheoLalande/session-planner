@@ -1,5 +1,5 @@
 import { getSession } from './authService'
-import { getSupabaseClient } from './supabaseClient'
+import { getSupabaseDb } from './supabaseClient'
 
 export type ClimbingAttemptStatus = 'success' | 'fail'
 
@@ -46,7 +46,7 @@ export async function addClimbingRouteAttempts(payload: {
   failCount: number
   createdAt?: number
 }) {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
   const routeType = payload.routeType.trim()
@@ -81,12 +81,12 @@ export async function addClimbingRouteAttempts(payload: {
     rows.push({ user_id: userId, route_label: routeLabel, status: 'fail', created_at: createdAtIso })
   }
 
-  const { error } = await supabase.from('climbing_attempts').insert(rows)
+  const { error } = await db.from('climbing_attempts').insert(rows)
   if (error) throw new Error(error.message)
 }
 
 export async function renameClimbingRouteLabel(payload: { oldRouteLabel: string; newRouteLabel: string }) {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
   const oldRouteLabel = payload.oldRouteLabel.trim()
@@ -94,7 +94,7 @@ export async function renameClimbingRouteLabel(payload: { oldRouteLabel: string;
   if (!oldRouteLabel || !newRouteLabel) return
   if (oldRouteLabel === newRouteLabel) return
 
-  const { error } = await supabase
+  const { error } = await db
     .from('climbing_attempts')
     .update({ route_label: newRouteLabel })
     .eq('user_id', userId)
@@ -104,13 +104,13 @@ export async function renameClimbingRouteLabel(payload: { oldRouteLabel: string;
 }
 
 export async function deleteClimbingRouteLabel(routeLabel: string) {
-  const supabase = getSupabaseClient()
+  const db = getSupabaseDb()
   const userId = await getCurrentUserId()
 
   const routeLabelTrimmed = routeLabel.trim()
   if (!routeLabelTrimmed) return
 
-  const { error } = await supabase.from('climbing_attempts').delete().eq('user_id', userId).eq('route_label', routeLabelTrimmed)
+  const { error } = await db.from('climbing_attempts').delete().eq('user_id', userId).eq('route_label', routeLabelTrimmed)
   if (error) throw new Error(error.message)
 }
 
