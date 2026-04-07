@@ -38,6 +38,18 @@ function normalizeRow(row: ExerciseLibraryRow): IExerciseLibraryItem {
   }
 }
 
+function resolveExerciseTitle(payload: any): string {
+  const title = String(payload?.title ?? '').trim()
+  const exerciceType = String(payload?.exerciceType ?? '').trim()
+  if (title.length > 0) {
+    return title
+  }
+  if (exerciceType.length > 0) {
+    return exerciceType
+  }
+  return ''
+}
+
 export function toTrainingExerciseFromLibrary(item: IExerciseLibraryItem): TrainingExercise {
   return {
     type: item.exerciseType,
@@ -109,7 +121,7 @@ export async function createExerciseLibraryItem(exercise: TrainingExercise): Pro
     .insert({
       user_id: userId,
       exercise_type: exercise.type,
-      title: payload?.title ?? payload?.exerciceType ?? '',
+      title: resolveExerciseTitle(payload),
       description: payload?.description ?? '',
       notes: payload?.notes ?? '',
       picture_url: payload?.picture ?? '',
@@ -134,7 +146,7 @@ export async function updateExerciseLibraryItem(id: string, exercise: TrainingEx
     .from('exercise_library')
     .update({
       exercise_type: exercise.type,
-      title: payload?.title ?? payload?.exerciceType ?? '',
+      title: resolveExerciseTitle(payload),
       description: payload?.description ?? '',
       notes: payload?.notes ?? '',
       picture_url: payload?.picture ?? '',

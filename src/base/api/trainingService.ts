@@ -100,6 +100,26 @@ function normalizeExerciseFromRow(row: ExerciseRow): TrainingExercise {
   } as TrainingExercise
 }
 
+function normalizeOptionalUuid(value: unknown): string | null {
+  const raw = String(value ?? '').trim()
+  if (!raw) {
+    return null
+  }
+  return raw
+}
+
+function resolveExerciseTitle(data: TrainingExercise['data']): string {
+  const title = String((data as any)?.title ?? '').trim()
+  const exerciceType = String((data as any)?.exerciceType ?? '').trim()
+  if (title.length > 0) {
+    return title
+  }
+  if (exerciceType.length > 0) {
+    return exerciceType
+  }
+  return ''
+}
+
 function getExerciseInsertPayload(
   userId: string,
   blockId: string,
@@ -109,14 +129,37 @@ function getExerciseInsertPayload(
   return {
     user_id: userId,
     block_id: blockId,
-    exercise_library_id: exercise.data.libraryExerciseId ?? null,
+    exercise_library_id: normalizeOptionalUuid((exercise.data as any)?.libraryExerciseId),
     exercise_type: exercise.type,
-    title: exercise.data.title ?? '',
+    title: resolveExerciseTitle(exercise.data),
     description: exercise.data.description ?? '',
     notes: exercise.data.notes ?? '',
     picture_url: exercise.data.picture ?? '',
     payload_json: exercise.data,
     position,
+  }
+}
+
+function isExerciseLibraryForeignKeyError(message: string): boolean {
+  const normalized = String(message ?? '').toLowerCase()
+  return normalized.includes('exercise_library_id') || normalized.includes('exercise_library')
+}
+
+async function insertExercisesWithFallback(db: ReturnType<typeof getSupabaseDb>, exercisesToInsert: any[]) {
+  const { error } = await db.from('training_plan_exercises').insert(exercisesToInsert)
+  if (!error) {
+    return
+  }
+  if (!isExerciseLibraryForeignKeyError(error.message)) {
+    throw new Error(error.message)
+  }
+  const withoutLibraryFk = exercisesToInsert.map((row) => ({
+    ...row,
+    exercise_library_id: null,
+  }))
+  const { error: fallbackError } = await db.from('training_plan_exercises').insert(withoutLibraryFk)
+  if (fallbackError) {
+    throw new Error(fallbackError.message)
   }
 }
 
@@ -274,10 +317,7 @@ export async function createTraining(
     })
 
     if (exercisesToInsert.length > 0) {
-      const { error: exercisesError } = await db.from('training_plan_exercises').insert(exercisesToInsert)
-      if (exercisesError) {
-        throw new Error(exercisesError.message)
-      }
+      await insertExercisesWithFallback(db, exercisesToInsert)
     }
   }
 
@@ -386,10 +426,7 @@ export async function updateTrainingById(
     return
   }
 
-  const { error: exercisesError } = await db.from('training_plan_exercises').insert(exercisesToInsert)
-  if (exercisesError) {
-    throw new Error(exercisesError.message)
-  }
+  await insertExercisesWithFallback(db, exercisesToInsert)
 }
 
 export async function deleteTrainingById(trainingId: string): Promise<void> {

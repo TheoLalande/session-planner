@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, View, Keyboard, Alert, StyleSheet, TouchableOpacity, Text } from 'react-native'
+import { ScrollView, View, Keyboard, Alert, StyleSheet, TouchableOpacity, Text, Platform, KeyboardAvoidingView } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, IRenforcement, IStretching, TrainingExercise } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -570,86 +570,92 @@ export default function index() {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <ScrollView
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          alignItems: 'center',
-          paddingBottom: 30,
-          paddingTop: 20,
-        }}
-        keyboardDismissMode="on-drag"
-        keyboardShouldPersistTaps="handled"
-        onScrollBeginDrag={() => Keyboard.dismiss()}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {!forcedType && !isEditTrainingMode && !isEditBlocMode && !isFromLibraryForBloc && !isEditLibraryMode ? (
-          <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} />
-        ) : null}
-        {renderForm()}
-        {isLibraryCreationMode || isEditLibraryMode ? (
-          <View style={{ width: '100%', paddingHorizontal: 30, marginBottom: 12 }}>
-            <Text style={{ color: colors.black, fontWeight: '700', marginBottom: 8 }}>Type d'exercice</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setSelectedCategoryId('')
-                  setSelectedCategoryName('')
-                }}
-                style={{
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: selectedCategoryId === '' ? colors.primary : colors.cardBorder,
-                  backgroundColor: selectedCategoryId === '' ? colors.primary : colors.white,
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
-                }}
-              >
-                <Text style={{ color: selectedCategoryId === '' ? colors.white : colors.black, fontWeight: '700', fontSize: 12 }}>Sans type</Text>
-              </TouchableOpacity>
-              {categories.map((category) => {
-                const isActive = selectedCategoryId === category.id
-                return (
-                  <TouchableOpacity
-                    key={category.id}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      setSelectedCategoryId(category.id)
-                      setSelectedCategoryName(category.name)
-                    }}
-                    style={{
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: isActive ? colors.primary : colors.cardBorder,
-                      backgroundColor: isActive ? colors.primary : colors.white,
-                      paddingHorizontal: 12,
-                      paddingVertical: 7,
-                    }}
-                  >
-                    <Text style={{ color: isActive ? colors.white : colors.black, fontWeight: '700', fontSize: 12 }}>{category.name}</Text>
-                  </TouchableOpacity>
-                )
-              })}
-            </ScrollView>
-          </View>
-        ) : null}
-        <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
-          <PrimaryButton
-            title={isEditLibraryMode ? "Mettre à jour l'exercice" : blocId === null ? "Enregistrer l'exercice" : "Ajouter l'exercice"}
-            onPress={handleNext}
-            isClickable={!isSaving && !isDeleting && !isLoadingTemplate}
-          />
-          {isEditTrainingMode || isEditBlocMode ? (
-            <PrimaryButton
-              title="Supprimer l'exercice"
-              onPress={handleDelete}
-              color={colors.primary}
-              borderColor={colors.primary}
-              isClickable={!isSaving && !isDeleting}
-            />
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            alignItems: 'center',
+            paddingBottom: 120,
+            paddingTop: 20,
+          }}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={() => Keyboard.dismiss()}
+        >
+          {!forcedType && !isEditTrainingMode && !isEditBlocMode && !isFromLibraryForBloc && !isEditLibraryMode ? (
+            <ExercicePicker selectedType={selectedType} onSelect={setSelectedType} />
           ) : null}
-        </View>
-      </ScrollView>
+          {renderForm()}
+          {isLibraryCreationMode || isEditLibraryMode ? (
+            <View style={{ width: '100%', paddingHorizontal: 30, marginBottom: 12 }}>
+              <Text style={{ color: colors.black, fontWeight: '700', marginBottom: 8 }}>Type d'exercice</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedCategoryId('')
+                    setSelectedCategoryName('')
+                  }}
+                  style={{
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: selectedCategoryId === '' ? colors.primary : colors.cardBorder,
+                    backgroundColor: selectedCategoryId === '' ? colors.primary : colors.white,
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                  }}
+                >
+                  <Text style={{ color: selectedCategoryId === '' ? colors.white : colors.black, fontWeight: '700', fontSize: 12 }}>Sans type</Text>
+                </TouchableOpacity>
+                {categories.map((category) => {
+                  const isActive = selectedCategoryId === category.id
+                  return (
+                    <TouchableOpacity
+                      key={category.id}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setSelectedCategoryId(category.id)
+                        setSelectedCategoryName(category.name)
+                      }}
+                      style={{
+                        borderRadius: 999,
+                        borderWidth: 1,
+                        borderColor: isActive ? colors.primary : colors.cardBorder,
+                        backgroundColor: isActive ? colors.primary : colors.white,
+                        paddingHorizontal: 12,
+                        paddingVertical: 7,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? colors.white : colors.black, fontWeight: '700', fontSize: 12 }}>{category.name}</Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </ScrollView>
+            </View>
+          ) : null}
+          <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
+            <PrimaryButton
+              title={isEditLibraryMode ? "Mettre à jour l'exercice" : blocId === null ? "Enregistrer l'exercice" : "Ajouter l'exercice"}
+              onPress={handleNext}
+              isClickable={!isSaving && !isDeleting && !isLoadingTemplate}
+            />
+            {isEditTrainingMode || isEditBlocMode ? (
+              <PrimaryButton
+                title="Supprimer l'exercice"
+                onPress={handleDelete}
+                color={colors.primary}
+                borderColor={colors.primary}
+                isClickable={!isSaving && !isDeleting}
+              />
+            ) : null}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
       {isSaving || isDeleting || isLoadingTemplate ? (
         <View pointerEvents="none" style={styles.loadingOverlay}>
           <LoadingIndicator />
