@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import * as SecureStore from 'expo-secure-store'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const secureStoreAdapter = {
   getItem: async (key: string) => {
@@ -15,6 +16,8 @@ const secureStoreAdapter = {
 }
 
 let supabaseClient: SupabaseClient | null = null
+const SUPABASE_SCHEMA_STORAGE_KEY = 'supabase_schema_mode'
+let schemaOverride: 'public' | '__DEV__' = 'public'
 
 export function getSupabaseClient(): SupabaseClient {
   if (supabaseClient) return supabaseClient
@@ -46,11 +49,31 @@ export function getSupabaseRedirectTo(): string | undefined {
 }
 
 export function getSupabaseSchemaName(): string {
-  const envValue = String(process.env.EXPO_PUBLIC_ENV ?? process.env.ENV ?? 'PROD').trim().toUpperCase()
-  if (envValue === 'DEV') {
-    return '__DEV__'
+  return schemaOverride
+}
+
+export async function initSupabaseSchemaPreference(): Promise<void> {
+  try {
+    const storedMode = await AsyncStorage.getItem(SUPABASE_SCHEMA_STORAGE_KEY)
+    schemaOverride = storedMode === 'DEV' ? '__DEV__' : 'public'
+  } catch {
+    schemaOverride = 'public'
   }
-  return 'public'
+}
+
+export async function setSupabaseSchemaMode(mode: 'DEV' | 'PROD'): Promise<void> {
+  schemaOverride = mode === 'DEV' ? '__DEV__' : 'public'
+  await AsyncStorage.setItem(SUPABASE_SCHEMA_STORAGE_KEY, mode)
+}
+
+export async function getSupabaseSchemaMode(): Promise<'DEV' | 'PROD'> {
+  try {
+    const storedMode = await AsyncStorage.getItem(SUPABASE_SCHEMA_STORAGE_KEY)
+    if (storedMode === 'DEV') {
+      return 'DEV'
+    }
+  } catch {}
+  return 'PROD'
 }
 
 export function getSupabaseDb() {

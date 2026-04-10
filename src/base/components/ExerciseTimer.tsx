@@ -46,10 +46,13 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const elapsedSecondsRef = useRef(0)
     const minutesBuzzedRef = useRef(0)
     const finishedBuzzRef = useRef(false)
+    const preEndBellPlayedRef = useRef(false)
     const hapticsSeqRef = useRef(0)
     const nextExerciseCalledRef = useRef(false)
     const initialTransitionActiveRef = useRef(initialTransitionSeconds > 0)
     const bellSoundRef = useRef<Audio.Sound | null>(null)
+    const tictacSoundRef = useRef<Audio.Sound | null>(null)
+    const startSoundPlayedRef = useRef(false)
 
     const playBellSound = async () => {
       try {
@@ -65,10 +68,27 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       }
     }
 
+    const playStartExerciseSound = async () => {
+      try {
+        if (tictacSoundRef.current) {
+          await tictacSoundRef.current.replayAsync()
+          return
+        }
+        const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/tictac.mp3'))
+        tictacSoundRef.current = sound
+        await sound.playAsync()
+      } catch {
+        return
+      }
+    }
+
     useEffect(() => {
       return () => {
         if (bellSoundRef.current) {
           void bellSoundRef.current.unloadAsync()
+        }
+        if (tictacSoundRef.current) {
+          void tictacSoundRef.current.unloadAsync()
         }
       }
     }, [])
@@ -83,9 +103,25 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
+      preEndBellPlayedRef.current = false
       nextExerciseCalledRef.current = false
       initialTransitionActiveRef.current = hasInitialTransition
+      startSoundPlayedRef.current = false
     }, [initialSeconds, autoStart, transitionSecondsBetweenTimers, initialTransitionSeconds])
+
+    useEffect(() => {
+      if (!isRunning || isTransition || remainingSeconds !== initialSeconds) {
+        if (!isRunning || isTransition) {
+          startSoundPlayedRef.current = false
+        }
+        return
+      }
+      if (startSoundPlayedRef.current) {
+        return
+      }
+      startSoundPlayedRef.current = true
+      void playStartExerciseSound()
+    }, [isRunning, isTransition, remainingSeconds, initialSeconds])
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -121,6 +157,11 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
       const interval = setInterval(() => {
         setRemainingSeconds((prev) => {
+          if (prev === 2 && !preEndBellPlayedRef.current) {
+            preEndBellPlayedRef.current = true
+            void playBellSound()
+          }
+
           if (prev <= 1) {
             clearInterval(interval)
             setIsRunning(false)
@@ -128,7 +169,6 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
             if (!finishedBuzzRef.current) {
               finishedBuzzRef.current = true
               runHapticsSequence(5, 'finish')
-              void playBellSound()
             }
 
             if (hasNextExercise && onNextExercise) {
@@ -206,6 +246,8 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
         elapsedSecondsRef.current = 0
         minutesBuzzedRef.current = 0
         finishedBuzzRef.current = false
+        preEndBellPlayedRef.current = false
+        startSoundPlayedRef.current = false
       }
 
       setIsRunning((prev) => !prev)
@@ -220,12 +262,16 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       elapsedSecondsRef.current = 0
       minutesBuzzedRef.current = 0
       finishedBuzzRef.current = false
+      preEndBellPlayedRef.current = false
       nextExerciseCalledRef.current = false
       initialTransitionActiveRef.current = false
       // Stoppe toute séquence haptics en cours
       hapticsSeqRef.current += 1
       if (bellSoundRef.current) {
         void bellSoundRef.current.stopAsync()
+      }
+      if (tictacSoundRef.current) {
+        void tictacSoundRef.current.stopAsync()
       }
     }
 

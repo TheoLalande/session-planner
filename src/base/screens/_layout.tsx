@@ -11,6 +11,7 @@ import { PaperProvider } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AppThemeProvider, useAppTheme } from '../providers/themeProvider'
+import { initSupabaseSchemaPreference } from '../api/supabaseClient'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -23,6 +24,10 @@ function AppNavigator() {
     'Saira_Condensed-Bold': require('../assets/fonts/Saira_Condensed-Bold.ttf'),
   })
   const { isReady, navigationTheme, paperTheme, colors } = useAppTheme()
+
+  useEffect(() => {
+    void initSupabaseSchemaPreference()
+  }, [])
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

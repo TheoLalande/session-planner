@@ -47,7 +47,6 @@ export default function Tools() {
           <Text style={[styles.cardText, { color: colors.grey }]}>Ajoute ici tes outils (timers, calculs, checklists...).</Text>
         </View>
       </ScrollView>
-      <BottomNavBar />
     </SafeAreaView>
   )
 }

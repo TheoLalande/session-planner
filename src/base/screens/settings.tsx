@@ -4,9 +4,12 @@ import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView } from 're
 import { router } from 'expo-router'
 import { PrimaryButton } from '../components'
 import { getSession, logout } from '../api/authService'
+import { getSupabaseSchemaMode, setSupabaseSchemaMode } from '../api/supabaseClient'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { useAppTheme } from '../providers/themeProvider'
 import { ThemeOptions } from '../constants/theme'
+import { useTrainingStore } from '../store/trainingStore'
+import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 
 export default function settings() {
   const [isCheckingSession, setIsCheckingSession] = useState(true)
@@ -15,6 +18,39 @@ export default function settings() {
   const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h')
   const [autoStartNextExercise, setAutoStartNextExercise] = useState(true)
   const [dailyReminder, setDailyReminder] = useState(false)
+  const [isDevSchema, setIsDevSchema] = useState(false)
+  const [isSwitchingSchema, setIsSwitchingSchema] = useState(false)
+  const refreshDataAfterSchemaSwitch = async () => {
+    useTrainingStore.setState({
+      trainings: [],
+      blocs: [],
+      editingBlocId: null,
+      editingTrainingId: null,
+    })
+    useClimbingAttemptsStore.setState({
+      attempts: [],
+    })
+    await Promise.allSettled([useTrainingStore.getState().loadTrainings(), useClimbingAttemptsStore.getState().loadAttempts()])
+  }
+
+
+  useEffect(() => {
+    let isMounted = true
+    const loadSchemaMode = async () => {
+      try {
+        const mode = await getSupabaseSchemaMode()
+        if (!isMounted) return
+        setIsDevSchema(mode === 'DEV')
+      } catch {
+        if (!isMounted) return
+        setIsDevSchema(false)
+      }
+    }
+    void loadSchemaMode()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   useEffect(() => {
     let isMounted = true
@@ -85,6 +121,25 @@ export default function settings() {
 
           <View style={[styles.panel, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
             <Text style={[styles.panelTitle, { color: colors.black }]}>Préférences d'entraînement</Text>
+            <View style={styles.row}>
+              <Text style={[styles.rowLabel, { color: colors.black }]}>Schéma DEV (__DEV__)</Text>
+              <Switch
+                value={isDevSchema}
+                onValueChange={async (enabled) => {
+                  if (isSwitchingSchema) {
+                    return
+                  }
+                  setIsSwitchingSchema(true)
+                  setIsDevSchema(enabled)
+                  try {
+                    await setSupabaseSchemaMode(enabled ? 'DEV' : 'PROD')
+                    await refreshDataAfterSchemaSwitch()
+                  } finally {
+                    setIsSwitchingSchema(false)
+                  }
+                }}
+              />
+            </View>
             <View style={styles.row}>
               <Text style={[styles.rowLabel, { color: colors.black }]}>Démarrer automatiquement l'exercice suivant</Text>
               <Switch value={autoStartNextExercise} onValueChange={setAutoStartNextExercise} />
