@@ -25,6 +25,20 @@ function withExerciseDataId(exercise: TrainingExercise, nextId: number): Trainin
   } as TrainingExercise
 }
 
+function withExerciseDataIds(exercises: TrainingExercise[], startId: number): TrainingExercise[] {
+  let nextId = startId
+  return exercises.map((exercise) => {
+    const nextExercise = {
+      ...exercise,
+      data: {
+        ...exercise.data,
+        id: nextId++,
+      },
+    } as TrainingExercise
+    return nextExercise
+  })
+}
+
 type TrainingState = {
   blocs: ITrainingBloc[]
   trainings: IPlannedTraining[]
@@ -48,11 +62,18 @@ type TrainingState = {
   duplicateExerciseInBloc: (blocId: number, exerciseIndex: number) => void
   duplicateBloc: (blocId: number) => void
   updateExerciseInBloc: (blocId: number, exerciseIndex: number, exercise: TrainingExercise) => void
+  replaceExerciseInBloc: (blocId: number, exerciseIndex: number, exercises: TrainingExercise[]) => void
   updateExerciseInTraining: (
     trainingId: string,
     blocId: number,
     exerciseIndex: number,
     exercise: TrainingExercise,
+  ) => Promise<void>
+  replaceExerciseInTraining: (
+    trainingId: string,
+    blocId: number,
+    exerciseIndex: number,
+    exercises: TrainingExercise[],
   ) => Promise<void>
   removeBloc: (blocId: number) => void
   removeTraining: (trainingId: string) => Promise<void>
@@ -426,6 +447,34 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
         trainings: nextTrainings,
       }
     }),
+  replaceExerciseInBloc: (blocId, exerciseIndex, exercises) =>
+    set((state) => {
+      const preparedExercises = withExerciseDataIds(exercises, getNextExerciseDataId(state.blocs))
+      const nextBlocs = state.blocs.map((bloc) => {
+        if (bloc.id !== blocId) {
+          return bloc
+        }
+        if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) {
+          return bloc
+        }
+        const updatedExercises = [...bloc.exercises]
+        updatedExercises.splice(exerciseIndex, 1, ...preparedExercises)
+        return {
+          ...bloc,
+          exercises: updatedExercises,
+        }
+      })
+      const nextTrainings =
+        state.editingTrainingId == null
+          ? state.trainings
+          : state.trainings.map((training) => (training.id === state.editingTrainingId ? { ...training, blocs: nextBlocs } : training))
+
+      return {
+        ...state,
+        blocs: nextBlocs,
+        trainings: nextTrainings,
+      }
+    }),
   updateExerciseInTraining: async (trainingId, blocId, exerciseIndex, exercise) => {
     const state = get()
     const training = state.trainings.find((t) => t.id === trainingId)
@@ -448,6 +497,32 @@ export const useTrainingStore = create<TrainingState>()((set, get) => ({
     set((current) => ({
       ...current,
       trainings: current.trainings.map((t) => (t.id === trainingId ? nextTraining : t)),
+    }))
+  },
+  replaceExerciseInTraining: async (trainingId, blocId, exerciseIndex, exercises) => {
+    const state = get()
+    const training = state.trainings.find((t) => t.id === trainingId)
+    if (!training) return
+    const preparedExercises = withExerciseDataIds(exercises, getNextExerciseDataId(training.blocs))
+    const nextBlocs = training.blocs.map((bloc) => {
+      if (bloc.id !== blocId) return bloc
+      if (exerciseIndex < 0 || exerciseIndex >= bloc.exercises.length) return bloc
+      const updatedExercises = [...bloc.exercises]
+      updatedExercises.splice(exerciseIndex, 1, ...preparedExercises)
+      return { ...bloc, exercises: updatedExercises }
+    })
+    const nextTraining = { ...training, blocs: nextBlocs }
+    await updateTrainingById(trainingId, {
+      title: nextTraining.title,
+      description: nextTraining.description,
+      blocs: nextTraining.blocs,
+      transitionSecondsBetweenTimers: nextTraining.transitionSecondsBetweenTimers ?? 5,
+      transitionSecondsBetweenBlocs: nextTraining.transitionSecondsBetweenBlocs ?? nextTraining.transitionSecondsBetweenTimers ?? 5,
+    })
+    set((current) => ({
+      ...current,
+      trainings: current.trainings.map((t) => (t.id === trainingId ? nextTraining : t)),
+      blocs: current.editingTrainingId === trainingId ? nextBlocs : current.blocs,
     }))
   },
   removeBloc: (blocId) =>

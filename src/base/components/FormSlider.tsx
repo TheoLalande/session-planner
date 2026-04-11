@@ -95,6 +95,14 @@ export function FormSlider({
     return unitMode === 'minutes' ? maximumValue / 60 : maximumValue
   }, [maximumValue, unitMode, valueStoredInSeconds])
 
+  const sliderStep = useMemo(() => {
+    const isSecondsMode = enableUnitToggle ? unitMode === 'seconds' : unit === 'seconds' || unit === 'secondes'
+    if (isSecondsMode) {
+      return step < 5 ? 5 : step
+    }
+    return step
+  }, [enableUnitToggle, unitMode, unit, step])
+
   const fullLabel = effectiveUnit ? `${label} : ${Math.round(displayValue)} ${effectiveUnit}` : `${label} : ${Math.round(displayValue)}`
 
   return (
@@ -150,7 +158,7 @@ export function FormSlider({
         }}
         minimumValue={displayMin}
         maximumValue={displayMax}
-        step={step}
+        step={sliderStep}
         minimumTrackTintColor={colors.primary}
       />
     </View>

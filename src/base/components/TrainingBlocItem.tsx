@@ -12,64 +12,83 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
   const styles = createStyles(colors)
   const { type, data } = exercise
 
-  let label = ''
+  let coloredLabel = ''
+  let blackLabel = ''
   let typeLabel = ''
   const categoryName = String((data as any).exerciseCategoryName ?? '').trim()
   if (type === 'hangboard') {
-    label = `${data.title || 'Hangboard'} · ${data.sets} séries`
+    coloredLabel = `${data.title || 'Hangboard'}`
+    blackLabel = `${data.sets} séries`
     typeLabel = 'Hangboard'
   } else if (type === 'climbing') {
-    label = `${data.title || 'Climbing'} · ${data.grade}`
+    coloredLabel = `${data.title || 'Climbing'}`
+    blackLabel = `${data.grade}`
     typeLabel = 'Escalade'
   } else if (type === 'warmup') {
     if (data.mode === 'reps') {
-      label = `${data.title || 'Échauffement'} · ${data.repetitions} reps`
+      coloredLabel = `${data.title || 'Échauffement'}`
+      blackLabel = `${data.repetitions} reps`
     } else {
       const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
-      label = `${data.title || 'Échauffement'} · ${data.duration} ${unit}`
+      coloredLabel = `${data.title || 'Échauffement'}`
+      blackLabel = `${data.duration} ${unit}`
     }
     typeLabel = data.exerciceType || 'Échauffement'
   } else if (type === 'renforcement') {
     if (data.mode === 'reps') {
-      label = `${data.title || 'Renforcement'} · ${data.repetitions} reps`
+      coloredLabel = `${data.title || 'Renforcement'}`
+      blackLabel = `${data.repetitions} reps`
     } else {
       const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
-      label = `${data.title || 'Renforcement'} · ${data.duration} ${unit}`
+      coloredLabel = `${data.title || 'Renforcement'}`
+      blackLabel = `${data.duration} ${unit}`
     }
     typeLabel = data.exerciceType || 'Renforcement'
   } else if (type === 'stretching') {
     if (data.mode === 'reps') {
-      label = `${data.title || 'Étirement'} · ${data.repetitions} reps`
+      coloredLabel = `${data.title || 'Étirement'}`
+      blackLabel = `${data.repetitions} reps`
     } else {
       const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
-      label = `${data.title || 'Étirement'} · ${data.duration} ${unit}`
+      coloredLabel = `${data.title || 'Étirement'}`
+      blackLabel = `${data.duration} ${unit}`
     }
     typeLabel = data.exerciceType || 'Étirement'
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.type}>{categoryName || typeLabel}</Text>
+      <Text style={styles.type} numberOfLines={1}>
+        <Text style={styles.type}>{coloredLabel}</Text>
+        {blackLabel ? <Text style={styles.typeSecondary}> {`· ${blackLabel}`}</Text> : null}
+      </Text>
       <Text style={styles.label} numberOfLines={1}>
-        {label}
+        {categoryName || typeLabel}
       </Text>
     </View>
   )
 }
 
-const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) => StyleSheet.create({
-  container: {
-    width: '100%',
-    marginBottom: 6,
-  },
-  type: {
-    fontSize: 11,
-    color: colors.primary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  label: {
-    fontSize: 13,
-    color: colors.black,
-  },
-})
+const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      width: '100%',
+      marginBottom: 6,
+    },
+    type: {
+      fontSize: 11,
+      color: colors.primary,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+    },
+    typeSecondary: {
+      fontSize: 11,
+      color: colors.black,
+      fontWeight: '600',
+      textTransform: 'none',
+    },
+    label: {
+      fontSize: 13,
+      color: colors.black,
+    },
+  })

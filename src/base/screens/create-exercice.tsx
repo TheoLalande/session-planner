@@ -46,6 +46,8 @@ export default function index() {
   const removeExerciseFromTraining = useTrainingStore((state) => state.removeExerciseFromTraining)
   const updateExerciseInBloc = useTrainingStore((state) => state.updateExerciseInBloc)
   const updateExerciseInTraining = useTrainingStore((state) => state.updateExerciseInTraining)
+  const replaceExerciseInBloc = useTrainingStore((state) => state.replaceExerciseInBloc)
+  const replaceExerciseInTraining = useTrainingStore((state) => state.replaceExerciseInTraining)
   const blocType = useTrainingStore((state) => (blocId ? state.blocs.find((b) => b.id === blocId)?.blocType : undefined))
   const currentExercise = useTrainingStore((state) => {
     if (isEditTrainingMode) {
@@ -323,6 +325,12 @@ export default function index() {
     return signedData.signedUrl
   }
 
+  const runInBackground = (task: Promise<void>, fallbackMessage: string) => {
+    void task.catch((e: any) => {
+      Alert.alert('Erreur', e?.message || fallbackMessage)
+    })
+  }
+
   const handleNext = async () => {
     if (!selectedType) {
       router.back()
@@ -444,17 +452,18 @@ export default function index() {
           return
         }
         const baseData = exercise.data as IWarmUp
+        const sharedPicture = String((baseData as any).picture ?? existingPicture ?? '').trim()
         const baseLabel = (baseData.exerciceType || baseData.title || '').trim()
         const leftLabel = baseLabel ? `${baseLabel} gauche` : 'gauche'
         const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
 
         const leftExercise: TrainingExercise = {
           type: selectedType as 'warmup' | 'renforcement' | 'stretching',
-          data: { ...baseData, exerciceType: leftLabel, title: leftLabel, leftRight: false },
+          data: { ...baseData, picture: sharedPicture, exerciceType: leftLabel, title: leftLabel, leftRight: false },
         }
         const rightExercise: TrainingExercise = {
           type: selectedType as 'warmup' | 'renforcement' | 'stretching',
-          data: { ...baseData, exerciceType: rightLabel, title: rightLabel, leftRight: false },
+          data: { ...baseData, picture: sharedPicture, exerciceType: rightLabel, title: rightLabel, leftRight: false },
         }
 
         addExerciseToBloc(blocIdValue, leftExercise)
@@ -472,18 +481,57 @@ export default function index() {
           }
         }
       } else if (isEditTrainingMode && trainingId !== null && exerciseIndex !== null) {
-        setIsSaving(true)
-        try {
-          await updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise)
-        } catch (e: any) {
-          Alert.alert('Erreur', e?.message || 'Impossible de mettre a jour l exercice')
+        if (isLeftRightExercise) {
+          const baseData = exercise.data as IWarmUp
+          const baseId = Number((baseData as any).id ?? 0)
+          const sharedPicture = String((baseData as any).picture ?? existingPicture ?? '').trim()
+          const baseLabel = (baseData.exerciceType || baseData.title || '').trim()
+          const leftLabel = baseLabel ? `${baseLabel} gauche` : 'gauche'
+          const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
+          const leftExercise: TrainingExercise = {
+            type: selectedType as 'warmup' | 'renforcement' | 'stretching',
+            data: { ...baseData, id: baseId > 0 ? baseId : 0, picture: sharedPicture, exerciceType: leftLabel, title: leftLabel, leftRight: false },
+          }
+          const rightExercise: TrainingExercise = {
+            type: selectedType as 'warmup' | 'renforcement' | 'stretching',
+            data: { ...baseData, id: baseId > 0 ? baseId + 1 : 0, picture: sharedPicture, exerciceType: rightLabel, title: rightLabel, leftRight: false },
+          }
+          runInBackground(
+            replaceExerciseInTraining(trainingId, blocId, exerciseIndex, [leftExercise, rightExercise]),
+            'Impossible de mettre a jour l exercice',
+          )
+          router.back()
           return
-        } finally {
-          setIsSaving(false)
         }
+        runInBackground(updateExerciseInTraining(trainingId, blocId, exerciseIndex, exercise), 'Impossible de mettre a jour l exercice')
+        router.back()
+        return
       } else if (isEditBlocMode && exerciseIndex !== null) {
         if (blocIdValue <= 0) {
           Alert.alert('Erreur', 'Bloc invalide')
+          return
+        }
+        if (isLeftRightExercise) {
+          const baseData = exercise.data as IWarmUp
+          const baseId = Number((baseData as any).id ?? 0)
+          const sharedPicture = String((baseData as any).picture ?? existingPicture ?? '').trim()
+          const baseLabel = (baseData.exerciceType || baseData.title || '').trim()
+          const leftLabel = baseLabel ? `${baseLabel} gauche` : 'gauche'
+          const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
+          const leftExercise: TrainingExercise = {
+            type: selectedType as 'warmup' | 'renforcement' | 'stretching',
+            data: { ...baseData, id: baseId > 0 ? baseId : 0, picture: sharedPicture, exerciceType: leftLabel, title: leftLabel, leftRight: false },
+          }
+          const rightExercise: TrainingExercise = {
+            type: selectedType as 'warmup' | 'renforcement' | 'stretching',
+            data: { ...baseData, id: baseId > 0 ? baseId + 1 : 0, picture: sharedPicture, exerciceType: rightLabel, title: rightLabel, leftRight: false },
+          }
+          replaceExerciseInBloc(blocIdValue, exerciseIndex, [leftExercise, rightExercise])
+          if (blocId !== null && !isEditTrainingMode) {
+            router.replace('/create-training')
+            return
+          }
+          router.back()
           return
         }
         updateExerciseInBloc(blocIdValue, exerciseIndex, exercise)
@@ -640,7 +688,13 @@ export default function index() {
           ) : null}
           <View style={{ width: '100%', paddingHorizontal: 30, justifyContent: 'center', alignItems: 'center', gap: 10 }}>
             <PrimaryButton
-              title={isEditLibraryMode ? "Mettre à jour l'exercice" : blocId === null ? "Enregistrer l'exercice" : "Ajouter l'exercice"}
+              title={
+                isEditLibraryMode || isEditTrainingMode || isEditBlocMode
+                  ? "Mettre à jour l'exercice"
+                  : blocId === null
+                    ? "Enregistrer l'exercice"
+                    : "Ajouter l'exercice"
+              }
               onPress={handleNext}
               isClickable={!isSaving && !isDeleting && !isLoadingTemplate}
             />
@@ -648,8 +702,8 @@ export default function index() {
               <PrimaryButton
                 title="Supprimer l'exercice"
                 onPress={handleDelete}
-                color={colors.primary}
-                borderColor={colors.primary}
+                color={colors.danger}
+                borderColor={colors.danger}
                 isClickable={!isSaving && !isDeleting}
               />
             ) : null}
