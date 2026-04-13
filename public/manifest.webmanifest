@@ -1,0 +1,9 @@
+{
+  "name": "SessionPlanner",
+  "short_name": "SessionPlanner",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F0F8FF"
+}
