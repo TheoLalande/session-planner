@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native'
 import { TextField } from './TextField'
-import { FormSlider } from './FormSlider'
+import { FormSlider } from './SliderField'
 import { IClimbing } from '../types/trainingTypes'
 import { useAppTheme } from '../providers/themeProvider'
 

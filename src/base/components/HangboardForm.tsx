@@ -1,7 +1,7 @@
 import React from 'react'
 import { View } from 'react-native'
 import { TextField } from './TextField'
-import { FormSlider } from './FormSlider'
+import { FormSlider } from './SliderField'
 import { Ihangboard } from '../types/trainingTypes'
 
 type HangboardFormProps = {
