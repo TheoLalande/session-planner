@@ -2,11 +2,19 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "cleanUrls": true,
+  "cleanUrls": false,
   "rewrites": [
     {
       "source": "/_expo/static/:path*",
       "destination": "/_expo/static/:path*"
+    },
+    {
+      "source": "/:path",
+      "destination": "/:path.html"
+    },
+    {
+      "source": "/:path/",
+      "destination": "/:path.html"
     },
     {
       "source": "/:path*",
