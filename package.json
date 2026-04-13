@@ -8,6 +8,7 @@
     "android": "expo start --android --port 3000",
     "ios": "expo start --ios --port 3000",
     "web": "expo start --web --port 3000",
+    "build": "expo export --platform web",
     "lint": "expo lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\""
