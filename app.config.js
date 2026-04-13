@@ -23,6 +23,18 @@ export default ({ config }) => ({
     barStyle: 'dark-content',
     backgroundColor: '#00000000',
   },
+  web: {
+    bundler: 'metro',
+    output: 'static',
+    name: 'run4life',
+    shortName: 'run4life',
+    backgroundColor: '#FFFFFF',
+    themeColor: '#F0F8FF',
+    display: 'standalone',
+    pwa: {
+      enabled: true,
+    },
+  },
   plugins: [
     [
       'expo-build-properties',

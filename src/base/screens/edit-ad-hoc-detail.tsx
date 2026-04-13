@@ -12,7 +12,7 @@ import {
   fetchAdHocClimbingAttemptById,
   updateAdHocClimbingAttempt,
 } from '../api/climbingAttemptsService'
-import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
+import DateTimePicker, { DateTimePickerAndroid } from '../components/AppDatePicker'
 
 type ClimbingType = 'bloc' | 'voie' | 'grande voie'
 type RouteProfile = 'dalle' | 'verticale' | 'devers' | 'toit'
@@ -124,7 +124,7 @@ export default function EditAdHocDetail() {
   }, [attemptCount, grade, locationType, routeName])
 
   const openDatePicker = () => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       DateTimePickerAndroid.open({
         value: climbedAt,
         mode: 'date',

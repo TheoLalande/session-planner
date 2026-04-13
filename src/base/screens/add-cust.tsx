@@ -9,7 +9,7 @@ import { useAppTheme } from '../providers/themeProvider'
 import { getSession } from '../api/authService'
 import { getSupabaseDb } from '../api/supabaseClient'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
-import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
+import DateTimePicker, { DateTimePickerAndroid } from '../components/AppDatePicker'
 
 type ClimbingType = 'bloc' | 'voie' | 'grande voie'
 type RouteProfile = 'dalle' | 'verticale' | 'devers' | 'toit'
@@ -67,7 +67,7 @@ export default function AddCustomExercise() {
   }, [attemptCount, grade, locationType, routeName])
 
   const openDatePicker = () => {
-    if (Platform.OS === 'android') {
+    if (Platform.OS === 'android' || Platform.OS === 'web') {
       DateTimePickerAndroid.open({
         value: climbedAt,
         mode: 'date',

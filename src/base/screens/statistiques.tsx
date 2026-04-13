@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Platform, ScrollView, StyleSheet, useWindowDimensions, View, Text, TouchableOpacity } from 'react-native'
-import DateTimePicker from '@react-native-community/datetimepicker'
 import { LineChart } from 'react-native-gifted-charts'
+import DateTimePicker, { DateTimePickerAndroid } from '../components/AppDatePicker'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import { useAppTheme } from '../providers/themeProvider'
 import { CompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
@@ -657,8 +657,38 @@ export default function Statistiques() {
           colors={colors}
           startDateLabel={formatDate(startDate)}
           endDateLabel={formatDate(endDate)}
-          onPressStartDate={() => setShowStartPicker(true)}
-          onPressEndDate={() => setShowEndPicker(true)}
+          onPressStartDate={() => {
+            if (Platform.OS === 'web') {
+              DateTimePickerAndroid.open({
+                value: startDate,
+                mode: 'date',
+                maximumDate: endDate,
+                onChange: (_, date) => {
+                  if (!date) return
+                  setStartDate(date)
+                  setEndDate((prevEnd) => (prevEnd.getTime() < date.getTime() ? date : prevEnd))
+                },
+              })
+              return
+            }
+            setShowStartPicker(true)
+          }}
+          onPressEndDate={() => {
+            if (Platform.OS === 'web') {
+              DateTimePickerAndroid.open({
+                value: endDate,
+                mode: 'date',
+                maximumDate: new Date(),
+                onChange: (_, date) => {
+                  if (!date) return
+                  setEndDate(date)
+                  setStartDate((prevStart) => (prevStart.getTime() > date.getTime() ? date : prevStart))
+                },
+              })
+              return
+            }
+            setShowEndPicker(true)
+          }}
         />
 
         <View style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
@@ -843,7 +873,7 @@ export default function Statistiques() {
         ) : null}
       </ScrollView>
 
-      {showStartPicker ? (
+      {Platform.OS !== 'web' && showStartPicker ? (
         <DateTimePicker
           value={startDate}
           mode="date"
@@ -858,7 +888,7 @@ export default function Statistiques() {
         />
       ) : null}
 
-      {showEndPicker ? (
+      {Platform.OS !== 'web' && showEndPicker ? (
         <DateTimePicker
           value={endDate}
           mode="date"
