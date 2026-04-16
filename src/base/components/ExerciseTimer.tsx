@@ -5,6 +5,10 @@ import * as Haptics from 'expo-haptics'
 import { Audio } from 'expo-av'
 import { useAppTheme } from '../providers/themeProvider'
 
+let globalWebAudioUnlocked = false
+let globalBellWebAudio: HTMLAudioElement | null = null
+let globalTictacWebAudio: HTMLAudioElement | null = null
+
 type ExerciseTimerProps = {
   initialSeconds: number
   autoStart?: boolean
@@ -52,10 +56,8 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const initialTransitionActiveRef = useRef(initialTransitionSeconds > 0)
     const bellSoundRef = useRef<Audio.Sound | null>(null)
     const tictacSoundRef = useRef<Audio.Sound | null>(null)
-    const bellWebAudioRef = useRef<HTMLAudioElement | null>(null)
-    const tictacWebAudioRef = useRef<HTMLAudioElement | null>(null)
     const startSoundPlayedRef = useRef(false)
-    const webAudioUnlockedRef = useRef(false)
+    const [webAudioReadyVersion, setWebAudioReadyVersion] = useState(globalWebAudioUnlocked ? 1 : 0)
     const bellAssetModule = require('../assets/sounds/bell-sound.mp3')
     const tictacAssetModule = require('../assets/sounds/tictac.mp3')
 
@@ -78,8 +80,8 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     }
 
     const ensureWebBellSoundLoaded = () => {
-      if (bellWebAudioRef.current) {
-        return bellWebAudioRef.current
+      if (globalBellWebAudio) {
+        return globalBellWebAudio
       }
       const uri = getWebAudioUri(bellAssetModule)
       if (!uri || typeof globalThis.Audio === 'undefined') {
@@ -88,13 +90,13 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       const audio = new globalThis.Audio(uri)
       audio.preload = 'auto'
       audio.playsInline = true
-      bellWebAudioRef.current = audio
+      globalBellWebAudio = audio
       return audio
     }
 
     const ensureWebStartSoundLoaded = () => {
-      if (tictacWebAudioRef.current) {
-        return tictacWebAudioRef.current
+      if (globalTictacWebAudio) {
+        return globalTictacWebAudio
       }
       const uri = getWebAudioUri(tictacAssetModule)
       if (!uri || typeof globalThis.Audio === 'undefined') {
@@ -103,20 +105,21 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       const audio = new globalThis.Audio(uri)
       audio.preload = 'auto'
       audio.playsInline = true
-      tictacWebAudioRef.current = audio
+      globalTictacWebAudio = audio
       return audio
     }
 
-    const playWebAudio = async (audio: HTMLAudioElement | null) => {
+    const playWebAudio = async (audio: HTMLAudioElement | null): Promise<boolean> => {
       if (!audio) {
-        return
+        return false
       }
       try {
         audio.pause()
         audio.currentTime = 0
         await audio.play()
+        return true
       } catch {
-        return
+        return false
       }
     }
 
@@ -145,7 +148,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     }
 
     const unlockWebAudioIfNeeded = async () => {
-      if (Platform.OS !== 'web' || webAudioUnlockedRef.current) {
+      if (Platform.OS !== 'web' || globalWebAudioUnlocked) {
         return
       }
       try {
@@ -165,41 +168,42 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
         startAudio.currentTime = 0
         bellAudio.muted = false
         startAudio.muted = false
-        webAudioUnlockedRef.current = true
+        globalWebAudioUnlocked = true
+        setWebAudioReadyVersion((prev) => prev + 1)
       } catch {
         return
       }
     }
 
-    const playBellSound = async () => {
+    const playBellSound = async (): Promise<boolean> => {
       try {
         if (Platform.OS === 'web') {
-          await playWebAudio(ensureWebBellSoundLoaded())
-          return
+          return await playWebAudio(ensureWebBellSoundLoaded())
         }
         const sound = await ensureBellSoundLoaded()
         if (!sound) {
-          return
+          return false
         }
         await sound.playAsync()
+        return true
       } catch {
-        return
+        return false
       }
     }
 
-    const playStartExerciseSound = async () => {
+    const playStartExerciseSound = async (): Promise<boolean> => {
       try {
         if (Platform.OS === 'web') {
-          await playWebAudio(ensureWebStartSoundLoaded())
-          return
+          return await playWebAudio(ensureWebStartSoundLoaded())
         }
         const sound = await ensureStartSoundLoaded()
         if (!sound) {
-          return
+          return false
         }
         await sound.playAsync()
+        return true
       } catch {
-        return
+        return false
       }
     }
 
@@ -211,13 +215,26 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
         if (tictacSoundRef.current) {
           void tictacSoundRef.current.unloadAsync()
         }
-        if (bellWebAudioRef.current) {
-          bellWebAudioRef.current.pause()
-          bellWebAudioRef.current = null
-        }
-        if (tictacWebAudioRef.current) {
-          tictacWebAudioRef.current.pause()
-          tictacWebAudioRef.current = null
+      }
+    }, [])
+
+    useEffect(() => {
+      if (Platform.OS !== 'web') {
+        return
+      }
+      const handleUserInteraction = () => {
+        void unlockWebAudioIfNeeded()
+      }
+      if (typeof window !== 'undefined') {
+        window.addEventListener('pointerdown', handleUserInteraction)
+        window.addEventListener('touchstart', handleUserInteraction)
+        window.addEventListener('keydown', handleUserInteraction)
+      }
+      return () => {
+        if (typeof window !== 'undefined') {
+          window.removeEventListener('pointerdown', handleUserInteraction)
+          window.removeEventListener('touchstart', handleUserInteraction)
+          window.removeEventListener('keydown', handleUserInteraction)
         }
       }
     }, [])
@@ -248,9 +265,17 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       if (startSoundPlayedRef.current) {
         return
       }
-      startSoundPlayedRef.current = true
-      void playStartExerciseSound()
-    }, [isRunning, isTransition, remainingSeconds, initialSeconds])
+      let cancelled = false
+      ;(async () => {
+        const played = await playStartExerciseSound()
+        if (!cancelled && played) {
+          startSoundPlayedRef.current = true
+        }
+      })()
+      return () => {
+        cancelled = true
+      }
+    }, [isRunning, isTransition, remainingSeconds, initialSeconds, webAudioReadyVersion])
 
     const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
