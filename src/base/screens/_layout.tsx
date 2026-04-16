@@ -5,7 +5,7 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import * as SystemUI from 'expo-system-ui'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { AppState, Keyboard, Platform, View } from 'react-native'
 import { PaperProvider } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -24,6 +24,7 @@ function AppNavigator() {
     'Saira_Condensed-Bold': require('../assets/fonts/Saira_Condensed-Bold.ttf'),
   })
   const { isReady, navigationTheme, paperTheme, colors } = useAppTheme()
+  const wakeLockSentinelRef = useRef<any>(null)
 
   useEffect(() => {
     void initSupabaseSchemaPreference()
@@ -59,6 +60,74 @@ function AppNavigator() {
 
     return () => {
       subscription.remove()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      return
+    }
+
+    let isMounted = true
+
+    const releaseWakeLock = async () => {
+      const sentinel = wakeLockSentinelRef.current
+      wakeLockSentinelRef.current = null
+      if (!sentinel) {
+        return
+      }
+      try {
+        await sentinel.release()
+      } catch {}
+    }
+
+    const requestWakeLock = async () => {
+      if (!isMounted || typeof document === 'undefined' || document.visibilityState !== 'visible') {
+        return
+      }
+      const wakeLockApi = typeof navigator !== 'undefined' ? (navigator as any).wakeLock : undefined
+      if (!wakeLockApi?.request) {
+        return
+      }
+      try {
+        if (wakeLockSentinelRef.current) {
+          return
+        }
+        const sentinel = await wakeLockApi.request('screen')
+        wakeLockSentinelRef.current = sentinel
+        sentinel?.addEventListener?.('release', () => {
+          if (wakeLockSentinelRef.current === sentinel) {
+            wakeLockSentinelRef.current = null
+          }
+        })
+      } catch {}
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void requestWakeLock()
+        return
+      }
+      void releaseWakeLock()
+    }
+
+    const handleUserInteraction = () => {
+      void requestWakeLock()
+    }
+
+    void requestWakeLock()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleUserInteraction)
+    window.addEventListener('pointerdown', handleUserInteraction)
+    window.addEventListener('touchstart', handleUserInteraction)
+
+    return () => {
+      isMounted = false
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleUserInteraction)
+      window.removeEventListener('pointerdown', handleUserInteraction)
+      window.removeEventListener('touchstart', handleUserInteraction)
+      void releaseWakeLock()
     }
   }, [])
 

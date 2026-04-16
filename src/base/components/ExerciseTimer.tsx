@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Audio } from 'expo-av'
@@ -53,15 +53,49 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const bellSoundRef = useRef<Audio.Sound | null>(null)
     const tictacSoundRef = useRef<Audio.Sound | null>(null)
     const startSoundPlayedRef = useRef(false)
+    const webAudioUnlockedRef = useRef(false)
+
+    const ensureBellSoundLoaded = async () => {
+      if (bellSoundRef.current) {
+        return bellSoundRef.current
+      }
+      const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/bell-sound.mp3'))
+      bellSoundRef.current = sound
+      return sound
+    }
+
+    const ensureStartSoundLoaded = async () => {
+      if (tictacSoundRef.current) {
+        return tictacSoundRef.current
+      }
+      const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/tictac.mp3'))
+      tictacSoundRef.current = sound
+      return sound
+    }
+
+    const unlockWebAudioIfNeeded = async () => {
+      if (Platform.OS !== 'web' || webAudioUnlockedRef.current) {
+        return
+      }
+      try {
+        const [bellSound, startSound] = await Promise.all([ensureBellSoundLoaded(), ensureStartSoundLoaded()])
+        await Promise.all([
+          bellSound.setStatusAsync({ volume: 0, shouldPlay: true, positionMillis: 0 }),
+          startSound.setStatusAsync({ volume: 0, shouldPlay: true, positionMillis: 0 }),
+        ])
+        await Promise.all([
+          bellSound.setStatusAsync({ shouldPlay: false, positionMillis: 0, volume: 1 }),
+          startSound.setStatusAsync({ shouldPlay: false, positionMillis: 0, volume: 1 }),
+        ])
+        webAudioUnlockedRef.current = true
+      } catch {
+        return
+      }
+    }
 
     const playBellSound = async () => {
       try {
-        if (bellSoundRef.current) {
-          await bellSoundRef.current.replayAsync()
-          return
-        }
-        const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/bell-sound.mp3'))
-        bellSoundRef.current = sound
+        const sound = await ensureBellSoundLoaded()
         await sound.playAsync()
       } catch {
         return
@@ -70,12 +104,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
     const playStartExerciseSound = async () => {
       try {
-        if (tictacSoundRef.current) {
-          await tictacSoundRef.current.replayAsync()
-          return
-        }
-        const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/tictac.mp3'))
-        tictacSoundRef.current = sound
+        const sound = await ensureStartSoundLoaded()
         await sound.playAsync()
       } catch {
         return
@@ -236,7 +265,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       }
     }, [isTransition, transitionSeconds, autoStart])
 
-    const handleStartPause = () => {
+    const handleStartPause = async () => {
       if (isTransition) {
         return
       }
@@ -250,6 +279,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
         startSoundPlayedRef.current = false
       }
 
+      await unlockWebAudioIfNeeded()
       setIsRunning((prev) => !prev)
     }
 
