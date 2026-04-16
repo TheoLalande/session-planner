@@ -3,7 +3,7 @@ export default ({ config }) => ({
   name: 'SessionPlanner',
   slug: 'SessionPlanner',
   version: '1.0.0',
-  orientation: 'portrait',
+  orientation: 'default',
   scheme: 'SessionPlanner',
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
