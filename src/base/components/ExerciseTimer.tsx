@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Audio } from 'expo-av'
@@ -62,6 +62,10 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const tictacAssetModule = require('../assets/sounds/tictac.mp3')
 
     const getWebAudioUri = (assetModule: any) => {
+      const resolvedAsset = Image.resolveAssetSource(assetModule)
+      if (resolvedAsset && typeof resolvedAsset.uri === 'string') {
+        return resolvedAsset.uri
+      }
       if (typeof assetModule === 'string') {
         return assetModule
       }
