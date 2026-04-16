@@ -88,7 +88,7 @@ export function ClimbingForm({ value, onChange, hideTimingControls = false }: Cl
       <FormSlider
         label="Nombre de tentatives"
         value={value.attempts}
-        minimumValue={0}
+        minimumValue={1}
         maximumValue={20}
         onChange={(v) => onChange({ ...value, attempts: v })}
       />
