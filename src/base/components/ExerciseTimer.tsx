@@ -52,23 +52,94 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const initialTransitionActiveRef = useRef(initialTransitionSeconds > 0)
     const bellSoundRef = useRef<Audio.Sound | null>(null)
     const tictacSoundRef = useRef<Audio.Sound | null>(null)
+    const bellWebAudioRef = useRef<HTMLAudioElement | null>(null)
+    const tictacWebAudioRef = useRef<HTMLAudioElement | null>(null)
     const startSoundPlayedRef = useRef(false)
     const webAudioUnlockedRef = useRef(false)
+    const bellAssetModule = require('../assets/sounds/bell-sound.mp3')
+    const tictacAssetModule = require('../assets/sounds/tictac.mp3')
+
+    const getWebAudioUri = (assetModule: any) => {
+      if (typeof assetModule === 'string') {
+        return assetModule
+      }
+      if (assetModule && typeof assetModule === 'object') {
+        if (typeof assetModule.uri === 'string') {
+          return assetModule.uri
+        }
+        if (typeof assetModule.default === 'string') {
+          return assetModule.default
+        }
+        if (typeof assetModule.src === 'string') {
+          return assetModule.src
+        }
+      }
+      return ''
+    }
+
+    const ensureWebBellSoundLoaded = () => {
+      if (bellWebAudioRef.current) {
+        return bellWebAudioRef.current
+      }
+      const uri = getWebAudioUri(bellAssetModule)
+      if (!uri || typeof globalThis.Audio === 'undefined') {
+        return null
+      }
+      const audio = new globalThis.Audio(uri)
+      audio.preload = 'auto'
+      audio.playsInline = true
+      bellWebAudioRef.current = audio
+      return audio
+    }
+
+    const ensureWebStartSoundLoaded = () => {
+      if (tictacWebAudioRef.current) {
+        return tictacWebAudioRef.current
+      }
+      const uri = getWebAudioUri(tictacAssetModule)
+      if (!uri || typeof globalThis.Audio === 'undefined') {
+        return null
+      }
+      const audio = new globalThis.Audio(uri)
+      audio.preload = 'auto'
+      audio.playsInline = true
+      tictacWebAudioRef.current = audio
+      return audio
+    }
+
+    const playWebAudio = async (audio: HTMLAudioElement | null) => {
+      if (!audio) {
+        return
+      }
+      try {
+        audio.pause()
+        audio.currentTime = 0
+        await audio.play()
+      } catch {
+        return
+      }
+    }
 
     const ensureBellSoundLoaded = async () => {
+      if (Platform.OS === 'web') {
+        return null
+      }
       if (bellSoundRef.current) {
         return bellSoundRef.current
       }
-      const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/bell-sound.mp3'))
+      const { sound } = await Audio.Sound.createAsync(bellAssetModule)
       bellSoundRef.current = sound
       return sound
     }
 
     const ensureStartSoundLoaded = async () => {
+      if (Platform.OS === 'web') {
+        return null
+      }
       if (tictacSoundRef.current) {
         return tictacSoundRef.current
       }
-      const { sound } = await Audio.Sound.createAsync(require('../assets/sounds/tictac.mp3'))
+      const { sound } = await Audio.Sound.createAsync(tictacAssetModule)
       tictacSoundRef.current = sound
       return sound
     }
@@ -78,15 +149,22 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
         return
       }
       try {
-        const [bellSound, startSound] = await Promise.all([ensureBellSoundLoaded(), ensureStartSoundLoaded()])
-        await Promise.all([
-          bellSound.setStatusAsync({ volume: 0, shouldPlay: true, positionMillis: 0 }),
-          startSound.setStatusAsync({ volume: 0, shouldPlay: true, positionMillis: 0 }),
-        ])
-        await Promise.all([
-          bellSound.setStatusAsync({ shouldPlay: false, positionMillis: 0, volume: 1 }),
-          startSound.setStatusAsync({ shouldPlay: false, positionMillis: 0, volume: 1 }),
-        ])
+        const bellAudio = ensureWebBellSoundLoaded()
+        const startAudio = ensureWebStartSoundLoaded()
+        if (!bellAudio || !startAudio) {
+          return
+        }
+        bellAudio.muted = true
+        startAudio.muted = true
+        bellAudio.currentTime = 0
+        startAudio.currentTime = 0
+        await Promise.all([bellAudio.play(), startAudio.play()])
+        bellAudio.pause()
+        startAudio.pause()
+        bellAudio.currentTime = 0
+        startAudio.currentTime = 0
+        bellAudio.muted = false
+        startAudio.muted = false
         webAudioUnlockedRef.current = true
       } catch {
         return
@@ -95,7 +173,14 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
     const playBellSound = async () => {
       try {
+        if (Platform.OS === 'web') {
+          await playWebAudio(ensureWebBellSoundLoaded())
+          return
+        }
         const sound = await ensureBellSoundLoaded()
+        if (!sound) {
+          return
+        }
         await sound.playAsync()
       } catch {
         return
@@ -104,7 +189,14 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
     const playStartExerciseSound = async () => {
       try {
+        if (Platform.OS === 'web') {
+          await playWebAudio(ensureWebStartSoundLoaded())
+          return
+        }
         const sound = await ensureStartSoundLoaded()
+        if (!sound) {
+          return
+        }
         await sound.playAsync()
       } catch {
         return
@@ -118,6 +210,14 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
         }
         if (tictacSoundRef.current) {
           void tictacSoundRef.current.unloadAsync()
+        }
+        if (bellWebAudioRef.current) {
+          bellWebAudioRef.current.pause()
+          bellWebAudioRef.current = null
+        }
+        if (tictacWebAudioRef.current) {
+          tictacWebAudioRef.current.pause()
+          tictacWebAudioRef.current = null
         }
       }
     }, [])
@@ -194,6 +294,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
           if (prev <= 1) {
             clearInterval(interval)
             setIsRunning(false)
+            void playBellSound()
 
             if (!finishedBuzzRef.current) {
               finishedBuzzRef.current = true

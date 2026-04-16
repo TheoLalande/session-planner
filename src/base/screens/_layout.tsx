@@ -5,7 +5,7 @@ import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import * as SystemUI from 'expo-system-ui'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AppState, Keyboard, Platform, View } from 'react-native'
 import { PaperProvider } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -25,6 +25,7 @@ function AppNavigator() {
   })
   const { isReady, navigationTheme, paperTheme, colors } = useAppTheme()
   const wakeLockSentinelRef = useRef<any>(null)
+  const [isWebLandscape, setIsWebLandscape] = useState(false)
 
   useEffect(() => {
     void initSupabaseSchemaPreference()
@@ -70,6 +71,23 @@ function AppNavigator() {
 
     let isMounted = true
 
+    const syncOrientation = () => {
+      if (typeof window === 'undefined') {
+        return
+      }
+      setIsWebLandscape(window.innerWidth > window.innerHeight)
+    }
+
+    const lockPortrait = async () => {
+      const orientationApi = typeof screen !== 'undefined' ? (screen as any).orientation : undefined
+      if (!orientationApi?.lock) {
+        return
+      }
+      try {
+        await orientationApi.lock('portrait')
+      } catch {}
+    }
+
     const releaseWakeLock = async () => {
       const sentinel = wakeLockSentinelRef.current
       wakeLockSentinelRef.current = null
@@ -112,11 +130,16 @@ function AppNavigator() {
     }
 
     const handleUserInteraction = () => {
+      void lockPortrait()
       void requestWakeLock()
     }
 
+    syncOrientation()
+    void lockPortrait()
     void requestWakeLock()
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('resize', syncOrientation)
+    window.addEventListener('orientationchange', syncOrientation)
     window.addEventListener('focus', handleUserInteraction)
     window.addEventListener('pointerdown', handleUserInteraction)
     window.addEventListener('touchstart', handleUserInteraction)
@@ -124,6 +147,8 @@ function AppNavigator() {
     return () => {
       isMounted = false
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('resize', syncOrientation)
+      window.removeEventListener('orientationchange', syncOrientation)
       window.removeEventListener('focus', handleUserInteraction)
       window.removeEventListener('pointerdown', handleUserInteraction)
       window.removeEventListener('touchstart', handleUserInteraction)
@@ -142,6 +167,40 @@ function AppNavigator() {
           <SafeAreaProvider>
             <StatusBar hidden translucent backgroundColor="transparent" />
             <View style={{ flex: 1 }} onTouchMove={() => Keyboard.dismiss()}>
+              {Platform.OS === 'web' && isWebLandscape ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 9999,
+                    backgroundColor: colors.background,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 24,
+                  }}
+                >
+                  <View
+                    style={{
+                      backgroundColor: colors.white,
+                      borderWidth: 1,
+                      borderColor: colors.cardBorder,
+                      borderRadius: 18,
+                      paddingHorizontal: 20,
+                      paddingVertical: 18,
+                      width: '100%',
+                      maxWidth: 360,
+                    }}
+                  >
+                    <Text style={{ color: colors.primary, fontSize: 20, fontWeight: '700', textAlign: 'center' }}>Mode portrait requis</Text>
+                    <Text style={{ color: colors.black, fontSize: 14, textAlign: 'center', marginTop: 8 }}>
+                      Tourne ton appareil en portrait pour continuer.
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
               <Stack
                 screenOptions={{
                   contentStyle: { backgroundColor: 'transparent' },
