@@ -8,6 +8,8 @@ import { useAppTheme } from '../providers/themeProvider'
 let globalWebAudioUnlocked = false
 let globalBellWebAudio: HTMLAudioElement | null = null
 let globalTictacWebAudio: HTMLAudioElement | null = null
+let globalBellWebAudioUri = ''
+let globalBellPlaybackRef: HTMLAudioElement | null = null
 
 type ExerciseTimerProps = {
   initialSeconds: number
@@ -53,6 +55,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const preEndBellPlayedRef = useRef(false)
     const hapticsSeqRef = useRef(0)
     const nextExerciseCalledRef = useRef(false)
+    const goNextTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const initialTransitionActiveRef = useRef(initialTransitionSeconds > 0)
     const bellSoundRef = useRef<Audio.Sound | null>(null)
     const tictacSoundRef = useRef<Audio.Sound | null>(null)
@@ -91,6 +94,7 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
       if (!uri || typeof globalThis.Audio === 'undefined') {
         return null
       }
+      globalBellWebAudioUri = uri
       const audio = new globalThis.Audio(uri)
       audio.preload = 'auto'
       audio.playsInline = true
@@ -182,7 +186,25 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
     const playBellSound = async (): Promise<boolean> => {
       try {
         if (Platform.OS === 'web') {
-          return await playWebAudio(ensureWebBellSoundLoaded())
+          const bellAudio = ensureWebBellSoundLoaded()
+          if (!bellAudio) {
+            return false
+          }
+          const uri = globalBellWebAudioUri || bellAudio.src
+          if (!uri || typeof globalThis.Audio === 'undefined') {
+            return false
+          }
+          const oneShot = new globalThis.Audio(uri)
+          oneShot.preload = 'auto'
+          oneShot.playsInline = true
+          oneShot.volume = 1
+          globalBellPlaybackRef = oneShot
+          oneShot.onended = () => {
+            if (globalBellPlaybackRef === oneShot) {
+              globalBellPlaybackRef = null
+            }
+          }
+          return await playWebAudio(oneShot)
         }
         const sound = await ensureBellSoundLoaded()
         if (!sound) {
@@ -213,6 +235,10 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
 
     useEffect(() => {
       return () => {
+        if (goNextTimeoutRef.current) {
+          clearTimeout(goNextTimeoutRef.current)
+          goNextTimeoutRef.current = null
+        }
         if (bellSoundRef.current) {
           void bellSoundRef.current.unloadAsync()
         }
@@ -331,7 +357,13 @@ export const ExerciseTimer = forwardRef<ExerciseTimerHandle, ExerciseTimerProps>
             }
 
             if (hasNextExercise && onNextExercise) {
-              setShouldGoToNext(true)
+              if (goNextTimeoutRef.current) {
+                clearTimeout(goNextTimeoutRef.current)
+              }
+              goNextTimeoutRef.current = setTimeout(() => {
+                setShouldGoToNext(true)
+                goNextTimeoutRef.current = null
+              }, 280)
             }
 
             return 0
