@@ -21,8 +21,9 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
     blackLabel = `${data.sets} séries`
     typeLabel = 'Hangboard'
   } else if (type === 'climbing') {
+    const attempts = Math.max(1, Number(data.attempts ?? 1))
     coloredLabel = `${data.title || 'Climbing'}`
-    blackLabel = `${data.grade}`
+    blackLabel = `${data.grade} · ${attempts} tentative${attempts > 1 ? 's' : ''}`
     typeLabel = 'Escalade'
   } else if (type === 'warmup') {
     if (data.mode === 'reps') {
