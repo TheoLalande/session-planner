@@ -18,6 +18,7 @@ type Props = {
   onPrevMonth: () => void
   onNextMonth: () => void
   getTypeColor: (type: ExerciseType) => string
+  onPressDay: (dayKey: string) => void
 }
 
 export default function StatisticsCalendarCard({
@@ -29,6 +30,7 @@ export default function StatisticsCalendarCard({
   onPrevMonth,
   onNextMonth,
   getTypeColor,
+  onPressDay,
 }: Props) {
   return (
     <View style={[styles.card, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
@@ -68,8 +70,16 @@ export default function StatisticsCalendarCard({
       ) : (
         <View style={styles.grid}>
           {calendarCells.map((cell) => (
-            <View
+            <TouchableOpacity
               key={cell.key}
+              activeOpacity={cell.day && cell.blockTypes.length > 0 ? 0.75 : 1}
+              disabled={!cell.day || cell.blockTypes.length === 0}
+              onPress={() => {
+                if (!cell.day || cell.blockTypes.length === 0) {
+                  return
+                }
+                onPressDay(cell.key)
+              }}
               style={[
                 styles.cellWrapper,
                 {
@@ -97,7 +107,7 @@ export default function StatisticsCalendarCard({
                   </>
                 ) : null}
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}

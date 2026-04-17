@@ -1,9 +1,10 @@
 import React from 'react'
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native'
-import { TextField } from './TextField'
 import { FormSlider } from './SliderField'
 import { IClimbing } from '../types/trainingTypes'
 import { useAppTheme } from '../providers/themeProvider'
+import { GradeStepper } from './GradeStepper'
+import { TextField } from './TextField'
 
 type ClimbingFormProps = {
   value: IClimbing
@@ -73,7 +74,7 @@ export function ClimbingForm({ value, onChange, hideTimingControls = false }: Cl
         })}
       </View>
 
-      <TextField placeholder="Cotation (grade)" value={value.grade} onChangeText={(text) => handleChange('grade', text)} />
+      <GradeStepper value={value.grade} onChange={(next) => handleChange('grade', next)} />
       {!hideTimingControls ? (
         <FormSlider
           label="Temps de repos"
@@ -89,7 +90,7 @@ export function ClimbingForm({ value, onChange, hideTimingControls = false }: Cl
         label="Nombre de tentatives"
         value={value.attempts}
         minimumValue={1}
-        maximumValue={10}
+        maximumValue={10                                            }
         onChange={(v) => onChange({ ...value, attempts: v })}
       />
       <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />

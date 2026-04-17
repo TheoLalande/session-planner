@@ -181,6 +181,15 @@ function AppNavigator() {
                     headerTitleStyle: { fontSize: 15, fontWeight: '600' },
                   }}
                 />
+                <Stack.Screen
+                  name="statistics-day-detail"
+                  options={{
+                    headerShown: true,
+                    title: 'Détail de la journée',
+                    headerBackTitle: 'Retour',
+                    headerTitleStyle: { fontSize: 15, fontWeight: '600' },
+                  }}
+                />
                 <Stack.Screen name="climb-steps" options={{ headerShown: true, title: 'Climbing', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="hangboard" options={{ headerShown: true, title: 'Hangboard', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="session-complete" options={{ headerShown: true, title: 'Fin de session', headerBackTitle: 'Retour' }} />

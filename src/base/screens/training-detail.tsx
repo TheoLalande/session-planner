@@ -104,29 +104,48 @@ export default function TrainingDetail() {
   const totalExercises = allExercises.length
 
   const { totalDurationSeconds, hasOnlyTimeBasedExercises } = useMemo(() => {
-    return allExercises.reduce(
-      (acc, exercise) => {
-        const data: any = exercise.data ?? {}
+    const durationFromExercises = allExercises.reduce((acc, exercise) => {
+      const data: any = exercise.data ?? {}
 
-        if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching') {
-          if (data.mode === 'reps') {
-            acc.hasOnlyTimeBasedExercises = false
-          } else {
-            const rawDuration = typeof data.duration === 'number' ? data.duration : 0
-            const unit = data.durationUnit === 'minutes' ? 'minutes' : 'seconds'
-            const seconds = unit === 'minutes' ? rawDuration * 60 : rawDuration
-            acc.totalDurationSeconds += Math.max(0, seconds)
-          }
+      if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching') {
+        if (data.mode === 'reps') {
           return acc
         }
+        const rawDuration = typeof data.duration === 'number' ? data.duration : 0
+        const unit = data.durationUnit === 'minutes' ? 'minutes' : 'seconds'
+        const seconds = unit === 'minutes' ? rawDuration * 60 : rawDuration
+        return acc + Math.max(0, seconds)
+      }
 
-        acc.hasOnlyTimeBasedExercises = false
+      return acc
+    }, 0)
 
-        return acc
-      },
-      { totalDurationSeconds: 0, hasOnlyTimeBasedExercises: allExercises.length > 0 },
-    )
-  }, [allExercises])
+    const hasOnlyTimeExercises =
+      allExercises.length > 0 &&
+      allExercises.every((exercise) => {
+        if (exercise.type !== 'warmup' && exercise.type !== 'renforcement' && exercise.type !== 'stretching') {
+          return false
+        }
+        const data: any = exercise.data ?? {}
+        return data.mode !== 'reps'
+      })
+
+    if (!training || !hasOnlyTimeExercises) {
+      return { totalDurationSeconds: durationFromExercises, hasOnlyTimeBasedExercises: hasOnlyTimeExercises }
+    }
+
+    const betweenTimers = Math.max(0, training.transitionSecondsBetweenTimers ?? 5)
+    const betweenBlocs = Math.max(0, training.transitionSecondsBetweenBlocs ?? betweenTimers)
+    const nonEmptyBlocs = training.blocs.filter((bloc) => bloc.exercises.length > 0)
+    const transitionsInsideBlocs = nonEmptyBlocs.reduce((acc, bloc) => acc + Math.max(0, bloc.exercises.length - 1), 0)
+    const transitionsBetweenBlocs = Math.max(0, nonEmptyBlocs.length - 1)
+    const transitionsDurationSeconds = transitionsInsideBlocs * betweenTimers + transitionsBetweenBlocs * betweenBlocs
+
+    return {
+      totalDurationSeconds: durationFromExercises + transitionsDurationSeconds,
+      hasOnlyTimeBasedExercises: hasOnlyTimeExercises,
+    }
+  }, [allExercises, training])
 
   const totalDurationLabel = useMemo(() => {
     if (totalDurationSeconds <= 0) {

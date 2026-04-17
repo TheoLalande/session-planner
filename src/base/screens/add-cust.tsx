@@ -10,6 +10,7 @@ import { getSession } from '../api/authService'
 import { getSupabaseDb } from '../api/supabaseClient'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import DateTimePicker, { DateTimePickerAndroid } from '../components/AppDatePicker'
+import { GradeStepper } from '../components/GradeStepper'
 
 type ClimbingType = 'bloc' | 'voie' | 'grande voie'
 type RouteProfile = 'dalle' | 'verticale' | 'devers' | 'toit'
@@ -26,7 +27,6 @@ export default function AddCustomExercise() {
   const loadAttempts = useClimbingAttemptsStore((s) => s.loadAttempts)
   const [routeName, setRouteName] = useState('')
   const [grade, setGrade] = useState('6a')
-  const [gradeTouched, setGradeTouched] = useState(false)
   const [climbingType, setClimbingType] = useState<ClimbingType>('bloc')
   const [routeProfile, setRouteProfile] = useState<RouteProfile>('verticale')
   const [status, setStatus] = useState<AttemptStatus>('Réussi')
@@ -119,7 +119,7 @@ export default function AddCustomExercise() {
       Alert.alert('Ajout réussi', 'Ta voie a bien été enregistrée.', [
         {
           text: 'OK',
-          onPress: () => router.back(),
+          onPress: () => router.replace('/home'),
         },
       ])
     } catch (e) {
@@ -169,18 +169,7 @@ export default function AddCustomExercise() {
           </View>
 
           {locationType !== 'salle' ? <TextField placeholder="Nom de la voie" type="text" value={routeName} onChangeText={setRouteName} /> : null}
-          <TextField
-            placeholder="Cotation (ex: 6a)"
-            type="text"
-            value={grade}
-            onFocus={() => {
-              if (!gradeTouched) {
-                setGrade('')
-                setGradeTouched(true)
-              }
-            }}
-            onChangeText={setGrade}
-          />
+          <GradeStepper value={grade} onChange={setGrade} />
           <TextField
             placeholder="Nombre de tentatives"
             type="number"

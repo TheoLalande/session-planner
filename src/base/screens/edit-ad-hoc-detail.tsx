@@ -13,6 +13,7 @@ import {
   updateAdHocClimbingAttempt,
 } from '../api/climbingAttemptsService'
 import DateTimePicker, { DateTimePickerAndroid } from '../components/AppDatePicker'
+import { GradeStepper } from '../components/GradeStepper'
 
 type ClimbingType = 'bloc' | 'voie' | 'grande voie'
 type RouteProfile = 'dalle' | 'verticale' | 'devers' | 'toit'
@@ -47,7 +48,6 @@ export default function EditAdHocDetail() {
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [routeName, setRouteName] = useState('')
   const [grade, setGrade] = useState('6a')
-  const [gradeTouched, setGradeTouched] = useState(false)
   const [climbingType, setClimbingType] = useState<ClimbingType>('bloc')
   const [routeProfile, setRouteProfile] = useState<RouteProfile>('verticale')
   const [status, setStatus] = useState<AttemptStatus>('Réussi')
@@ -93,7 +93,6 @@ export default function EditAdHocDetail() {
       }
       setRouteName(row.locationType === 'salle' && row.routeName === 'SAE' ? '' : row.routeName)
       setGrade(row.grade)
-      setGradeTouched(true)
       setClimbingType(parseClimbingType(row.climbingType))
       setRouteProfile(parseRouteProfile(row.routeProfile))
       setStatus(row.status === 'success' ? 'Réussi' : 'Echoué')
@@ -166,7 +165,7 @@ export default function EditAdHocDetail() {
       Alert.alert('Enregistré', 'La voie a bien été mise à jour.', [
         {
           text: 'OK',
-          onPress: () => router.back(),
+          onPress: () => router.replace('/home'),
         },
       ])
     } catch (e) {
@@ -237,18 +236,7 @@ export default function EditAdHocDetail() {
           </View>
 
           {locationType !== 'salle' ? <TextField placeholder="Nom de la voie" type="text" value={routeName} onChangeText={setRouteName} /> : null}
-          <TextField
-            placeholder="Cotation (ex: 6a)"
-            type="text"
-            value={grade}
-            onFocus={() => {
-              if (!gradeTouched) {
-                setGrade('')
-                setGradeTouched(true)
-              }
-            }}
-            onChangeText={setGrade}
-          />
+          <GradeStepper value={grade} onChange={setGrade} />
           <TextField
             placeholder="Nombre de tentatives"
             type="number"

@@ -5,6 +5,7 @@ import { MaterialIcons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAppTheme } from '../providers/themeProvider'
 import { TextField } from './TextField'
+import { GradeStepper } from './GradeStepper'
 import type { ClimbingRouteGrade, ClimbingRouteStars, ClimbingRouteType, IClimbingRouteLabelPayload } from '../types/climbingRoutesTypes'
 import { ClimbingSpotEnum } from '../types/climbingRoutesTypes'
 
@@ -238,8 +239,7 @@ export function ClimbingRouteAddModal({ visible, onDismiss, onAddRoute }: Climbi
               <Text style={[styles.fieldLabel, { color: colors.grey, marginTop: 10 }]}>Nom de la voie</Text>
               <TextField placeholder="Nom de la voie" value={routeName} onChangeText={setRouteName} type="text" />
 
-              <Text style={[styles.fieldLabel, { color: colors.grey, marginTop: 2 }]}>Cotation</Text>
-              <TextField placeholder="Ex: 6a" value={routeGrade} onChangeText={(v) => setRouteGrade(toClimbingGrade(v))} type="text" />
+              <GradeStepper value={routeGrade} onChange={(next) => setRouteGrade(toClimbingGrade(next))} />
 
               <Text style={[styles.fieldLabel, { color: colors.grey, marginTop: 10 }]}>Profil</Text>
               <View style={styles.profileGrid}>

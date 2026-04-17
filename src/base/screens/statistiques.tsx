@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Platform, ScrollView, StyleSheet, useWindowDimensions, View, Text, TouchableOpacity } from 'react-native'
 import { LineChart } from 'react-native-gifted-charts'
+import { useRouter } from 'expo-router'
 import DateTimePicker, { DateTimePickerAndroid } from '../components/AppDatePicker'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
 import { useAppTheme } from '../providers/themeProvider'
@@ -175,6 +176,7 @@ const getStoredExerciseTimingSeconds = (exerciseType: string, payload: Record<st
 
 export default function Statistiques() {
   const { mode, colors } = useAppTheme()
+  const router = useRouter()
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
   const isLoadingAttempts = useClimbingAttemptsStore((state) => state.isLoadingAttempts)
   const loadAttempts = useClimbingAttemptsStore((state) => state.loadAttempts)
@@ -184,7 +186,7 @@ export default function Statistiques() {
 
   const [startDate, setStartDate] = useState<Date>(() => {
     const next = new Date()
-    next.setDate(next.getDate() - 7)
+    next.setFullYear(next.getFullYear() - 1)
     return next
   })
   const [endDate, setEndDate] = useState<Date>(() => new Date())
@@ -279,7 +281,14 @@ export default function Statistiques() {
         blocks.forEach((item) => blockById.set(item.id, item))
         const exercisesByTrainingId = new Map<
           string,
-          Array<{ exercise_type: string; title: string | null; exercise_library_id: string | null; payload_json: unknown; blockPosition: number; exercisePosition: number }>
+          Array<{
+            exercise_type: string
+            title: string | null
+            exercise_library_id: string | null
+            payload_json: unknown
+            blockPosition: number
+            exercisePosition: number
+          }>
         >()
         exercises.forEach((exercise) => {
           const block = blockById.get(exercise.block_id)
@@ -307,7 +316,8 @@ export default function Statistiques() {
               if (!libId) {
                 return
               }
-              const payload = exercise.payload_json && typeof exercise.payload_json === 'object' ? (exercise.payload_json as Record<string, unknown>) : {}
+              const payload =
+                exercise.payload_json && typeof exercise.payload_json === 'object' ? (exercise.payload_json as Record<string, unknown>) : {}
               const valueSeconds = getStoredExerciseTimingSeconds(exercise.exercise_type, payload)
               if (valueSeconds == null) {
                 return
@@ -649,7 +659,12 @@ export default function Statistiques() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
         <StatisticsHeader mode={mode} colors={colors} titleColor={colors.primary} subtitleColor={colors.grey} />
 
         <StatisticsDateRangeCard
@@ -717,7 +732,9 @@ export default function Statistiques() {
 
         {activeTab === 'practice' ? (
           <>
-            <View style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <View
+              style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}
+            >
               <Text style={[styles.sectionTitle, { color: colors.black }]}>Synthèse pratique</Text>
               <View style={styles.kpiRow}>
                 <View style={[styles.kpiItem, { backgroundColor: colors.badgeBackground }]}>
@@ -737,7 +754,9 @@ export default function Statistiques() {
               </View>
             </View>
 
-            <View style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <View
+              style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}
+            >
               <Text style={[styles.sectionTitle, { color: colors.black }]}>Exercice suivi</Text>
               {isPracticeLoading ? (
                 <View style={styles.emptyBox}>
@@ -749,7 +768,12 @@ export default function Statistiques() {
                 </View>
               ) : (
                 <>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll} keyboardShouldPersistTaps="handled">
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.filtersScroll}
+                    keyboardShouldPersistTaps="handled"
+                  >
                     {exerciseGroups.map((group) => {
                       const isActive = group.libraryExerciseId === selectedExerciseLibraryId
                       return (
@@ -848,6 +872,9 @@ export default function Statistiques() {
             onPrevMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
             onNextMonth={() => setCalendarMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
             getTypeColor={getTypeColor}
+            onPressDay={(dayKey) => {
+              router.push({ pathname: '/statistics-day-detail', params: { day: dayKey } })
+            }}
           />
         ) : null}
 
