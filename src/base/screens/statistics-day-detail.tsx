@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
 import LoadingIndicator from '../components/LoadingIndicator'
-import { CompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
+import { CompletedSession, deleteCompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
+import { deleteClimbingAttemptById } from '../api/climbingAttemptsService'
 import { useAppTheme } from '../providers/themeProvider'
 import { useTrainingStore } from '../store/trainingStore'
 import { useClimbingAttemptsStore } from '../store/climbingAttemptsStore'
@@ -62,6 +63,8 @@ export default function StatisticsDayDetail() {
   const dayEnd = useMemo(() => (parsedDate ? toEndOfDay(parsedDate) : 0), [parsedDate])
   const [completedSessions, setCompletedSessions] = useState<CompletedSession[]>([])
   const [isLoadingCompletedSessions, setIsLoadingCompletedSessions] = useState(false)
+  const [deletingCompletedSessionId, setDeletingCompletedSessionId] = useState<string | null>(null)
+  const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null)
   const trainings = useTrainingStore((state) => state.trainings)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
@@ -73,30 +76,26 @@ export default function StatisticsDayDetail() {
     void loadAttempts()
   }, [loadAttempts, loadTrainings])
 
-  useEffect(() => {
+  const loadDaySessions = useCallback(async () => {
     if (!parsedDate) {
       setCompletedSessions([])
       return
     }
-    let isMounted = true
-    const loadDaySessions = async () => {
-      try {
-        setIsLoadingCompletedSessions(true)
-        const data = await fetchCompletedSessions({ startAt: dayStart, endAt: dayEnd })
-        if (isMounted) {
-          setCompletedSessions(data)
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingCompletedSessions(false)
-        }
-      }
-    }
-    void loadDaySessions()
-    return () => {
-      isMounted = false
+    setIsLoadingCompletedSessions(true)
+    try {
+      const data = await fetchCompletedSessions({ startAt: dayStart, endAt: dayEnd })
+      setCompletedSessions(data)
+    } finally {
+      setIsLoadingCompletedSessions(false)
     }
   }, [dayEnd, dayStart, parsedDate])
+
+  useEffect(() => {
+    const load = async () => {
+      await loadDaySessions()
+    }
+    void load()
+  }, [loadDaySessions])
 
   const trainingById = useMemo(() => {
     const map = new Map<string, string>()
@@ -121,6 +120,54 @@ export default function StatisticsDayDetail() {
   )
 
   const isLoading = isLoadingAttempts || isLoadingCompletedSessions
+
+  const confirmAction = (title: string, message: string, onConfirm: () => Promise<void>) => {
+    if (Platform.OS === 'web') {
+      const confirmed = typeof globalThis.confirm === 'function' ? globalThis.confirm(`${title}\n\n${message}`) : true
+      if (confirmed) {
+        void onConfirm()
+      }
+      return
+    }
+    Alert.alert(title, message, [
+      { text: 'Annuler', style: 'cancel' },
+      {
+        text: 'Supprimer',
+        style: 'destructive',
+        onPress: () => {
+          void onConfirm()
+        },
+      },
+    ])
+  }
+
+  const confirmDeleteCompletedSession = (session: CompletedSession) => {
+    confirmAction('Supprimer la séance', 'Cette séance terminée sera supprimée du calendrier.', async () => {
+      try {
+        setDeletingCompletedSessionId(session.id)
+        await deleteCompletedSession(session.id)
+        await loadDaySessions()
+      } catch (e) {
+        Alert.alert('Erreur', e instanceof Error ? e.message : 'Suppression impossible')
+      } finally {
+        setDeletingCompletedSessionId(null)
+      }
+    })
+  }
+
+  const confirmDeleteAttempt = (attemptId: string) => {
+    confirmAction('Supprimer la voie', 'Cette voie sera supprimée de l’historique.', async () => {
+      try {
+        setDeletingAttemptId(attemptId)
+        await deleteClimbingAttemptById(attemptId)
+        await loadAttempts()
+      } catch (e) {
+        Alert.alert('Erreur', e instanceof Error ? e.message : 'Suppression impossible')
+      } finally {
+        setDeletingAttemptId(null)
+      }
+    })
+  }
 
   if (!parsedDate) {
     return (
@@ -154,7 +201,17 @@ export default function StatisticsDayDetail() {
               ) : (
                 completedSessionsSorted.map((session) => (
                   <View key={session.id} style={[styles.rowCard, { backgroundColor: colors.badgeBackground }]}>
-                    <Text style={[styles.rowTitle, { color: colors.black }]}>{trainingById.get(session.trainingId) ?? 'Entraînement'}</Text>
+                    <View style={styles.rowHeader}>
+                      <Text style={[styles.rowTitle, { color: colors.black }]}>{trainingById.get(session.trainingId) ?? 'Entraînement'}</Text>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        disabled={deletingCompletedSessionId === session.id}
+                        onPress={() => confirmDeleteCompletedSession(session)}
+                        style={styles.deleteButton}
+                      >
+                        <Text style={[styles.deleteButtonText, { color: colors.danger }]}>Supprimer</Text>
+                      </TouchableOpacity>
+                    </View>
                     <Text style={[styles.rowSub, { color: colors.grey }]}>
                       {formatHour(session.completedAt)} · {session.blockTypes.join(' · ') || 'Sans bloc'}
                     </Text>
@@ -170,9 +227,19 @@ export default function StatisticsDayDetail() {
               ) : (
                 climbingAttemptsOfDay.map((attempt) => (
                   <View key={attempt.id} style={[styles.rowCard, { backgroundColor: colors.badgeBackground }]}>
-                    <Text style={[styles.rowTitle, { color: colors.black }]}>
-                      {attempt.climbingType} · {attempt.routeName} · {attempt.grade}
-                    </Text>
+                    <View style={styles.rowHeader}>
+                      <Text style={[styles.rowTitle, { color: colors.black }]}>
+                        {attempt.climbingType} · {attempt.routeName} · {attempt.grade}
+                      </Text>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        disabled={deletingAttemptId === attempt.id}
+                        onPress={() => confirmDeleteAttempt(attempt.id)}
+                        style={styles.deleteButton}
+                      >
+                        <Text style={[styles.deleteButtonText, { color: colors.danger }]}>Supprimer</Text>
+                      </TouchableOpacity>
+                    </View>
                     <Text style={[styles.rowSub, { color: colors.grey }]}>
                       {formatHour(attempt.createdAt)} · {attempt.status === 'success' ? 'Réussi' : 'Échoué'} ·{' '}
                       {attempt.source === 'planned' ? 'Entraînement' : 'Hors séance'}
@@ -242,7 +309,14 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) =>
       paddingHorizontal: 10,
       gap: 2,
     },
+    rowHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 8,
+    },
     rowTitle: {
+      flex: 1,
       fontSize: 14,
       fontWeight: '700',
     },
@@ -253,5 +327,13 @@ const createStyles = (colors: ReturnType<typeof useAppTheme>['colors']) =>
     emptyText: {
       fontSize: 13,
       fontWeight: '600',
+    },
+    deleteButton: {
+      paddingVertical: 3,
+      paddingHorizontal: 6,
+    },
+    deleteButtonText: {
+      fontSize: 12,
+      fontWeight: '700',
     },
   })

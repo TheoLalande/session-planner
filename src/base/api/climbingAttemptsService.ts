@@ -264,3 +264,16 @@ export async function updateAdHocClimbingAttempt(
     throw new Error(error.message)
   }
 }
+
+export async function deleteClimbingAttemptById(attemptId: string): Promise<void> {
+  const db = getSupabaseDb()
+  const userId = await getCurrentUserId()
+  const attemptIdTrimmed = attemptId.trim()
+  if (!attemptIdTrimmed) {
+    return
+  }
+  const { error } = await db.from('climbing_attempts').delete().eq('id', attemptIdTrimmed).eq('user_id', userId)
+  if (error) {
+    throw new Error(error.message)
+  }
+}

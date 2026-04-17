@@ -107,3 +107,16 @@ export async function fetchCompletedSessions(payload: { startAt?: number; endAt?
     }
   })
 }
+
+export async function deleteCompletedSession(sessionId: string): Promise<void> {
+  const db = getSupabaseDb()
+  const userId = await getCurrentUserId()
+  const sessionIdTrimmed = sessionId.trim()
+  if (!sessionIdTrimmed) {
+    return
+  }
+  const { error } = await db.from('completed_sessions').delete().eq('id', sessionIdTrimmed).eq('user_id', userId)
+  if (error) {
+    throw new Error(error.message)
+  }
+}
