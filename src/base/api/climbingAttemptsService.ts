@@ -10,6 +10,7 @@ export type ClimbingAttempt = {
   routeName: string
   grade: string
   routeLabel: string
+  climbingType: string
   status: ClimbingAttemptStatus
   source: ClimbingAttemptSource
 }
@@ -18,6 +19,7 @@ type ClimbingAttemptRow = {
   id: string
   route_name: string
   grade: string
+  climbing_type: string | null
   status: ClimbingAttemptStatus
   source: ClimbingAttemptSource | null
   performed_at: string | null
@@ -35,6 +37,32 @@ function extractRouteNameFromRouteLabel(routeLabel: string) {
   return parts.slice(0, parts.length - 1).join(' · ').trim()
 }
 
+function normalizeRouteName(routeName: string): string {
+  const trimmed = routeName.trim()
+  if (!trimmed.includes('||')) {
+    return trimmed
+  }
+  const tokens = trimmed
+    .split('||')
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0)
+  if (tokens.length === 0) {
+    return trimmed
+  }
+  const knownTypes = new Set(['bloc', 'falaise', 'voie', 'grande voie'])
+  const first = tokens[0].toLowerCase()
+  if (knownTypes.has(first) && tokens.length > 1) {
+    return tokens[1]
+  }
+  if (tokens.length > 2 && knownTypes.has(tokens[1].toLowerCase())) {
+    return tokens[2]
+  }
+  if (tokens.length > 1) {
+    return tokens[1]
+  }
+  return tokens[0]
+}
+
 async function getCurrentUserId() {
   const session = await getSession()
   const userId = session.user?.id
@@ -50,7 +78,7 @@ export async function fetchClimbingAttempts(): Promise<ClimbingAttempt[]> {
 
   const { data, error } = await db
     .from('climbing_attempts')
-    .select('id,route_name,grade,status,source,performed_at,created_at')
+    .select('id,route_name,grade,climbing_type,status,source,performed_at,created_at')
     .eq('user_id', userId)
     .order('performed_at', { ascending: true })
 
@@ -60,9 +88,10 @@ export async function fetchClimbingAttempts(): Promise<ClimbingAttempt[]> {
 
   return (data as ClimbingAttemptRow[]).map((row) => ({
     id: row.id,
-    routeName: row.route_name,
+    routeName: normalizeRouteName(row.route_name),
     grade: row.grade,
-    routeLabel: `${row.route_name} · ${row.grade}`,
+    routeLabel: `${normalizeRouteName(row.route_name)} · ${row.grade}`,
+    climbingType: row.climbing_type ?? 'bloc',
     status: row.status,
     source: row.source === 'planned' ? 'planned' : 'ad_hoc',
     createdAt: new Date(row.performed_at ?? row.created_at).getTime(),
@@ -90,7 +119,7 @@ export async function createClimbingAttempt(payload: { routeLabel: string; statu
       status: payload.status,
       performed_at: new Date(createdAt).toISOString(),
     })
-    .select('id,route_name,grade,status,source,performed_at,created_at')
+    .select('id,route_name,grade,climbing_type,status,source,performed_at,created_at')
     .single()
 
   if (error) {
@@ -100,9 +129,10 @@ export async function createClimbingAttempt(payload: { routeLabel: string; statu
   const row = data as ClimbingAttemptRow
   return {
     id: row.id,
-    routeName: row.route_name,
+    routeName: normalizeRouteName(row.route_name),
     grade: row.grade,
-    routeLabel: `${row.route_name} · ${row.grade}`,
+    routeLabel: `${normalizeRouteName(row.route_name)} · ${row.grade}`,
+    climbingType: row.climbing_type ?? 'bloc',
     status: row.status,
     source: row.source === 'planned' ? 'planned' : 'ad_hoc',
     createdAt: new Date(row.performed_at ?? row.created_at).getTime(),

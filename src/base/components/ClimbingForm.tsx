@@ -90,7 +90,7 @@ export function ClimbingForm({ value, onChange, hideTimingControls = false }: Cl
         label="Nombre de tentatives"
         value={value.attempts}
         minimumValue={1}
-        maximumValue={10                                            }
+        maximumValue={10}
         onChange={(v) => onChange({ ...value, attempts: v })}
       />
       <TextField placeholder="Notes" value={value.notes} onChangeText={(text) => handleChange('notes', text)} />

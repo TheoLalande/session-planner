@@ -497,7 +497,6 @@ export default function Statistiques() {
     const rangeStart = toStartOfDay(startDate)
     const rangeEnd = toEndOfDay(endDate)
     attempts.forEach((attempt) => {
-      if (attempt.source !== 'ad_hoc') return
       if (attempt.createdAt < rangeStart || attempt.createdAt > rangeEnd) return
       const key = toDayKey(attempt.createdAt)
       const current = map.get(key) ?? new Set<ExerciseType>()

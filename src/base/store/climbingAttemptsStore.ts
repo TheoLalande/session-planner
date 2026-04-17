@@ -9,6 +9,7 @@ export type ClimbingAttempt = {
   routeName: string
   grade: string
   routeLabel: string
+  climbingType: string
   status: ClimbingAttemptStatus
   source: ClimbingAttemptSource
 }

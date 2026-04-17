@@ -106,12 +106,12 @@ export default function StatisticsDayDetail() {
     return map
   }, [trainings])
 
-  const adHocAttemptsOfDay = useMemo(() => {
+  const climbingAttemptsOfDay = useMemo(() => {
     if (!parsedDate) {
       return []
     }
     return attempts
-      .filter((attempt) => attempt.source === 'ad_hoc' && attempt.createdAt >= dayStart && attempt.createdAt <= dayEnd)
+      .filter((attempt) => attempt.createdAt >= dayStart && attempt.createdAt <= dayEnd)
       .sort((a, b) => b.createdAt - a.createdAt)
   }, [attempts, dayEnd, dayStart, parsedDate])
 
@@ -164,17 +164,18 @@ export default function StatisticsDayDetail() {
             </View>
 
             <View style={[styles.sectionCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
-              <Text style={[styles.sectionTitle, { color: colors.black }]}>Voies ajoutées hors séance</Text>
-              {adHocAttemptsOfDay.length === 0 ? (
-                <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune voie saisie ce jour.</Text>
+              <Text style={[styles.sectionTitle, { color: colors.black }]}>Voies réalisées</Text>
+              {climbingAttemptsOfDay.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.grey }]}>Aucune voie réalisée ce jour.</Text>
               ) : (
-                adHocAttemptsOfDay.map((attempt) => (
+                climbingAttemptsOfDay.map((attempt) => (
                   <View key={attempt.id} style={[styles.rowCard, { backgroundColor: colors.badgeBackground }]}>
                     <Text style={[styles.rowTitle, { color: colors.black }]}>
-                      {attempt.routeName} · {attempt.grade}
+                      {attempt.climbingType} · {attempt.routeName} · {attempt.grade}
                     </Text>
                     <Text style={[styles.rowSub, { color: colors.grey }]}>
-                      {formatHour(attempt.createdAt)} · {attempt.status === 'success' ? 'Réussi' : 'Échoué'}
+                      {formatHour(attempt.createdAt)} · {attempt.status === 'success' ? 'Réussi' : 'Échoué'} ·{' '}
+                      {attempt.source === 'planned' ? 'Entraînement' : 'Hors séance'}
                     </Text>
                   </View>
                 ))

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { Alert, View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTrainingStore } from '../store/trainingStore'
@@ -8,7 +8,6 @@ import { TrainingExercise } from '../types/trainingTypes'
 import { ExerciseTimer, ExerciseTimerHandle } from '../components/ExerciseTimer'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { haptic } from '../utils/haptics'
-import { buildClimbingRouteLabel } from '../api/climbingRoutesService'
 import { useAppTheme } from '../providers/themeProvider'
 import { getTransitionSecondsBeforeNextExercise } from '../utils/trainingTransitions'
 
@@ -57,6 +56,7 @@ export default function ClimbSteps() {
   const isAttemptsDone = nextAttemptIndex === -1
 
   const addAttempt = useClimbingAttemptsStore((state) => state.addAttempt)
+  const [isSavingAttempt, setIsSavingAttempt] = useState(false)
 
   if (!exercise || exercise.type !== 'climbing') {
     return (
@@ -79,16 +79,22 @@ export default function ClimbSteps() {
   }
 
   const markAttempt = async (status: 'success' | 'fail') => {
-    if (nextAttemptIndex === -1) {
+    if (nextAttemptIndex === -1 || isSavingAttempt) {
       return
     }
 
-    const routeLabel = buildClimbingRouteLabel({
-      routeType: 'falaise',
-      routeName: exercise.data.title || 'Climbing',
-      routeGrade: exercise.data.grade,
-    })
-    await addAttempt({ routeLabel, status })
+    const climbingTypeLabel = (exercise.data.climbingType || 'bloc').trim()
+    const routeNameLabel = (exercise.data.title || 'Climbing').trim()
+    const routeLabel = `${climbingTypeLabel} - ${routeNameLabel} · ${exercise.data.grade}`
+    try {
+      setIsSavingAttempt(true)
+      await addAttempt({ routeLabel, status, createdAt: Date.now() })
+    } catch (e) {
+      Alert.alert('Erreur', e instanceof Error ? e.message : "Impossible d'enregistrer la voie en base")
+      return
+    } finally {
+      setIsSavingAttempt(false)
+    }
 
     setAttemptResults((prev) => {
       const next = [...prev]
@@ -123,8 +129,8 @@ export default function ClimbSteps() {
               await haptic('tap')
               await markAttempt('success')
             }}
-            disabled={isAttemptsDone}
-            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? colors.lightGrey : colors.primary }]}
+            disabled={isAttemptsDone || isSavingAttempt}
+            style={[styles.attemptButton, { backgroundColor: isAttemptsDone || isSavingAttempt ? colors.lightGrey : colors.primary }]}
           >
             <MaterialCommunityIcons name="check" size={22} color={colors.white} />
           </TouchableOpacity>
@@ -134,8 +140,8 @@ export default function ClimbSteps() {
               await haptic('tap')
               await markAttempt('fail')
             }}
-            disabled={isAttemptsDone}
-            style={[styles.attemptButton, { backgroundColor: isAttemptsDone ? colors.lightGrey : colors.danger }]}
+            disabled={isAttemptsDone || isSavingAttempt}
+            style={[styles.attemptButton, { backgroundColor: isAttemptsDone || isSavingAttempt ? colors.lightGrey : colors.danger }]}
           >
             <MaterialCommunityIcons name="close" size={22} color={colors.white} />
           </TouchableOpacity>
