@@ -186,6 +186,7 @@ export default function index() {
                 <RadioButton.Item label="Warmup" value="warmup" />
                 <RadioButton.Item label="Renforcement" value="renforcement" />
                 <RadioButton.Item label="Stretching" value="stretching" />
+                <RadioButton.Item label="Gainage" value="gainage" />
                 <RadioButton.Item label="Climbing" value="climbing" />
                 <RadioButton.Item label="Hangboard" value="hangboard" />
               </RadioButton.Group>

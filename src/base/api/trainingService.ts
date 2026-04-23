@@ -26,7 +26,7 @@ type ExerciseRow = {
   id: string
   block_id: string
   exercise_library_id: string | null
-  exercise_type: TrainingExercise['type']
+  exercise_type: string
   title: string | null
   description: string | null
   notes: string | null
@@ -74,13 +74,22 @@ async function toSignedPictureUrl(pictureUrl: string, supabase: ReturnType<typeo
 
 function normalizeStoredExerciseType(raw: string): TrainingExercise['type'] {
   if (raw === 'cooldown') return 'renforcement'
+  if (raw === 'strength') return 'gainage'
   return raw as TrainingExercise['type']
 }
 
 function normalizeStoredBlocType(raw: string | null | undefined): ExerciseType | undefined {
   if (raw == null || raw === '') return undefined
   if (raw === 'cooldown') return 'renforcement'
+  if (raw === 'strength') return 'gainage'
   return raw as ExerciseType
+}
+
+function toStoredExerciseType(raw: TrainingExercise['type'] | ExerciseType): string {
+  if (raw === 'gainage') {
+    return 'strength'
+  }
+  return raw
 }
 
 function normalizeExerciseFromRow(row: ExerciseRow): TrainingExercise {
@@ -130,7 +139,7 @@ function getExerciseInsertPayload(
     user_id: userId,
     block_id: blockId,
     exercise_library_id: normalizeOptionalUuid((exercise.data as any)?.libraryExerciseId),
-    exercise_type: exercise.type,
+    exercise_type: toStoredExerciseType(exercise.type),
     title: resolveExerciseTitle(exercise.data),
     description: exercise.data.description ?? '',
     notes: exercise.data.notes ?? '',
@@ -290,7 +299,7 @@ export async function createTraining(
       plan_id: plan.id,
       title: bloc.title,
       description: bloc.description ?? '',
-      bloc_type: bloc.blocType ?? null,
+      bloc_type: bloc.blocType ? toStoredExerciseType(bloc.blocType) : null,
       position: index,
     }))
 
@@ -400,7 +409,7 @@ export async function updateTrainingById(
     plan_id: trainingId,
     title: bloc.title,
     description: bloc.description ?? '',
-    bloc_type: bloc.blocType ?? null,
+    bloc_type: bloc.blocType ? toStoredExerciseType(bloc.blocType) : null,
     position: index,
   }))
 

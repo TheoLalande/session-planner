@@ -194,6 +194,7 @@ export default function SimpleTimer() {
     } else {
       if (currentExercise.type === 'warmup') title = 'Échauffement'
       else if (currentExercise.type === 'renforcement') title = 'Renforcement'
+      else if (currentExercise.type === 'gainage') title = 'Gainage'
       else if (currentExercise.type === 'stretching') title = 'Étirement'
       else title = 'Exercice'
     }

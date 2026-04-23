@@ -107,7 +107,7 @@ export default function TrainingDetail() {
     const durationFromExercises = allExercises.reduce((acc, exercise) => {
       const data: any = exercise.data ?? {}
 
-      if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching') {
+        if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching' || exercise.type === 'gainage') {
         if (data.mode === 'reps') {
           return acc
         }
@@ -123,7 +123,7 @@ export default function TrainingDetail() {
     const hasOnlyTimeExercises =
       allExercises.length > 0 &&
       allExercises.every((exercise) => {
-        if (exercise.type !== 'warmup' && exercise.type !== 'renforcement' && exercise.type !== 'stretching') {
+        if (exercise.type !== 'warmup' && exercise.type !== 'renforcement' && exercise.type !== 'stretching' && exercise.type !== 'gainage') {
           return false
         }
         const data: any = exercise.data ?? {}
@@ -215,6 +215,8 @@ export default function TrainingDetail() {
               ? colors.warmup
               : blocType === 'renforcement'
                 ? colors.renforcement
+                : blocType === 'gainage'
+                  ? colors.gainage
                 : blocType === 'stretching'
                   ? colors.stretching
                   : blocType === 'climbing'

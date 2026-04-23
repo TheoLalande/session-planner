@@ -1,6 +1,6 @@
 export type ClimbingGrades = '5c+' | '6a' | '6a+' | '6b' | '6+b' | '6c' | '6c+' | '7a' | '7a+' | '7b' | '7b+' | '7c' | '7c+' | '8a'
 
-export type ExerciseType = 'hangboard' | 'climbing' | 'warmup' | 'renforcement' | 'stretching'
+export type ExerciseType = 'hangboard' | 'climbing' | 'warmup' | 'renforcement' | 'stretching' | 'gainage'
 
 export type ExerciceTypes = ExerciseType
 
@@ -46,6 +46,7 @@ export interface IWarmUp extends ICommonWorkout {
 
 export interface IRenforcement extends IWarmUp {}
 export interface IStretching extends IWarmUp {}
+export interface IGainage extends IWarmUp {}
 
 export type TrainingExercise =
   | { type: 'hangboard'; data: Ihangboard }
@@ -53,6 +54,7 @@ export type TrainingExercise =
   | { type: 'warmup'; data: IWarmUp }
   | { type: 'renforcement'; data: IRenforcement }
   | { type: 'stretching'; data: IStretching }
+  | { type: 'gainage'; data: IGainage }
 
 export interface ITrainingBloc {
   id: number

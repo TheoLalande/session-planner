@@ -5,7 +5,7 @@ import { getSupabaseDb } from './supabaseClient'
 type ExerciseLibraryRow = {
   id: string
   user_id: string
-  exercise_type: ExerciseType
+  exercise_type: string
   title: string | null
   description: string | null
   notes: string | null
@@ -28,7 +28,7 @@ function normalizeRow(row: ExerciseLibraryRow): IExerciseLibraryItem {
   return {
     id: row.id,
     userId: row.user_id,
-    exerciseType: row.exercise_type,
+    exerciseType: normalizeStoredExerciseType(row.exercise_type),
     title: row.title ?? '',
     description: row.description ?? '',
     notes: row.notes ?? '',
@@ -36,6 +36,17 @@ function normalizeRow(row: ExerciseLibraryRow): IExerciseLibraryItem {
     payloadJson: payload,
     createdAt: row.created_at,
   }
+}
+
+function normalizeStoredExerciseType(raw: string): ExerciseType {
+  if (raw === 'strength') return 'gainage'
+  if (raw === 'cooldown') return 'renforcement'
+  return raw as ExerciseType
+}
+
+function toStoredExerciseType(raw: ExerciseType): string {
+  if (raw === 'gainage') return 'strength'
+  return raw
 }
 
 function resolveExerciseTitle(payload: any): string {
@@ -120,7 +131,7 @@ export async function createExerciseLibraryItem(exercise: TrainingExercise): Pro
     .from('exercise_library')
     .insert({
       user_id: userId,
-      exercise_type: exercise.type,
+      exercise_type: toStoredExerciseType(exercise.type),
       title: resolveExerciseTitle(payload),
       description: payload?.description ?? '',
       notes: payload?.notes ?? '',
@@ -145,7 +156,7 @@ export async function updateExerciseLibraryItem(id: string, exercise: TrainingEx
   const { data, error } = await db
     .from('exercise_library')
     .update({
-      exercise_type: exercise.type,
+      exercise_type: toStoredExerciseType(exercise.type),
       title: resolveExerciseTitle(payload),
       description: payload?.description ?? '',
       notes: payload?.notes ?? '',

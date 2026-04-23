@@ -49,8 +49,8 @@ function getCompletedBlockTypes(blocs: ITrainingBloc[]): ExerciseType[] {
 
 function normalizeStoredCompletedBlockType(item: unknown): ExerciseType | null {
   const raw = String(item)
-  const t = raw === 'cooldown' ? 'renforcement' : raw
-  if (t === 'warmup' || t === 'stretching' || t === 'climbing' || t === 'hangboard' || t === 'renforcement') {
+  const t = raw === 'cooldown' ? 'renforcement' : raw === 'strength' ? 'gainage' : raw
+  if (t === 'warmup' || t === 'stretching' || t === 'climbing' || t === 'hangboard' || t === 'renforcement' || t === 'gainage') {
     return t
   }
   return null
