@@ -185,6 +185,7 @@ export default function index() {
               <RadioButton.Group onValueChange={(value) => setBlocType(value as ExerciseType)} value={blocType}>
                 <RadioButton.Item label="Warmup" value="warmup" />
                 <RadioButton.Item label="Renforcement" value="renforcement" />
+                <RadioButton.Item label="Strength" value="strength" />
                 <RadioButton.Item label="Stretching" value="stretching" />
                 <RadioButton.Item label="Gainage" value="gainage" />
                 <RadioButton.Item label="Climbing" value="climbing" />

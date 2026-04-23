@@ -99,7 +99,7 @@ const toShortDate = (timestamp: number) => {
 }
 
 const getExerciseDisplayName = (exercise: TrainingExercise) => {
-  if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching' || exercise.type === 'gainage') {
+  if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'strength' || exercise.type === 'stretching' || exercise.type === 'gainage') {
     return (exercise.data.exerciceType || exercise.data.title || '').trim() || 'Exercice'
   }
   if (exercise.type === 'hangboard' || exercise.type === 'climbing') {
@@ -109,7 +109,7 @@ const getExerciseDisplayName = (exercise: TrainingExercise) => {
 }
 
 const getExerciseTimingSeconds = (exercise: TrainingExercise) => {
-  if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'stretching' || exercise.type === 'gainage') {
+  if (exercise.type === 'warmup' || exercise.type === 'renforcement' || exercise.type === 'strength' || exercise.type === 'stretching' || exercise.type === 'gainage') {
     if (exercise.data.mode !== 'time') {
       return null
     }
@@ -146,14 +146,14 @@ type StoredTrainingExerciseRow = {
 const getStoredExerciseDisplayName = (exerciseType: string, title: string | null, payload: Record<string, unknown>) => {
   const payloadTitle = String(payload.title ?? '')
   const payloadExerciseType = String(payload.exerciceType ?? '')
-  if (exerciseType === 'warmup' || exerciseType === 'renforcement' || exerciseType === 'stretching' || exerciseType === 'gainage') {
+  if (exerciseType === 'warmup' || exerciseType === 'renforcement' || exerciseType === 'strength' || exerciseType === 'stretching' || exerciseType === 'gainage') {
     return (title || payloadExerciseType || payloadTitle || '').trim() || 'Exercice'
   }
   return (title || payloadTitle || '').trim() || 'Exercice'
 }
 
 const getStoredExerciseTimingSeconds = (exerciseType: string, payload: Record<string, unknown>) => {
-  if (exerciseType === 'warmup' || exerciseType === 'renforcement' || exerciseType === 'stretching' || exerciseType === 'gainage') {
+  if (exerciseType === 'warmup' || exerciseType === 'renforcement' || exerciseType === 'strength' || exerciseType === 'stretching' || exerciseType === 'gainage') {
     const mode = String(payload.mode ?? 'time')
     if (mode !== 'time') {
       return null
@@ -524,6 +524,7 @@ export default function Statistiques() {
   const getTypeColor = (type: ExerciseType) => {
     if (type === 'warmup') return colors.warmup
     if (type === 'renforcement') return colors.renforcement
+    if (type === 'strength') return colors.strength
     if (type === 'gainage') return colors.gainage
     if (type === 'stretching') return colors.stretching
     if (type === 'hangboard') return colors.hangboard

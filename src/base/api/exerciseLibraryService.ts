@@ -39,13 +39,11 @@ function normalizeRow(row: ExerciseLibraryRow): IExerciseLibraryItem {
 }
 
 function normalizeStoredExerciseType(raw: string): ExerciseType {
-  if (raw === 'strength') return 'gainage'
   if (raw === 'cooldown') return 'renforcement'
   return raw as ExerciseType
 }
 
 function toStoredExerciseType(raw: ExerciseType): string {
-  if (raw === 'gainage') return 'strength'
   return raw
 }
 

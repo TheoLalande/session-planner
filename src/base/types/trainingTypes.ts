@@ -1,6 +1,6 @@
 export type ClimbingGrades = '5c+' | '6a' | '6a+' | '6b' | '6+b' | '6c' | '6c+' | '7a' | '7a+' | '7b' | '7b+' | '7c' | '7c+' | '8a'
 
-export type ExerciseType = 'hangboard' | 'climbing' | 'warmup' | 'renforcement' | 'stretching' | 'gainage'
+export type ExerciseType = 'hangboard' | 'climbing' | 'warmup' | 'renforcement' | 'stretching' | 'strength' | 'gainage'
 
 export type ExerciceTypes = ExerciseType
 
@@ -45,6 +45,7 @@ export interface IWarmUp extends ICommonWorkout {
 }
 
 export interface IRenforcement extends IWarmUp {}
+export interface IStrength extends IWarmUp {}
 export interface IStretching extends IWarmUp {}
 export interface IGainage extends IWarmUp {}
 
@@ -53,6 +54,7 @@ export type TrainingExercise =
   | { type: 'climbing'; data: IClimbing }
   | { type: 'warmup'; data: IWarmUp }
   | { type: 'renforcement'; data: IRenforcement }
+  | { type: 'strength'; data: IStrength }
   | { type: 'stretching'; data: IStretching }
   | { type: 'gainage'; data: IGainage }
 

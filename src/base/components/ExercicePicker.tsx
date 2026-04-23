@@ -8,7 +8,7 @@ type Props = {
   onSelect: (type: ExerciceTypes) => void
 }
 
-const EXERCICE_TYPES: ExerciceTypes[] = ['hangboard', 'climbing', 'warmup', 'renforcement', 'stretching', 'gainage']
+const EXERCICE_TYPES: ExerciceTypes[] = ['hangboard', 'climbing', 'warmup', 'renforcement', 'strength', 'stretching', 'gainage']
 
 export const ExercicePicker: React.FC<Props> = ({ selectedType, onSelect }) => {
   const { colors } = useAppTheme()

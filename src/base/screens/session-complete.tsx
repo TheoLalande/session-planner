@@ -20,7 +20,7 @@ export default function SessionComplete() {
   const buttonWrapRef = React.useRef<View | null>(null)
   const pieceCount = 30
   const confettiColors = useMemo(
-    () => [colors.primary, colors.secondary, colors.warmup, colors.renforcement, colors.gainage, colors.stretching, colors.climbing, colors.hangboard],
+    () => [colors.primary, colors.secondary, colors.warmup, colors.renforcement, colors.strength, colors.gainage, colors.stretching, colors.climbing, colors.hangboard],
     [colors],
   )
   const pieces = React.useRef(

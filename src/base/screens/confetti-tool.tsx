@@ -16,7 +16,7 @@ export default function ConfettiTool() {
   const buttonWrapRef = useRef<View | null>(null)
 
   const confettiColors = useMemo(
-    () => [colors.primary, colors.secondary, colors.warmup, colors.renforcement, colors.gainage, colors.stretching, colors.climbing, colors.hangboard],
+    () => [colors.primary, colors.secondary, colors.warmup, colors.renforcement, colors.strength, colors.gainage, colors.stretching, colors.climbing, colors.hangboard],
     [colors],
   )
 

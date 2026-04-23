@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView, View, Keyboard, Alert, StyleSheet, TouchableOpacity, Text, Platform, KeyboardAvoidingView } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, IRenforcement, IStretching, IGainage, TrainingExercise } from '../types/trainingTypes'
+import { ExerciceTypes, ExerciseType, Ihangboard, IClimbing, IWarmUp, IRenforcement, IStrength, IStretching, IGainage, TrainingExercise } from '../types/trainingTypes'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { ExercicePicker } from '../components/ExercicePicker'
 import { HangboardForm } from '../components/HangboardForm'
 import { ClimbingForm } from '../components/ClimbingForm'
 import { WarmupForm } from '../components/WarmupForm'
 import { RenforcementForm } from '../components/RenforcementForm'
+import { StrengthForm } from '../components/StrengthForm'
 import { StretchingForm } from '../components/StretchingForm'
 import { GainageForm } from '../components/GainageForm'
 import { useTrainingStore } from '../store/trainingStore'
@@ -146,6 +147,20 @@ export default function index() {
     leftRight: false,
   })
 
+  const [strengthData, setStrengthData] = useState<IStrength>({
+    id: 0,
+    title: '',
+    description: '',
+    picture: '',
+    exerciceType: '',
+    notes: '',
+    duration: 0,
+    durationUnit: 'seconds',
+    mode: 'time',
+    repetitions: 0,
+    leftRight: false,
+  })
+
   const [stretchingData, setStretchingData] = useState<IStretching>({
     id: 0,
     title: '',
@@ -189,6 +204,8 @@ export default function index() {
       setWarmupData(currentExercise.data)
     } else if (currentExercise.type === 'renforcement') {
       setRenforcementData(currentExercise.data)
+    } else if (currentExercise.type === 'strength') {
+      setStrengthData(currentExercise.data)
     } else if (currentExercise.type === 'stretching') {
       setStretchingData(currentExercise.data)
     } else if (currentExercise.type === 'gainage') {
@@ -228,6 +245,9 @@ export default function index() {
         } else if (templated.type === 'renforcement') {
           setSelectedType('renforcement')
           setRenforcementData(templatedData as IRenforcement)
+        } else if (templated.type === 'strength') {
+          setSelectedType('strength')
+          setStrengthData(templatedData as IStrength)
         } else if (templated.type === 'stretching') {
           setSelectedType('stretching')
           setStretchingData(templatedData as IStretching)
@@ -367,6 +387,8 @@ export default function index() {
       exercise = { type: 'warmup', data: warmupData }
     } else if (selectedType === 'renforcement') {
       exercise = { type: 'renforcement', data: renforcementData }
+    } else if (selectedType === 'strength') {
+      exercise = { type: 'strength', data: strengthData }
     } else if (selectedType === 'stretching') {
       exercise = { type: 'stretching', data: stretchingData }
     } else if (selectedType === 'gainage') {
@@ -415,7 +437,11 @@ export default function index() {
 
       const isCreateMode = !isEditTrainingMode && !isEditBlocMode
       const isLeftRightExercise =
-        (selectedType === 'warmup' || selectedType === 'renforcement' || selectedType === 'stretching' || selectedType === 'gainage') &&
+        (selectedType === 'warmup' ||
+          selectedType === 'renforcement' ||
+          selectedType === 'strength' ||
+          selectedType === 'stretching' ||
+          selectedType === 'gainage') &&
         Boolean((exercise.data as IWarmUp).leftRight)
       const blocIdValue = blocId ?? -1
 
@@ -481,11 +507,11 @@ export default function index() {
         const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
 
         const leftExercise: TrainingExercise = {
-          type: selectedType as 'warmup' | 'renforcement' | 'stretching' | 'gainage',
+          type: selectedType as 'warmup' | 'renforcement' | 'strength' | 'stretching' | 'gainage',
           data: { ...baseData, picture: sharedPicture, exerciceType: leftLabel, title: leftLabel, leftRight: false },
         }
         const rightExercise: TrainingExercise = {
-          type: selectedType as 'warmup' | 'renforcement' | 'stretching' | 'gainage',
+          type: selectedType as 'warmup' | 'renforcement' | 'strength' | 'stretching' | 'gainage',
           data: { ...baseData, picture: sharedPicture, exerciceType: rightLabel, title: rightLabel, leftRight: false },
         }
 
@@ -512,11 +538,11 @@ export default function index() {
           const leftLabel = baseLabel ? `${baseLabel} gauche` : 'gauche'
           const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
           const leftExercise: TrainingExercise = {
-            type: selectedType as 'warmup' | 'renforcement' | 'stretching' | 'gainage',
+            type: selectedType as 'warmup' | 'renforcement' | 'strength' | 'stretching' | 'gainage',
             data: { ...baseData, id: baseId > 0 ? baseId : 0, picture: sharedPicture, exerciceType: leftLabel, title: leftLabel, leftRight: false },
           }
           const rightExercise: TrainingExercise = {
-            type: selectedType as 'warmup' | 'renforcement' | 'stretching' | 'gainage',
+            type: selectedType as 'warmup' | 'renforcement' | 'strength' | 'stretching' | 'gainage',
             data: { ...baseData, id: baseId > 0 ? baseId + 1 : 0, picture: sharedPicture, exerciceType: rightLabel, title: rightLabel, leftRight: false },
           }
           runInBackground(
@@ -542,11 +568,11 @@ export default function index() {
           const leftLabel = baseLabel ? `${baseLabel} gauche` : 'gauche'
           const rightLabel = baseLabel ? `${baseLabel} droite` : 'droite'
           const leftExercise: TrainingExercise = {
-            type: selectedType as 'warmup' | 'renforcement' | 'stretching' | 'gainage',
+            type: selectedType as 'warmup' | 'renforcement' | 'strength' | 'stretching' | 'gainage',
             data: { ...baseData, id: baseId > 0 ? baseId : 0, picture: sharedPicture, exerciceType: leftLabel, title: leftLabel, leftRight: false },
           }
           const rightExercise: TrainingExercise = {
-            type: selectedType as 'warmup' | 'renforcement' | 'stretching' | 'gainage',
+            type: selectedType as 'warmup' | 'renforcement' | 'strength' | 'stretching' | 'gainage',
             data: { ...baseData, id: baseId > 0 ? baseId + 1 : 0, picture: sharedPicture, exerciceType: rightLabel, title: rightLabel, leftRight: false },
           }
           replaceExerciseInBloc(blocIdValue, exerciseIndex, [leftExercise, rightExercise])
@@ -631,6 +657,9 @@ export default function index() {
     }
     if (selectedType === 'renforcement') {
       return <RenforcementForm value={renforcementData} onChange={setRenforcementData} hideTimingControls={isLibraryCreationMode || isEditLibraryMode} />
+    }
+    if (selectedType === 'strength') {
+      return <StrengthForm value={strengthData} onChange={setStrengthData} hideTimingControls={isLibraryCreationMode || isEditLibraryMode} />
     }
     if (selectedType === 'stretching') {
       return <StretchingForm value={stretchingData} onChange={setStretchingData} hideTimingControls={isLibraryCreationMode || isEditLibraryMode} />

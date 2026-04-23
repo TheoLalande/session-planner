@@ -45,6 +45,16 @@ export const TrainingBlocItem = ({ exercise }: Props) => {
       blackLabel = `${data.duration} ${unit}`
     }
     typeLabel = data.exerciceType || 'Renforcement'
+  } else if (type === 'strength') {
+    if (data.mode === 'reps') {
+      coloredLabel = `${data.title || 'Strength'}`
+      blackLabel = `${data.repetitions} reps`
+    } else {
+      const unit = data.durationUnit === 'minutes' ? 'min' : 'sec'
+      coloredLabel = `${data.title || 'Strength'}`
+      blackLabel = `${data.duration} ${unit}`
+    }
+    typeLabel = data.exerciceType || 'Strength'
   } else if (type === 'stretching') {
     if (data.mode === 'reps') {
       coloredLabel = `${data.title || 'Étirement'}`

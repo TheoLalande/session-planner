@@ -74,21 +74,16 @@ async function toSignedPictureUrl(pictureUrl: string, supabase: ReturnType<typeo
 
 function normalizeStoredExerciseType(raw: string): TrainingExercise['type'] {
   if (raw === 'cooldown') return 'renforcement'
-  if (raw === 'strength') return 'gainage'
   return raw as TrainingExercise['type']
 }
 
 function normalizeStoredBlocType(raw: string | null | undefined): ExerciseType | undefined {
   if (raw == null || raw === '') return undefined
   if (raw === 'cooldown') return 'renforcement'
-  if (raw === 'strength') return 'gainage'
   return raw as ExerciseType
 }
 
 function toStoredExerciseType(raw: TrainingExercise['type'] | ExerciseType): string {
-  if (raw === 'gainage') {
-    return 'strength'
-  }
   return raw
 }
 
