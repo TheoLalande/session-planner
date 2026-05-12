@@ -97,7 +97,7 @@ export default function index() {
               label="Temps entre deux timers"
               value={transitionSecondsBetweenTimers}
               minimumValue={0}
-              maximumValue={30}
+              maximumValue={120}
               step={1}
               onChange={setTransitionSecondsBetweenTimers}
               unit="secondes"

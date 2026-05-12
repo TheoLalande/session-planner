@@ -8,6 +8,13 @@ export default function Root({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
         <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="icon" href="/logo.jpg" />
+        <link rel="shortcut icon" href="/logo.jpg" />
+        <link rel="apple-touch-icon" href="/logo.jpg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/logo.jpg" />
+        <link rel="apple-touch-icon" sizes="167x167" href="/logo.jpg" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/logo.jpg" />
+        <link rel="apple-touch-icon" sizes="120x120" href="/logo.jpg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-touch-fullscreen" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
