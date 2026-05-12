@@ -32,6 +32,7 @@ type Props = {
   stepValue: number
   dailySuccessRate: Array<{ value: number; label: string }>
   dailyAverageGrades: Array<{ value: number; label: string; gradeLabel: string }>
+  dailyAverageSuccessGrades: Array<{ value: number; gradeLabel: string; timestamp: number }>
 }
 
 export default function StatisticsClimbingChartsCard({
@@ -51,6 +52,7 @@ export default function StatisticsClimbingChartsCard({
   stepValue,
   dailySuccessRate,
   dailyAverageGrades,
+  dailyAverageSuccessGrades,
 }: Props) {
   if (isLoadingAttempts) {
     return (
@@ -84,7 +86,12 @@ export default function StatisticsClimbingChartsCard({
       <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
         <View style={styles.filtersSection}>
           <Text style={[styles.filtersTitle, { color: colors.black }]}>Cotation</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersScroll} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersScroll}
+            keyboardShouldPersistTaps="handled"
+          >
             {gradeCounts.gradesToDisplay.map((grade) => {
               const counts = gradeCounts.map.get(grade)
               const total = (counts?.success ?? 0) + (counts?.fail ?? 0)
@@ -211,6 +218,47 @@ export default function StatisticsClimbingChartsCard({
                   yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
                   xAxisTextNumberOfLines={1}
                   xAxisLabelTextStyle={[styles.xAxisLabelText, { color: colors.grey }]}
+                />
+              </View>
+            )}
+          </View>
+
+          <View style={[styles.contentCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}>
+            <Text style={[styles.lineChartTitle, { color: colors.black }]}>Évolution de la cotation moyenne réussie</Text>
+            {dailyAverageSuccessGrades.length < 2 ? (
+              <View style={styles.lineChartEmptyBox}>
+                <Text style={[styles.emptyText, { color: colors.grey }]}>Il faut au moins 2 jours avec réussite pour afficher une évolution.</Text>
+              </View>
+            ) : (
+              <View style={styles.lineChartContainer}>
+                <LineChart
+                  height={220}
+                  data={dailyAverageSuccessGrades.map((d) => ({ value: d.value }))}
+                  xAxisLabelTexts={dailyAverageSuccessGrades.map(() => '')}
+                  maxValue={14}
+                  noOfSections={7}
+                  stepValue={2}
+                  yAxisLabelTexts={['5c', '6a', '6b', '6c', '7a', '7b', '7c', '8a']}
+                  adjustToWidth
+                  parentWidth={availableChartWidth}
+                  disableScroll
+                  rotateLabel={false}
+                  xAxisLabelsAtBottom
+                  initialSpacing={14}
+                  endSpacing={26}
+                  labelsExtraHeight={4}
+                  color={colors.primary}
+                  thickness={2}
+                  curved
+                  dataPointsRadius={4}
+                  dataPointsColor={colors.primary}
+                  lineGradient={false}
+                  rulesType="dashed"
+                  rulesColor={colors.neutralBorder}
+                  rulesThickness={1}
+                  xAxisTextNumberOfLines={1}
+                  xAxisLabelTextStyle={[styles.xAxisLabelText, { color: colors.grey }]}
+                  yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
                 />
               </View>
             )}

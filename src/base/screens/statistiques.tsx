@@ -561,6 +561,37 @@ export default function Statistiques() {
       })
   }, [attemptsInRange])
 
+  const dailyAverageSuccessGrades = useMemo(() => {
+    const byDay = new Map<number, number[]>()
+
+    attemptsInRange.forEach((attempt) => {
+      if (attempt.status !== 'success') {
+        return
+      }
+      const rawGrade = extractGradeFromAttempt(attempt)
+      const grade = normalizeGradeLabel(rawGrade)
+      const score = gradeToScore(grade)
+      if (score < 0) {
+        return
+      }
+      const dayKey = toStartOfDay(new Date(attempt.createdAt))
+      const current = byDay.get(dayKey) ?? []
+      current.push(score)
+      byDay.set(dayKey, current)
+    })
+
+    return Array.from(byDay.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([dayKey, scores]) => {
+        const avgScore = scores.reduce((sum, score) => sum + score, 0) / scores.length
+        return {
+          value: Math.round(avgScore * 10) / 10,
+          gradeLabel: scoreToGrade(avgScore),
+          timestamp: dayKey,
+        }
+      })
+  }, [attemptsInRange])
+
   const exerciseTimingEvents = useMemo(() => exerciseTimingEventsFromDb, [exerciseTimingEventsFromDb])
 
   const exerciseGroups = useMemo(() => {
@@ -897,6 +928,7 @@ export default function Statistiques() {
             stepValue={stepValue}
             dailySuccessRate={dailySuccessRate}
             dailyAverageGrades={dailyAverageGrades}
+            dailyAverageSuccessGrades={dailyAverageSuccessGrades}
           />
         ) : null}
       </ScrollView>
