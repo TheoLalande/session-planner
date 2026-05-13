@@ -71,6 +71,7 @@ export default function SimpleTimer() {
   const hasTimerStatusRef = useRef(false)
   const [contentWidth, setContentWidth] = useState(0)
   const isFirstProgressUpdateRef = useRef<boolean>(true)
+  const [initialRestComplete, setInitialRestComplete] = useState(false)
   const pendingTransitionSecondsValue = useMemo(() => {
     const rawValue = Array.isArray(pendingTransitionSeconds) ? pendingTransitionSeconds[0] : pendingTransitionSeconds
     const parsed = Number(rawValue ?? 0)
@@ -85,7 +86,8 @@ export default function SimpleTimer() {
     progressAnimRef.current.setValue(0)
     hasTimerStatusRef.current = false
     isFirstProgressUpdateRef.current = true
-  }, [exerciseIndex])
+    setInitialRestComplete(pendingTransitionSecondsValue <= 0)
+  }, [exerciseIndex, pendingTransitionSecondsValue])
 
   const {
     initialDurationSeconds,
@@ -478,12 +480,37 @@ export default function SimpleTimer() {
             </Text>
 
             {isReps ? (
-              <Surface style={[styles.repsCard, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]} elevation={0}>
-                <PaperText variant="headlineMedium" style={{ color: colors.mutedText, textAlign: 'center' }}>
-                  Répétitions
-                </PaperText>
-                <Text style={[styles.repsNumber, { color: colors.primary }]}>{repetitions}</Text>
-              </Surface>
+              !initialRestComplete ? (
+                <View style={[styles.timerWell, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]}>
+                  <ExerciseTimer
+                    initialSeconds={1}
+                    autoStart={false}
+                    hasNextExercise={false}
+                    transitionSecondsBetweenTimers={transitionSecondsForNextStep}
+                    transparentBackground
+                    initialTransitionSeconds={pendingTransitionSecondsValue}
+                    onStatusChange={({ isRunning: running, isTransition: transition, remainingSeconds: seconds }) => {
+                      hasTimerStatusRef.current = true
+                      setIsRunning(running)
+                      setIsTransition(transition)
+                      setRemainingSeconds(seconds)
+                      if (!transition) {
+                        setInitialRestComplete(true)
+                      }
+                    }}
+                  />
+                  <PaperText variant="bodySmall" style={[styles.timerHint, { color: colors.mutedText }]}>
+                    Repos avant le prochain exercice
+                  </PaperText>
+                </View>
+              ) : (
+                <Surface style={[styles.repsCard, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]} elevation={0}>
+                  <PaperText variant="headlineMedium" style={{ color: colors.mutedText, textAlign: 'center' }}>
+                    Répétitions
+                  </PaperText>
+                  <Text style={[styles.repsNumber, { color: colors.primary }]}>{repetitions}</Text>
+                </Surface>
+              )
             ) : (
               <View style={[styles.timerWell, { backgroundColor: timerWellBg, borderColor: colors.cardBorder }]}>
                 <ExerciseTimer
@@ -576,7 +603,7 @@ export default function SimpleTimer() {
                         finishTraining()
                         return
                       }
-                      goToNextExercise(false)
+                      goToNextExercise(isReps)
                     }}
                     style={[
                       styles.navBtn,
