@@ -4,6 +4,8 @@ import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { useLocalSearchParams } from 'expo-router'
 import LoadingIndicator from '../components/LoadingIndicator'
 import { CompletedSession, deleteCompletedSession, fetchCompletedSessions } from '../api/completedSessionsService'
+import { QUICK_LOG_SESSION_DISPLAY_TITLE, fetchQuickLogPlanId } from '../api/quickSessionsService'
+import { getExerciseTypeLabel } from '../constants/exerciseTypeLabels'
 import { deleteClimbingAttemptById } from '../api/climbingAttemptsService'
 import { useAppTheme } from '../providers/themeProvider'
 import { useTrainingStore } from '../store/trainingStore'
@@ -65,6 +67,7 @@ export default function StatisticsDayDetail() {
   const [isLoadingCompletedSessions, setIsLoadingCompletedSessions] = useState(false)
   const [deletingCompletedSessionId, setDeletingCompletedSessionId] = useState<string | null>(null)
   const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(null)
+  const [quickLogPlanId, setQuickLogPlanId] = useState<string | null>(null)
   const trainings = useTrainingStore((state) => state.trainings)
   const loadTrainings = useTrainingStore((state) => state.loadTrainings)
   const attempts = useClimbingAttemptsStore((state) => state.attempts)
@@ -75,6 +78,26 @@ export default function StatisticsDayDetail() {
     void loadTrainings()
     void loadAttempts()
   }, [loadAttempts, loadTrainings])
+
+  useEffect(() => {
+    let isMounted = true
+    const loadQuickLogPlanId = async () => {
+      try {
+        const planId = await fetchQuickLogPlanId()
+        if (isMounted) {
+          setQuickLogPlanId(planId)
+        }
+      } catch {
+        if (isMounted) {
+          setQuickLogPlanId(null)
+        }
+      }
+    }
+    void loadQuickLogPlanId()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const loadDaySessions = useCallback(async () => {
     if (!parsedDate) {
@@ -202,7 +225,11 @@ export default function StatisticsDayDetail() {
                 completedSessionsSorted.map((session) => (
                   <View key={session.id} style={[styles.rowCard, { backgroundColor: colors.badgeBackground }]}>
                     <View style={styles.rowHeader}>
-                      <Text style={[styles.rowTitle, { color: colors.black }]}>{trainingById.get(session.trainingId) ?? 'Entraînement'}</Text>
+                      <Text style={[styles.rowTitle, { color: colors.black }]}>
+                        {session.trainingId === quickLogPlanId
+                          ? QUICK_LOG_SESSION_DISPLAY_TITLE
+                          : (trainingById.get(session.trainingId) ?? 'Entraînement')}
+                      </Text>
                       <TouchableOpacity
                         activeOpacity={0.7}
                         disabled={deletingCompletedSessionId === session.id}
@@ -213,7 +240,8 @@ export default function StatisticsDayDetail() {
                       </TouchableOpacity>
                     </View>
                     <Text style={[styles.rowSub, { color: colors.grey }]}>
-                      {formatHour(session.completedAt)} · {session.blockTypes.join(' · ') || 'Sans bloc'}
+                      {formatHour(session.completedAt)} ·{' '}
+                      {session.blockTypes.map(getExerciseTypeLabel).join(' · ') || 'Sans bloc'}
                     </Text>
                   </View>
                 ))

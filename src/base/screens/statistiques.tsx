@@ -128,6 +128,31 @@ const getExerciseTimingSeconds = (exercise: TrainingExercise) => {
 
 type StatsTab = 'practice' | 'climbing' | 'calendar'
 
+type SessionChartGranularity = 'week' | 'month'
+
+const SESSION_TYPE_SERIES: ExerciseType[] = ['climbing', 'gainage', 'warmup', 'renforcement', 'strength', 'hangboard']
+
+const startOfWeekMonday = (d: Date) => {
+  const next = new Date(d)
+  const day = next.getDay() // 0=Sun, 1=Mon
+  const diff = day === 0 ? -6 : 1 - day
+  next.setDate(next.getDate() + diff)
+  next.setHours(0, 0, 0, 0)
+  return next
+}
+
+const getIsoWeekYearAndNumber = (date: Date) => {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7))
+  const weekYear = d.getFullYear()
+  const week1 = new Date(weekYear, 0, 4)
+  week1.setHours(0, 0, 0, 0)
+  const week1Start = startOfWeekMonday(week1)
+  const weekNumber = 1 + Math.round((d.getTime() - week1Start.getTime()) / (7 * 24 * 60 * 60 * 1000))
+  return { weekYear, weekNumber }
+}
+
 type StoredTrainingBlockRow = {
   id: string
   plan_id: string
@@ -186,7 +211,7 @@ export default function Statistiques() {
 
   const [startDate, setStartDate] = useState<Date>(() => {
     const next = new Date()
-    next.setFullYear(next.getFullYear() - 1)
+    next.setMonth(next.getMonth() - 3)
     return next
   })
   const [endDate, setEndDate] = useState<Date>(() => new Date())
@@ -201,6 +226,7 @@ export default function Statistiques() {
   >([])
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date())
   const [selectedExerciseLibraryId, setSelectedExerciseLibraryId] = useState<string | null>(null)
+  const [sessionTypeGranularity, setSessionTypeGranularity] = useState<SessionChartGranularity>('week')
 
   useEffect(() => {
     loadAttempts()
@@ -506,6 +532,99 @@ export default function Statistiques() {
     return map
   }, [attempts, completedSessions, endDate, startDate])
 
+  const sessionTypeSeries = useMemo(() => {
+    const start = toStartOfDay(startDate)
+    const end = toEndOfDay(endDate)
+    if (start <= 0 || end <= 0 || start > end) {
+      return { labels: [] as string[], dataSet: [] as any[], maxValue: 0, noOfSections: 4, stepValue: 1 }
+    }
+
+    const bucketStarts: Date[] = []
+    if (sessionTypeGranularity === 'week') {
+      let cursor = startOfWeekMonday(new Date(start))
+      const endDateObj = new Date(end)
+      while (cursor.getTime() <= endDateObj.getTime()) {
+        bucketStarts.push(new Date(cursor))
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 7)
+      }
+    } else {
+      let cursor = new Date(new Date(start).getFullYear(), new Date(start).getMonth(), 1)
+      cursor.setHours(0, 0, 0, 0)
+      const endObj = new Date(end)
+      while (cursor.getTime() <= endObj.getTime()) {
+        bucketStarts.push(new Date(cursor))
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1)
+      }
+    }
+
+    const bucketKeyOf = (ts: number) => {
+      const d = new Date(ts)
+      if (sessionTypeGranularity === 'month') {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      }
+      const { weekYear, weekNumber } = getIsoWeekYearAndNumber(d)
+      return `${weekYear}-W${String(weekNumber).padStart(2, '0')}`
+    }
+
+    const labelOfBucketStart = (d: Date) => {
+      if (sessionTypeGranularity === 'month') {
+        return d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' })
+      }
+      const { weekNumber } = getIsoWeekYearAndNumber(d)
+      return `S${weekNumber}`
+    }
+
+    const bucketKeys = bucketStarts.map((d) => bucketKeyOf(d.getTime()))
+    const labels = bucketStarts.map(labelOfBucketStart)
+
+    const countsByBucket = new Map<string, Record<ExerciseType, number>>()
+    bucketKeys.forEach((key) => {
+      const base: Record<ExerciseType, number> = {
+        warmup: 0,
+        climbing: 0,
+        stretching: 0,
+        renforcement: 0,
+        strength: 0,
+        gainage: 0,
+        hangboard: 0,
+      }
+      countsByBucket.set(key, base)
+    })
+
+    sessionsByDay.forEach((typesSet, dayKey) => {
+      const parsed = new Date(`${dayKey}T00:00:00`)
+      const ts = parsed.getTime()
+      if (!Number.isFinite(ts) || ts < start || ts > end) {
+        return
+      }
+      const bucketKey = bucketKeyOf(ts)
+      const record = countsByBucket.get(bucketKey)
+      if (!record) {
+        return
+      }
+      Array.from(typesSet).forEach((t) => {
+        record[t] = (record[t] ?? 0) + 1
+      })
+    })
+
+    const dataSet = SESSION_TYPE_SERIES.map((t) => ({
+      data: bucketKeys.map((key) => ({ value: countsByBucket.get(key)?.[t] ?? 0 })),
+      color: getTypeColor(t),
+      thickness: 2,
+      dataPointsRadius: 3,
+      dataPointsColor: getTypeColor(t),
+    }))
+
+    const maxValue = Math.max(
+      0,
+      ...bucketKeys.flatMap((key) => SESSION_TYPE_SERIES.map((t) => countsByBucket.get(key)?.[t] ?? 0)),
+    )
+    const noOfSections = 4
+    const stepValue = Math.max(1, Math.ceil(maxValue / noOfSections))
+
+    return { labels, dataSet, maxValue, noOfSections, stepValue }
+  }, [endDate, getTypeColor, sessionTypeGranularity, sessionsByDay, startDate])
+
   const calendarCells = useMemo(() => {
     const totalDays = monthEnd.getDate()
     const cells: Array<{ day: number | null; key: string; blockTypes: ExerciseType[] }> = []
@@ -521,7 +640,7 @@ export default function Statistiques() {
     return cells
   }, [firstWeekDay, monthEnd, monthStart, sessionsByDay])
 
-  const getTypeColor = (type: ExerciseType) => {
+  function getTypeColor(type: ExerciseType) {
     if (type === 'warmup') return colors.warmup
     if (type === 'renforcement') return colors.renforcement
     if (type === 'strength') return colors.strength
@@ -789,6 +908,85 @@ export default function Statistiques() {
             <View
               style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}
             >
+              <View style={styles.sessionTypeHeaderRow}>
+                <Text style={[styles.sectionTitle, { color: colors.black }]}>Séances par type</Text>
+                <View style={styles.sessionTypeToggleRow}>
+                  {([
+                    { key: 'week', label: 'Semaines' },
+                    { key: 'month', label: 'Mois' },
+                  ] as Array<{ key: SessionChartGranularity; label: string }>).map((item) => {
+                    const isActive = sessionTypeGranularity === item.key
+                    return (
+                      <TouchableOpacity
+                        key={item.key}
+                        activeOpacity={0.7}
+                        onPress={() => setSessionTypeGranularity(item.key)}
+                        style={[
+                          styles.tabChip,
+                          {
+                            backgroundColor: isActive ? colors.primary : colors.white,
+                            borderColor: isActive ? colors.primary : colors.cardBorder,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.tabChipText, { color: isActive ? colors.white : colors.black }]}>{item.label}</Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
+
+              {isLoadingCompletedSessions || isLoadingAttempts ? (
+                <View style={styles.emptyBox}>
+                  <Text style={[styles.emptyText, { color: colors.grey }]}>Chargement des données...</Text>
+                </View>
+              ) : sessionTypeSeries.labels.length < 2 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={[styles.emptyText, { color: colors.grey }]}>Pas assez de données sur la période.</Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.practiceLineChartWrap}>
+                    <LineChart
+                      height={240}
+                      dataSet={sessionTypeSeries.dataSet}
+                      curved
+                      curvature={0.3}
+                      xAxisLabelTexts={sessionTypeSeries.labels.map((label, index) => {
+                        const step = Math.max(1, Math.ceil(sessionTypeSeries.labels.length / 6))
+                        return index % step === 0 || index === sessionTypeSeries.labels.length - 1 ? label : ''
+                      })}
+                      maxValue={sessionTypeSeries.maxValue}
+                      noOfSections={sessionTypeSeries.noOfSections}
+                      stepValue={sessionTypeSeries.stepValue}
+                      adjustToWidth
+                      parentWidth={practiceChartWidth}
+                      disableScroll
+                      rotateLabel={false}
+                      xAxisLabelsAtBottom
+                      initialSpacing={14}
+                      endSpacing={26}
+                      labelsExtraHeight={12}
+                      xAxisTextNumberOfLines={1}
+                      xAxisLabelTextStyle={[styles.xAxisLabelText, { color: colors.grey }]}
+                      yAxisTextStyle={[styles.yAxisTextStyle, { color: colors.grey }]}
+                    />
+                  </View>
+                  <View style={styles.sessionTypeLegend}>
+                    {SESSION_TYPE_SERIES.map((t) => (
+                      <View key={t} style={styles.sessionTypeLegendItem}>
+                        <View style={[styles.sessionTypeLegendDot, { backgroundColor: getTypeColor(t) }]} />
+                        <Text style={[styles.sessionTypeLegendText, { color: colors.grey }]}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+            </View>
+
+            <View
+              style={[styles.modernCard, { backgroundColor: colors.white, borderColor: mode === 'dark' ? colors.darkBorder : colors.cardBorder }]}
+            >
               <Text style={[styles.sectionTitle, { color: colors.black }]}>Exercice suivi</Text>
               {isPracticeLoading ? (
                 <View style={styles.emptyBox}>
@@ -987,6 +1185,36 @@ const styles = StyleSheet.create({
   tabsRow: {
     alignItems: 'center',
     gap: 8,
+  },
+  sessionTypeHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
+  sessionTypeToggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  sessionTypeLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 10,
+  },
+  sessionTypeLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  sessionTypeLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  sessionTypeLegendText: {
+    fontSize: 12,
   },
   tabChip: {
     borderRadius: 999,

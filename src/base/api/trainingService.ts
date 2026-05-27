@@ -1,5 +1,6 @@
 import { ExerciseType, IPlannedTraining, TrainingExercise } from '../types/trainingTypes'
 import { getSession } from './authService'
+import { QUICK_LOG_PLAN_TITLE } from './quickSessionsService'
 import { getSupabaseClient, getSupabaseDb } from './supabaseClient'
 
 const EXERCISE_IMAGES_BUCKET = 'exercice-images'
@@ -176,6 +177,7 @@ export async function fetchTrainings(): Promise<IPlannedTraining[]> {
     .from('training_plans')
     .select('id,title,description,transition_seconds_between_timers,transition_seconds_between_blocs')
     .eq('user_id', userId)
+    .neq('title', QUICK_LOG_PLAN_TITLE)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
 

@@ -8,7 +8,6 @@ import { useAppTheme } from '../providers/themeProvider'
 import { useTrainingStore } from '../store/trainingStore'
 import { haptic } from '../utils/haptics'
 import { Fonts } from '../constants/theme'
-
 export default function CreateOptionsScreen() {
   const { colors } = useAppTheme()
   const styles = createStyles(colors)
@@ -22,6 +21,27 @@ export default function CreateOptionsScreen() {
         <Text style={[styles.subtitle, { color: colors.mutedText }]}>
           Choisis le type de création que tu veux lancer.
         </Text>
+
+        <Surface style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]} elevation={0}>
+          <View style={styles.cardHeader}>
+            <MaterialCommunityIcons name="lightning-bolt-outline" size={22} color={colors.primary} />
+            <Text style={[styles.cardTitle, { color: colors.black }]}>Enregistrer une séance</Text>
+          </View>
+          <Text style={[styles.cardDescription, { color: colors.mutedText }]}>
+            Ajoute une séance sans détail (gainage, escalade, renforcement…) pour tes statistiques.
+          </Text>
+          <Button
+            mode="contained"
+            onPress={async () => {
+              await haptic('tap')
+              router.push('/log-quick-session')
+            }}
+            buttonColor={colors.primary}
+            contentStyle={styles.buttonContent}
+          >
+            Enregistrer une séance
+          </Button>
+        </Surface>
 
         <Surface style={[styles.card, { backgroundColor: colors.white, borderColor: colors.cardBorder }]} elevation={0}>
           <View style={styles.cardHeader}>

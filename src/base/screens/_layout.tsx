@@ -165,6 +165,10 @@ function AppNavigator() {
                   }}
                 />
                 <Stack.Screen name="create-options" options={{ headerShown: true, title: 'Créer', headerBackTitle: 'Retour' }} />
+                <Stack.Screen
+                  name="log-quick-session"
+                  options={{ headerShown: true, title: 'Enregistrer une séance', headerBackTitle: 'Retour' }}
+                />
                 <Stack.Screen name="create-training" options={{ headerShown: true, title: 'Créer un entrainement', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="create-exercice" options={{ headerShown: true, title: 'Créer un exercice', headerBackTitle: 'Retour' }} />
                 <Stack.Screen name="add-exercise-choice" options={{ headerShown: true, title: 'Ajouter un exercice', headerBackTitle: 'Retour' }} />
